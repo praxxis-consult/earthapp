@@ -5,6 +5,13 @@ import lockIcon from '../../assets/icons/trust-lock.svg'
 import shieldIcon from '../../assets/icons/trust-shield.svg'
 import globalIcon from '../../assets/icons/trust-global.svg'
 import dataIcon from '../../assets/icons/trust-data.svg'
+import vector1 from '../../assets/images/trust-vector-1.svg'
+import vector2 from '../../assets/images/trust-vector-2.svg'
+import vector3 from '../../assets/images/trust-vector-3.svg'
+import vector4 from '../../assets/images/trust-vector-4.svg'
+
+// BUILDER: Section is 1440×696px in Figma. Content pinned at left-[120px] = 120px from section edge,
+// spanning 1200px. Vectors extend above the section (negative top) as decorative overlapping lines.
 
 interface TrustCard {
   icon: string
@@ -54,82 +61,112 @@ const cards: TrustCard[] = [
 
 export default function TrustSection() {
   return (
-    <section
-      className="w-full py-[64px] overflow-hidden"
+    // BUILDER: overflow-visible so vectors bleed upward into the section above; outer page uses overflow-x-hidden
+    <div
+      className="relative w-full h-[696px] overflow-visible"
       style={{
-        background: 'linear-gradient(-0.000003deg, rgb(12, 35, 16) 1.2931%, rgb(47, 137, 63) 152.66%)',
+        background: 'linear-gradient(180deg, #2f893f 0%, #0c2310 100%)',
       }}
     >
-      <div className="max-w-[1200px] mx-auto">
-        {/* Header row */}
-        <div className="flex items-start justify-between mb-[64px]">
-          <div className="w-[588px] flex flex-col gap-[8px]">
-            <h2
-              className="text-white text-[48px] tracking-[-0.96px] leading-[64px]"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}
-            >
-              Trade Built on Honesty and Physical Proof
-            </h2>
-            <p
-              className="text-[rgba(255,255,255,0.75)] text-[16px] leading-[29.25px]"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
-            >
-              In global commerce, trust isn't just a promise, it is proven in independent laboratories, verified by satellite mapping, and confirmed by fair wages paid directly to producers.
-            </p>
-          </div>
-
-          {/* Scroll arrows */}
-          <div className="flex gap-[16px] items-center shrink-0">
-            <div className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center">
-              <img src={arrowRight} alt="previous" className="size-[20px] rotate-180" />
-            </div>
-            <div className="size-[40px] rounded-full bg-[#aee74a] flex items-center justify-center">
-              <img src={arrowRight} alt="next" className="size-[20px]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Cards — horizontal scroll, show 2 at a time */}
-        <div className="flex gap-[24px] overflow-x-auto pb-[8px] scrollbar-hide">
-          {cards.map((card) => (
-            <div
-              key={card.title}
-              className="bg-white border border-[#e4dede] rounded-[30px] h-[304px] w-[588px] shrink-0 relative overflow-hidden"
-            >
-              {/* Icon */}
-              <div className="absolute left-[24px] top-[24px] size-[80px] bg-[#f2f9f7] rounded-[20px] flex items-center justify-center">
-                <img src={card.icon} alt="" className="size-[32px]" />
-              </div>
-
-              {/* Badge */}
-              <div className="absolute top-[47px] right-[24px] bg-[#f2f9f7] rounded-[30px] px-[16px] py-[5px]">
-                <span
-                  className="text-[#0c2310] text-[12px] leading-[24px] whitespace-nowrap"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
-                >
-                  {card.badge}
-                </span>
-              </div>
-
-              {/* Text */}
-              <div className="absolute left-[24px] top-[144px] w-[540px] flex flex-col gap-[8px]">
-                <p
-                  className="text-[#101604] text-[24px] tracking-[-1px] leading-[32px]"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}
-                >
-                  {card.title}
-                </p>
-                <p
-                  className="text-[#807e7e] text-[15px] leading-[24px]"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
-                >
-                  {card.body}
-                </p>
-              </div>
-            </div>
-          ))}
+      {/* ── Decorative vector curves (bleed above section) ── */}
+      {/* Vector 7831 — outermost ring, spans full width */}
+      <div className="absolute left-0 top-[-347px] w-full h-[835px] pointer-events-none">
+        <div className="absolute inset-[0_0_1.74%_0]">
+          <img src={vector1} alt="" className="block w-full h-full max-w-none" />
         </div>
       </div>
-    </section>
+      {/* Vector 7830 */}
+      <div className="absolute left-[128.98px] top-[-361px] w-[1182px] h-[685px] pointer-events-none">
+        <div className="absolute inset-[0_0_2.12%_0]">
+          <img src={vector2} alt="" className="block w-full h-full max-w-none" />
+        </div>
+      </div>
+      {/* Vector 7829 */}
+      <div
+        className="absolute top-[-349px] h-[510px] pointer-events-none"
+        style={{ left: 'calc(11.11% + 120px)', width: '880px' }}
+      >
+        <div className="absolute inset-[0_0_2.85%_0]">
+          <img src={vector3} alt="" className="block w-full h-full max-w-none" />
+        </div>
+      </div>
+      {/* Vector 7828 — innermost ring */}
+      <div
+        className="absolute top-[-346px] h-[342px] pointer-events-none"
+        style={{ left: 'calc(22.22% + 105px)', width: '590px' }}
+      >
+        <div className="absolute inset-[-0.15%_0_4.25%_0]">
+          <img src={vector4} alt="" className="block w-full h-full max-w-none" />
+        </div>
+      </div>
+
+      {/* ── Header text — absolute at top-[64px] left-[120px] w-[588px] ── */}
+      <div className="absolute left-[120px] top-[64px] w-[588px] flex flex-col gap-[8px]">
+        <h2
+          className="text-white text-[48px] tracking-[-0.96px] leading-[64px]"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}
+        >
+          Trade Built on Honesty and Physical Proof
+        </h2>
+        <p
+          className="text-[rgba(255,255,255,0.75)] text-[16px] leading-[29.25px]"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
+        >
+          In global commerce, trust isn't just a promise, it is proven in independent laboratories, verified by satellite mapping, and confirmed by fair wages paid directly to producers.
+        </p>
+      </div>
+
+      {/* ── Scroll arrows — absolute right side of content area at top-[156px] ── */}
+      {/* BUILDER: Figma places arrows at left-[calc(88.89%-56px)] = ~1224px from section left edge */}
+      <div className="absolute top-[156px] flex gap-[16px] items-center" style={{ left: 'calc(88.89% - 56px)' }}>
+        <div className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center">
+          <img src={arrowRight} alt="previous" className="size-[20px] rotate-180" />
+        </div>
+        <div className="size-[40px] rounded-full bg-[#aee74a] flex items-center justify-center">
+          <img src={arrowRight} alt="next" className="size-[20px]" />
+        </div>
+      </div>
+
+      {/* ── Cards row — absolute at top-[328px] left-[120px] w-[1200px] ── */}
+      <div className="absolute left-[120px] top-[328px] w-[1200px] flex gap-[24px] overflow-x-auto pb-[4px]">
+        {cards.map((card) => (
+          <div
+            key={card.title}
+            className="bg-white border border-[#e4dede] border-solid rounded-[30px] h-[304px] w-[588px] shrink-0 relative overflow-hidden"
+          >
+            {/* Icon box — absolute top-left */}
+            <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-[#f2f9f7] rounded-[20px] overflow-hidden flex items-center justify-center">
+              <img src={card.icon} alt="" className="size-[32px]" />
+            </div>
+
+            {/* Badge pill — absolute top-right area */}
+            <div className="absolute top-[46.5px] right-[23.5px] bg-[#f2f9f7] rounded-[30px] px-[16px] py-[5px]">
+              <span
+                className="text-[#0c2310] text-[12px] leading-[24px] whitespace-nowrap"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
+              >
+                {card.badge}
+              </span>
+            </div>
+
+            {/* Text block — absolute at top-[143.5px] left-[23.5px] */}
+            <div className="absolute left-[23.5px] top-[143.5px] w-[540px] flex flex-col gap-[8px]">
+              <p
+                className="text-[#101604] text-[24px] tracking-[-1px] leading-[32px]"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}
+              >
+                {card.title}
+              </p>
+              <p
+                className="text-[#807e7e] text-[15px] leading-[24px]"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
+              >
+                {card.body}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
