@@ -23,6 +23,8 @@ const jakarta = (weight: number) => ({
 
 const categories = ['All Resources', 'Agriculture', 'Energy', 'Minerals', 'Metals', 'Forestry', 'Raw Materials']
 
+type Category = 'Agriculture' | 'Energy' | 'Minerals' | 'Metals' | 'Forestry' | 'Raw Materials'
+
 interface Product {
   title: string
   price: string
@@ -31,6 +33,7 @@ interface Product {
   location: string
   quantity: string
   listed: string
+  category: Category
 }
 
 const products: Product[] = [
@@ -42,6 +45,7 @@ const products: Product[] = [
     location: 'Guayas, Ecuador',
     quantity: '20 tonnes',
     listed: 'June 2026',
+    category: 'Agriculture',
   },
   {
     title: 'Handpicked Saffron Threads',
@@ -51,6 +55,7 @@ const products: Product[] = [
     location: 'Khorasan, Iran',
     quantity: '5 kg',
     listed: 'October 2026',
+    category: 'Agriculture',
   },
   {
     title: 'Unrefined Gold Doré Bars',
@@ -60,6 +65,7 @@ const products: Product[] = [
     location: 'Kumasi, Ghana',
     quantity: '500 kg',
     listed: 'August 2026',
+    category: 'Metals',
   },
   {
     title: 'Electrolytic Pure Copper Cathodes',
@@ -69,6 +75,7 @@ const products: Product[] = [
     location: 'Vancouver, Canada',
     quantity: '500 metric tonnes',
     listed: 'January 2026',
+    category: 'Metals',
   },
   {
     title: 'Bonny Light Crude Oil',
@@ -78,6 +85,7 @@ const products: Product[] = [
     location: 'Gulf of Guinea, Nigeria',
     quantity: '500,000 barrels',
     listed: 'September 2026',
+    category: 'Energy',
   },
   {
     title: 'Raw Cashew Nuts',
@@ -87,6 +95,7 @@ const products: Product[] = [
     location: 'Ogbomosho, Nigeria',
     quantity: '2700 kg',
     listed: 'August 2026',
+    category: 'Agriculture',
   },
   {
     title: 'Northern Softwood Lumber (Pine)',
@@ -96,6 +105,7 @@ const products: Product[] = [
     location: 'Vancouver, Canada',
     quantity: '350 cubic meters',
     listed: 'October 2026',
+    category: 'Forestry',
   },
   {
     title: 'Fresh Sweet Potatoes',
@@ -105,15 +115,17 @@ const products: Product[] = [
     location: 'Kaduna, Nigeria',
     quantity: '728 kg',
     listed: 'August 2026',
+    category: 'Agriculture',
   },
   {
-    title: 'Processed White Wholes (W320 ...)',
+    title: 'Processed White Wholes (W320)',
     price: '$300',
     description: 'Premium kernel grade processed cashew nut, dried and ready for export snack manufacturing.',
     image: cashewW320Img,
     location: 'Binh Duong, Vietnam',
     quantity: '15 tonnes',
     listed: 'May 2026',
+    category: 'Agriculture',
   },
   {
     title: 'Farm Fresh Plum Tomatoes (Basket)',
@@ -123,6 +135,7 @@ const products: Product[] = [
     location: 'Lagos, Nigeria',
     quantity: '120 kg',
     listed: 'September 2026',
+    category: 'Agriculture',
   },
   {
     title: 'Sustainably Farmed Teak Timber',
@@ -132,6 +145,7 @@ const products: Product[] = [
     location: 'Mato Grosso, Brazil',
     quantity: '10000 units',
     listed: 'March 2026',
+    category: 'Forestry',
   },
   {
     title: 'High-Grade Spodumene Ore (SC6)',
@@ -141,11 +155,21 @@ const products: Product[] = [
     location: 'Nasarawa, Nigeria',
     quantity: '1,200 tonnes',
     listed: 'August 2026',
+    category: 'Minerals',
   },
 ]
 
 export default function Marketplace() {
   const [activeCategory, setActiveCategory] = useState('All Resources')
+  const [search, setSearch] = useState('')
+
+  const filtered = products.filter((p) => {
+    const matchCat = activeCategory === 'All Resources' || p.category === activeCategory
+    const matchSearch = search === '' ||
+      p.title.toLowerCase().includes(search.toLowerCase()) ||
+      p.location.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
 
   return (
     <div className="bg-white w-full pb-[120px]">
@@ -170,16 +194,21 @@ export default function Marketplace() {
         </div>
 
         {/* ── Search + filter controls ── */}
-        <div className="flex flex-col gap-[24px] mt-[136px]">
+        <div className="flex flex-col gap-[24px] mt-[40px]">
 
           {/* Row 1: search bar + dropdowns */}
           <div className="flex items-center justify-between">
             {/* Search bar */}
             <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-[588px]">
               <img src={searchIcon} alt="" className="size-[20px] shrink-0" />
-              <span className="text-[#807e7e] text-[13px]" style={jakarta(400)}>
-                Search by commodity name, location ...
-              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by commodity name, location ..."
+                className="bg-transparent outline-none text-[#807e7e] text-[13px] w-full placeholder:text-[#807e7e]"
+                style={jakarta(400)}
+              />
             </div>
 
             {/* Dropdowns */}
@@ -225,14 +254,14 @@ export default function Marketplace() {
               ))}
             </div>
             <span className="text-[14px] text-[#807e7e]" style={jakarta(400)}>
-              Showing <span className="text-[#101604]" style={jakarta(600)}>12</span> of 12 commodities
+              Showing <span className="text-[#101604]" style={jakarta(600)}>{filtered.length}</span> of {products.length} commodities
             </span>
           </div>
         </div>
 
         {/* ── Product grid — 3×4 ── */}
         <div className="grid grid-cols-3 gap-[24px] mt-[24px]">
-          {products.map((p) => (
+          {filtered.map((p) => (
             <div
               key={p.title}
               className="border border-[#e4dede] rounded-[30px] overflow-hidden flex flex-col"
