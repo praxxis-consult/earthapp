@@ -45,6 +45,8 @@ export type EmptyStateVariant =
 
 interface EmptyStateProps {
   variant: EmptyStateVariant
+  /** Scale factor applied to the 800×800 card. Default 0.5 → renders at 400×400. */
+  scale?: number
   className?: string
 }
 
@@ -439,19 +441,28 @@ const stateConfigs: Record<EmptyStateVariant, StateConfig> = {
   },
 }
 
-export default function EmptyState({ variant, className = '' }: EmptyStateProps) {
+export default function EmptyState({ variant, scale = 0.5, className = '' }: EmptyStateProps) {
   const config = stateConfigs[variant]
+  const displaySize = 800 * scale
 
   return (
+    // Outer wrapper collapses layout footprint to the scaled size
     <div
-      className={`relative bg-white overflow-hidden ${className}`}
-      style={{
-        width: '800px',
-        height: '800px',
-        borderRadius: config.borderRadius,
-        boxShadow: '0px 18px 110px 0px rgba(208, 208, 208, 0.47)',
-      }}
+      className={className}
+      style={{ width: displaySize, height: displaySize, flexShrink: 0 }}
     >
+      {/* Inner card stays at native 800×800 and is scaled down */}
+      <div
+        className="relative bg-white overflow-hidden"
+        style={{
+          width: '800px',
+          height: '800px',
+          borderRadius: config.borderRadius,
+          boxShadow: '0px 18px 110px 0px rgba(208, 208, 208, 0.47)',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      >
       {/* Illustration */}
       {config.illustration}
 
@@ -485,6 +496,7 @@ export default function EmptyState({ variant, className = '' }: EmptyStateProps)
           </p>
         ))}
       </div>
+    </div>
     </div>
   )
 }
