@@ -1,20 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import searchIcon from '../../assets/icons/mp-search.svg'
 import locationIcon from '../../assets/icons/mp-location.svg'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
 import arrowLeft from '../../assets/icons/mp-arrow-left.svg'
-import cocoaImg from '../../assets/images/mp-cocoa.png'
-import saffronImg from '../../assets/images/mp-saffron.png'
-import goldImg from '../../assets/images/mp-gold.png'
-import crudeOilImg from '../../assets/images/mp-crude-oil.png'
-import cashewsImg from '../../assets/images/mp-cashews.png'
-import lumberImg from '../../assets/images/mp-lumber.png'
-import sweetPotatoImg from '../../assets/images/mp-sweet-potato.png'
-import cashewW320Img from '../../assets/images/mp-cashew-w320.png'
-import tomatoesImg from '../../assets/images/mp-tomatoes.png'
-import teakImg from '../../assets/images/mp-teak.png'
+import { products } from '../../data/products'
 
 const jakarta = (weight: number) => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -26,111 +18,10 @@ const ITEMS_PER_PAGE = 9
 const categories = ['All Resources', 'Agriculture', 'Energy', 'Minerals', 'Metals', 'Forestry', 'Raw Materials']
 const sortOptions = ['Most recent', 'Price: Low to High', 'Price: High to Low']
 
-type Category = 'Agriculture' | 'Energy' | 'Minerals' | 'Metals' | 'Forestry' | 'Raw Materials'
-
-interface Product {
-  title: string
-  price: string
-  priceNum: number
-  description: string
-  image: string | null
-  location: string
-  country: string
-  quantity: string
-  listed: string
-  category: Category
-}
-
-const products: Product[] = [
-  {
-    title: 'Single-origin Cocoa Beans',
-    price: '$250', priceNum: 250,
-    description: 'Fermented and sun-dried beans harvested for artisan and commercial chocolate makers worldwide.',
-    image: cocoaImg, location: 'Guayas, Ecuador', country: 'Ecuador',
-    quantity: '20 tonnes', listed: 'June 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Handpicked Saffron Threads',
-    price: '$450', priceNum: 450,
-    description: 'Highest quality saffron, handpicked from the fields of Iran, perfect for gourmet cooking and natural ...',
-    image: saffronImg, location: 'Khorasan, Iran', country: 'Iran',
-    quantity: '5 kg', listed: 'October 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Unrefined Gold Doré Bars',
-    price: '$500', priceNum: 500,
-    description: 'High-grade gold and silver alloy bars direct from artisanal and small-scale mining concessions, ...',
-    image: goldImg, location: 'Kumasi, Ghana', country: 'Ghana',
-    quantity: '500 kg', listed: 'August 2026', category: 'Metals',
-  },
-  {
-    title: 'Electrolytic Pure Copper Cathodes',
-    price: '$850', priceNum: 850,
-    description: "Often called the metal of electrification, copper is the world's most efficient non-precious ...",
-    image: null, location: 'Vancouver, Canada', country: 'Canada',
-    quantity: '500 metric tonnes', listed: 'January 2026', category: 'Metals',
-  },
-  {
-    title: 'Bonny Light Crude Oil',
-    price: '$500', priceNum: 500,
-    description: 'Premium light sweet crude oil grade with low sulfur content, ideal for high-yield gasoline and diesel ...',
-    image: crudeOilImg, location: 'Gulf of Guinea, Nigeria', country: 'Nigeria',
-    quantity: '500,000 barrels', listed: 'September 2026', category: 'Energy',
-  },
-  {
-    title: 'Raw Cashew Nuts',
-    price: '$800', priceNum: 800,
-    description: 'Sun-dried raw cashews with high nut yields, direct from West African smallholder orchards.',
-    image: cashewsImg, location: 'Ogbomosho, Nigeria', country: 'Nigeria',
-    quantity: '2700 kg', listed: 'August 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Northern Softwood Lumber (Pine)',
-    price: '$2K', priceNum: 2000,
-    description: 'Structural grade dimensional pine timber treated for commercial framing and construction.',
-    image: lumberImg, location: 'Vancouver, Canada', country: 'Canada',
-    quantity: '350 cubic meters', listed: 'October 2026', category: 'Forestry',
-  },
-  {
-    title: 'Fresh Sweet Potatoes',
-    price: '$150', priceNum: 150,
-    description: 'A vibrant selection of fresh sweet potatoes at a local market display highlighting their rich colors and ...',
-    image: sweetPotatoImg, location: 'Kaduna, Nigeria', country: 'Nigeria',
-    quantity: '728 kg', listed: 'August 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Processed White Wholes (W320)',
-    price: '$300', priceNum: 300,
-    description: 'Premium kernel grade processed cashew nut, dried and ready for export snack manufacturing.',
-    image: cashewW320Img, location: 'Binh Duong, Vietnam', country: 'Vietnam',
-    quantity: '15 tonnes', listed: 'May 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Farm Fresh Plum Tomatoes (Basket)',
-    price: '$120', priceNum: 120,
-    description: 'Direct from smallholder farms in Ikorodu and Epe directly to restaurants, households, and ...',
-    image: tomatoesImg, location: 'Lagos, Nigeria', country: 'Nigeria',
-    quantity: '120 kg', listed: 'September 2026', category: 'Agriculture',
-  },
-  {
-    title: 'Sustainably Farmed Teak Timber',
-    price: '$250', priceNum: 250,
-    description: 'Renowned for centuries for its natural oils and exceptional resistance to water, rot, and insects.',
-    image: teakImg, location: 'Mato Grosso, Brazil', country: 'Brazil',
-    quantity: '10000 units', listed: 'March 2026', category: 'Forestry',
-  },
-  {
-    title: 'High-Grade Spodumene Ore (SC6)',
-    price: '$200', priceNum: 200,
-    description: 'Premium raw lithium-bearing spodumene mineral concentrate with a 6% Li₂O content ...',
-    image: null, location: 'Nasarawa, Nigeria', country: 'Nigeria',
-    quantity: '1,200 tonnes', listed: 'August 2026', category: 'Minerals',
-  },
-]
-
 const allCountries = ['Global', ...Array.from(new Set(products.map((p) => p.country))).sort()]
 
 export default function Marketplace() {
+  const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('All Resources')
   const [search, setSearch] = useState('')
   const [location, setLocation] = useState('Global')
@@ -344,6 +235,7 @@ export default function Marketplace() {
                   </div>
                   <div className="flex items-center justify-between mt-auto">
                     <button
+                      onClick={() => navigate(`/marketplace/${p.id}`)}
                       className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center"
                       style={jakarta(500)}
                     >
