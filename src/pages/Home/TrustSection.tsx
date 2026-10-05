@@ -153,7 +153,7 @@ export default function TrustSection() {
         />
       </div>
 
-      {/* ── Content — max-w-[1200px] centered ── */}
+      {/* ── Text + arrows — max-w-[1200px] centered ── */}
       <div className="relative max-w-[1200px] mx-auto h-full" style={{ zIndex: 2 }}>
 
         {/* Header text */}
@@ -190,11 +190,26 @@ export default function TrustSection() {
           </button>
         </div>
 
-        {/* Cards row — 2 visible at a time (2×588 + 24 = 1200px), horizontal scroll hidden */}
+      </div>
+
+      {/*
+        ── Cards strip — lives outside max-w so it can overflow the right edge freely.
+        paddingLeft aligns the first card with the content left margin.
+        On screens narrower than 1200px falls back to 24px gutter.
+      ── */}
+      <div
+        ref={scrollRef}
+        className="absolute left-0 right-0 overflow-x-auto"
+        style={{
+          top: '328px',
+          zIndex: 2,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
         <div
-          ref={scrollRef}
-          className="absolute top-[328px] left-0 right-0 flex gap-[24px] overflow-x-auto pb-[4px]"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="flex gap-[24px] pb-[4px]"
+          style={{ paddingLeft: 'max(calc((100vw - 1200px) / 2), 24px)' }}
         >
           {cards.map((card) => (
             <div
@@ -234,8 +249,8 @@ export default function TrustSection() {
             </div>
           ))}
         </div>
-
       </div>
+
     </section>
   )
 }
