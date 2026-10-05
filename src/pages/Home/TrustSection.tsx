@@ -10,6 +10,10 @@ import vector2 from '../../assets/images/trust-vector-2.svg'
 import vector3 from '../../assets/images/trust-vector-3.svg'
 import vector4 from '../../assets/images/trust-vector-4.svg'
 
+// BUILDER: Vectors in Figma extend above the section frame (negative top values),
+// meaning only partial arches were visible (V4 = 0% visible). We start all 4 at top=0
+// so the complete arch shapes show within the section, no bleeding above.
+
 interface TrustCard {
   icon: string
   badge: string
@@ -60,49 +64,59 @@ export default function TrustSection() {
   return (
     <section className="relative w-full h-[696px]">
 
-      {/* ── Background layer: gradient + vectors, clipped strictly within section bounds ── */}
+      {/* ── Background: gradient + 4 vector arches, all clipped within section ── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+
         {/* Gradient fill */}
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(180deg, #2f893f 0%, #0c2310 100%)' }}
         />
-        {/* Vector 7831 — outermost arc */}
-        <div className="absolute left-0 top-[-347px] w-full h-[835px]">
-          <div className="absolute inset-[0_0_1.74%_0]">
-            <img src={vector1} alt="" className="block w-full h-full max-w-none" />
-          </div>
-        </div>
-        {/* Vector 7830 */}
-        <div className="absolute left-[128.98px] top-[-361px] w-[1182px] h-[685px]">
-          <div className="absolute inset-[0_0_2.12%_0]">
-            <img src={vector2} alt="" className="block w-full h-full max-w-none" />
-          </div>
-        </div>
-        {/* Vector 7829 */}
-        <div
-          className="absolute top-[-349px] h-[510px]"
-          style={{ left: 'calc(11.11% + 120px)', width: '880px' }}
-        >
-          <div className="absolute inset-[0_0_2.85%_0]">
-            <img src={vector3} alt="" className="block w-full h-full max-w-none" />
-          </div>
-        </div>
-        {/* Vector 7828 — innermost arc */}
-        <div
-          className="absolute top-[-346px] h-[342px]"
-          style={{ left: 'calc(22.22% + 105px)', width: '590px' }}
-        >
-          <div className="absolute inset-[-0.15%_0_4.25%_0]">
-            <img src={vector4} alt="" className="block w-full h-full max-w-none" />
-          </div>
-        </div>
+
+        {/*
+          Vectors repositioned to top=0 so all 4 complete arches are visible within
+          the 696px section. Horizontal positions match Figma exactly.
+          V1 (835px tall) clips at section bottom — the arch tip is still visible.
+        */}
+
+        {/* V1 — outermost arch, full section width */}
+        <img
+          src={vector1}
+          alt=""
+          className="absolute top-0 left-0"
+          style={{ width: '1440px', height: '835px' }}
+        />
+
+        {/* V2 — second ring */}
+        <img
+          src={vector2}
+          alt=""
+          className="absolute top-0"
+          style={{ left: '128.98px', width: '1182px', height: '685px' }}
+        />
+
+        {/* V3 — third ring */}
+        <img
+          src={vector3}
+          alt=""
+          className="absolute top-0"
+          style={{ left: '280.11px', width: '880px', height: '510px' }}
+        />
+
+        {/* V4 — innermost ring (was 100% clipped before, now fully visible) */}
+        <img
+          src={vector4}
+          alt=""
+          className="absolute top-0"
+          style={{ left: '424.97px', width: '590px', height: '342px' }}
+        />
+
       </div>
 
-      {/* ── Content layer: max-w-[1200px] centered ── */}
+      {/* ── Content: max-w-[1200px] centered ── */}
       <div className="relative max-w-[1200px] mx-auto h-full">
 
-        {/* Header text — top-[64px] left-aligned w-[588px] */}
+        {/* Header text */}
         <div className="absolute top-[64px] left-0 w-[588px] flex flex-col gap-[8px]">
           <h2
             className="text-white text-[48px] tracking-[-0.96px] leading-[64px]"
@@ -118,7 +132,7 @@ export default function TrustSection() {
           </p>
         </div>
 
-        {/* Scroll arrows — top-[156px] right-aligned */}
+        {/* Scroll arrows */}
         <div className="absolute top-[156px] right-0 flex gap-[16px] items-center">
           <div className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center">
             <img src={arrowRight} alt="previous" className="size-[20px] rotate-180" />
@@ -128,7 +142,7 @@ export default function TrustSection() {
           </div>
         </div>
 
-        {/* Cards row — top-[328px], full content width, horizontal scroll */}
+        {/* Cards row — horizontal scroll, 2 visible at a time (2×588 + 24 = 1200px) */}
         <div className="absolute top-[328px] left-0 right-0 flex gap-[24px] overflow-x-auto pb-[4px]">
           {cards.map((card) => (
             <div
