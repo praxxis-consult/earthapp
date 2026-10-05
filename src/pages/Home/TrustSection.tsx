@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import boxIcon from '../../assets/icons/trust-box.svg'
 import medalIcon from '../../assets/icons/trust-medal.svg'
@@ -9,17 +10,6 @@ import vector1 from '../../assets/images/trust-vector-1.svg'
 import vector2 from '../../assets/images/trust-vector-2.svg'
 import vector3 from '../../assets/images/trust-vector-3.svg'
 import vector4 from '../../assets/images/trust-vector-4.svg'
-
-// BUILDER: Figma places the vectors at negative Y so only their arch-curve
-// portions are visible within the 696px section frame — the flat rectangle
-// tops are intentionally above the frame. We replicate this by:
-//  1. A gradient-only div (overflow-hidden) — keeps green inside the section.
-//  2. A vectors div that extends 380px ABOVE section top, with a CSS mask
-//     that hard-clips at the section boundary, so arches are visible inside
-//     the green area but transparent/invisible in the white section above.
-//  3. V4 is nudged down 60px from its Figma position so its arch tip enters
-//     the visible frame (in Figma dev mode it shows because the canvas is
-//     infinite; in a clipped frame it would be cut off).
 
 interface TrustCard {
   icon: string
@@ -67,18 +57,25 @@ const cards: TrustCard[] = [
   },
 ]
 
-// How far the vector container extends above the section top (must be ≥ max vector bleed).
-const VECTOR_BLEED = 380
+// Card width + gap = one scroll step
+const CARD_STEP = 588 + 24
+
+// How far the vector container extends above the section
+const BLEED = 380
 
 export default function TrustSection() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  function scrollCards(dir: 'left' | 'right') {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir === 'right' ? CARD_STEP : -CARD_STEP, behavior: 'smooth' })
+  }
+
   return (
     <section className="relative w-full h-[696px]">
 
-      {/* ── 1. Gradient fill — strictly within section ── */}
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ zIndex: 0 }}
-      >
+      {/* ── Gradient fill — clipped within section ── */}
+      <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(to top, #0c2310 1.293%, #2f893f 152.66%)' }}
@@ -86,68 +83,77 @@ export default function TrustSection() {
       </div>
 
       {/*
-        ── 2. Decorative vector arches ──
-        Container starts VECTOR_BLEED px above the section so the SVGs can sit
-        at their Figma positions (negative-top relative to section).
-        A CSS mask makes the above-section portion fully transparent → no bleed
-        into the white MarketplaceCatalog area above.
-        The mask hard-clips at exactly the section top edge (VECTOR_BLEED px into the div).
+        ── Decorative vector arches ──
+        All 4 vectors are centered horizontally on the full viewport width
+        (matching Figma where each SVG is centered around x=720 of 1440px).
+        Container extends BLEED px above the section; CSS mask clips the arches
+        exactly at the section top — no bleed into the white area above.
       */}
       <div
-        className="absolute left-0 right-0 pointer-events-none"
+        className="absolute left-0 right-0 pointer-events-none overflow-hidden"
         style={{
-          top: `-${VECTOR_BLEED}px`,
-          height: `${696 + VECTOR_BLEED}px`,
+          top: `-${BLEED}px`,
+          height: `${696 + BLEED}px`,
           zIndex: 1,
-          maskImage: `linear-gradient(to bottom, transparent ${VECTOR_BLEED - 1}px, black ${VECTOR_BLEED + 1}px)`,
-          WebkitMaskImage: `linear-gradient(to bottom, transparent ${VECTOR_BLEED - 1}px, black ${VECTOR_BLEED + 1}px)`,
+          maskImage: `linear-gradient(to bottom, transparent ${BLEED - 1}px, black ${BLEED + 1}px)`,
+          WebkitMaskImage: `linear-gradient(to bottom, transparent ${BLEED - 1}px, black ${BLEED + 1}px)`,
         }}
       >
-        {/*
-          Each vector's `top` inside this container = VECTOR_BLEED + figma_top_offset.
-          e.g. V1 Figma top = -346.56  →  380 - 346.56 = 33.44px inside this div.
-          This recreates the exact same visual as in the Figma frame.
-        */}
-
-        {/* V1 — outermost arch, full section width, 835px tall */}
+        {/* V1 — 1440px wide, centered */}
         <img
           src={vector1}
           alt=""
-          className="absolute left-0"
-          style={{ top: `${VECTOR_BLEED - 346.56}px`, width: '1440px', height: '835px' }}
+          className="absolute"
+          style={{
+            top: `${BLEED - 346.56}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '1440px',
+            height: '835px',
+          }}
         />
-
-        {/* V2 — second ring */}
+        {/* V2 — 1182px wide, centered */}
         <img
           src={vector2}
           alt=""
           className="absolute"
-          style={{ top: `${VECTOR_BLEED - 361}px`, left: '128.98px', width: '1182px', height: '685px' }}
+          style={{
+            top: `${BLEED - 361}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '1182px',
+            height: '685px',
+          }}
         />
-
-        {/* V3 — third ring */}
+        {/* V3 — 880px wide, centered */}
         <img
           src={vector3}
           alt=""
           className="absolute"
-          style={{ top: `${VECTOR_BLEED - 349.45}px`, left: '280.11px', width: '880px', height: '510px' }}
+          style={{
+            top: `${BLEED - 349.45}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '880px',
+            height: '510px',
+          }}
         />
-
-        {/*
-          V4 — innermost ring.
-          Figma top = -345.6px → bottom = -3.4px (3.4px above section top, invisible in frame).
-          Nudged down 60px so its arch tip appears within the section, matching what
-          designers see in Figma dev mode (infinite canvas view).
-        */}
+        {/* V4 — 590px wide, centered. Nudged 60px down so arch tip enters the frame */}
         <img
           src={vector4}
           alt=""
           className="absolute"
-          style={{ top: `${VECTOR_BLEED - 345.6 + 60}px`, left: '424.97px', width: '590px', height: '342px' }}
+          style={{
+            top: `${BLEED - 345.6 + 60}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '590px',
+            height: '342px',
+          }}
         />
       </div>
 
-      {/* ── 3. Content — max-w-[1200px] centered ── */}
+      {/* ── Content — max-w-[1200px] centered ── */}
       <div className="relative max-w-[1200px] mx-auto h-full" style={{ zIndex: 2 }}>
 
         {/* Header text */}
@@ -166,18 +172,30 @@ export default function TrustSection() {
           </p>
         </div>
 
-        {/* Scroll arrows */}
+        {/* Scroll arrows — functional */}
         <div className="absolute top-[156px] right-0 flex gap-[16px] items-center">
-          <div className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center">
-            <img src={arrowRight} alt="previous" className="size-[20px] rotate-180" />
-          </div>
-          <div className="size-[40px] rounded-full bg-[#aee74a] flex items-center justify-center">
-            <img src={arrowRight} alt="next" className="size-[20px]" />
-          </div>
+          <button
+            onClick={() => scrollCards('left')}
+            className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center cursor-pointer hover:bg-[rgba(255,255,255,0.3)] transition-colors"
+            aria-label="Scroll left"
+          >
+            <img src={arrowRight} alt="" className="size-[20px] rotate-180" />
+          </button>
+          <button
+            onClick={() => scrollCards('right')}
+            className="size-[40px] rounded-full bg-[#aee74a] flex items-center justify-center cursor-pointer hover:bg-[#c5f060] transition-colors"
+            aria-label="Scroll right"
+          >
+            <img src={arrowRight} alt="" className="size-[20px]" />
+          </button>
         </div>
 
-        {/* Cards row — 2 visible at a time (2×588 + 24 = 1200px), horizontal scroll */}
-        <div className="absolute top-[328px] left-0 right-0 flex gap-[24px] overflow-x-auto pb-[4px]">
+        {/* Cards row — 2 visible at a time (2×588 + 24 = 1200px), horizontal scroll hidden */}
+        <div
+          ref={scrollRef}
+          className="absolute top-[328px] left-0 right-0 flex gap-[24px] overflow-x-auto pb-[4px]"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {cards.map((card) => (
             <div
               key={card.title}
