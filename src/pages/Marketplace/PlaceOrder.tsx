@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { products } from '../../data/products'
+import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
 import arrowLeft from '../../assets/icons/po-arrow-left.svg'
 import arrowRight from '../../assets/icons/po-arrow-right.svg'
 import shieldIcon from '../../assets/icons/po-shield.svg'
@@ -31,6 +32,7 @@ export default function PlaceOrder() {
 
   const [activeThumb, setActiveThumb] = useState(0)
   const [qty, setQty] = useState(MIN_QTY)
+  const [modalOpen, setModalOpen] = useState(false)
 
   if (!product) {
     return (
@@ -262,6 +264,7 @@ export default function PlaceOrder() {
 
             {/* Place order button */}
             <button
+              onClick={() => setModalOpen(true)}
               className="bg-[#008f63] flex gap-[8px] h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full"
             >
               <span className="text-white text-[14px]" style={jakarta(600)}>
@@ -297,6 +300,8 @@ export default function PlaceOrder() {
           </div>
         </div>
       </div>
+
+      {modalOpen && <PlaceOrderModal onClose={() => setModalOpen(false)} />}
     </div>
   )
 }
