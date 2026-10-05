@@ -10,9 +10,16 @@ import vector2 from '../../assets/images/trust-vector-2.svg'
 import vector3 from '../../assets/images/trust-vector-3.svg'
 import vector4 from '../../assets/images/trust-vector-4.svg'
 
-// BUILDER: Vectors in Figma extend above the section frame (negative top values),
-// meaning only partial arches were visible (V4 = 0% visible). We start all 4 at top=0
-// so the complete arch shapes show within the section, no bleeding above.
+// BUILDER: Figma places the vectors at negative Y so only their arch-curve
+// portions are visible within the 696px section frame — the flat rectangle
+// tops are intentionally above the frame. We replicate this by:
+//  1. A gradient-only div (overflow-hidden) — keeps green inside the section.
+//  2. A vectors div that extends 380px ABOVE section top, with a CSS mask
+//     that hard-clips at the section boundary, so arches are visible inside
+//     the green area but transparent/invisible in the white section above.
+//  3. V4 is nudged down 60px from its Figma position so its arch tip enters
+//     the visible frame (in Figma dev mode it shows because the canvas is
+//     infinite; in a clipped frame it would be cut off).
 
 interface TrustCard {
   icon: string
@@ -60,61 +67,88 @@ const cards: TrustCard[] = [
   },
 ]
 
+// How far the vector container extends above the section top (must be ≥ max vector bleed).
+const VECTOR_BLEED = 380
+
 export default function TrustSection() {
   return (
     <section className="relative w-full h-[696px]">
 
-      {/* ── Background: gradient + 4 vector arches, all clipped within section ── */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-
-        {/* Gradient fill */}
+      {/* ── 1. Gradient fill — strictly within section ── */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ zIndex: 0 }}
+      >
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(180deg, #2f893f 0%, #0c2310 100%)' }}
+          style={{ background: 'linear-gradient(to top, #0c2310 1.293%, #2f893f 152.66%)' }}
         />
+      </div>
 
+      {/*
+        ── 2. Decorative vector arches ──
+        Container starts VECTOR_BLEED px above the section so the SVGs can sit
+        at their Figma positions (negative-top relative to section).
+        A CSS mask makes the above-section portion fully transparent → no bleed
+        into the white MarketplaceCatalog area above.
+        The mask hard-clips at exactly the section top edge (VECTOR_BLEED px into the div).
+      */}
+      <div
+        className="absolute left-0 right-0 pointer-events-none"
+        style={{
+          top: `-${VECTOR_BLEED}px`,
+          height: `${696 + VECTOR_BLEED}px`,
+          zIndex: 1,
+          maskImage: `linear-gradient(to bottom, transparent ${VECTOR_BLEED - 1}px, black ${VECTOR_BLEED + 1}px)`,
+          WebkitMaskImage: `linear-gradient(to bottom, transparent ${VECTOR_BLEED - 1}px, black ${VECTOR_BLEED + 1}px)`,
+        }}
+      >
         {/*
-          Vectors repositioned to top=0 so all 4 complete arches are visible within
-          the 696px section. Horizontal positions match Figma exactly.
-          V1 (835px tall) clips at section bottom — the arch tip is still visible.
+          Each vector's `top` inside this container = VECTOR_BLEED + figma_top_offset.
+          e.g. V1 Figma top = -346.56  →  380 - 346.56 = 33.44px inside this div.
+          This recreates the exact same visual as in the Figma frame.
         */}
 
-        {/* V1 — outermost arch, full section width */}
+        {/* V1 — outermost arch, full section width, 835px tall */}
         <img
           src={vector1}
           alt=""
-          className="absolute top-0 left-0"
-          style={{ width: '1440px', height: '835px' }}
+          className="absolute left-0"
+          style={{ top: `${VECTOR_BLEED - 346.56}px`, width: '1440px', height: '835px' }}
         />
 
         {/* V2 — second ring */}
         <img
           src={vector2}
           alt=""
-          className="absolute top-0"
-          style={{ left: '128.98px', width: '1182px', height: '685px' }}
+          className="absolute"
+          style={{ top: `${VECTOR_BLEED - 361}px`, left: '128.98px', width: '1182px', height: '685px' }}
         />
 
         {/* V3 — third ring */}
         <img
           src={vector3}
           alt=""
-          className="absolute top-0"
-          style={{ left: '280.11px', width: '880px', height: '510px' }}
+          className="absolute"
+          style={{ top: `${VECTOR_BLEED - 349.45}px`, left: '280.11px', width: '880px', height: '510px' }}
         />
 
-        {/* V4 — innermost ring (was 100% clipped before, now fully visible) */}
+        {/*
+          V4 — innermost ring.
+          Figma top = -345.6px → bottom = -3.4px (3.4px above section top, invisible in frame).
+          Nudged down 60px so its arch tip appears within the section, matching what
+          designers see in Figma dev mode (infinite canvas view).
+        */}
         <img
           src={vector4}
           alt=""
-          className="absolute top-0"
-          style={{ left: '424.97px', width: '590px', height: '342px' }}
+          className="absolute"
+          style={{ top: `${VECTOR_BLEED - 345.6 + 60}px`, left: '424.97px', width: '590px', height: '342px' }}
         />
-
       </div>
 
-      {/* ── Content: max-w-[1200px] centered ── */}
-      <div className="relative max-w-[1200px] mx-auto h-full">
+      {/* ── 3. Content — max-w-[1200px] centered ── */}
+      <div className="relative max-w-[1200px] mx-auto h-full" style={{ zIndex: 2 }}>
 
         {/* Header text */}
         <div className="absolute top-[64px] left-0 w-[588px] flex flex-col gap-[8px]">
@@ -142,7 +176,7 @@ export default function TrustSection() {
           </div>
         </div>
 
-        {/* Cards row — horizontal scroll, 2 visible at a time (2×588 + 24 = 1200px) */}
+        {/* Cards row — 2 visible at a time (2×588 + 24 = 1200px), horizontal scroll */}
         <div className="absolute top-[328px] left-0 right-0 flex gap-[24px] overflow-x-auto pb-[4px]">
           {cards.map((card) => (
             <div
