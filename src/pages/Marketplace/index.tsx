@@ -242,6 +242,7 @@ export default function Marketplace() {
                       View details
                     </button>
                     <button
+                      onClick={() => navigate(`/marketplace/${p.id}/order`)}
                       className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px]"
                       style={{ background: 'rgb(0, 124, 83)' }}
                     >

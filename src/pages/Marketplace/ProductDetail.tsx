@@ -209,6 +209,7 @@ export default function ProductDetail() {
             <div className="flex flex-col gap-[16px]">
               {/* Place order */}
               <button
+                onClick={() => navigate(`/marketplace/${product.id}/order`)}
                 className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] py-[16px] rounded-[30px] w-full"
                 style={{ background: 'rgb(0, 124, 83)' }}
               >
