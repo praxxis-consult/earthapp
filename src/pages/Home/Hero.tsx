@@ -1,99 +1,189 @@
-import { useEffect, useState } from 'react'
-import Button from '../../components/ui/Button'
-import scrollDown from '../../assets/icons/scroll-down.svg'
-import bg1 from '../../assets/images/hero-bg-3.png'
-import bg2 from '../../assets/images/hero-bg-4.png'
-import bg3 from '../../assets/images/hero-bg-5.png'
-import bg4 from '../../assets/images/hero-bg-7.png'
-import bg5 from '../../assets/images/hero-bg-10.png'
+import { useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import scrollIcon from '../../assets/icons/hero-scroll.svg'
+import arrowRight from '../../assets/icons/hero-arrow-right.svg'
+// Poster frames used as video fallback backgrounds
+import poster1 from '../../assets/images/hero-poster-1.png'
+import poster2 from '../../assets/images/hero-poster-2.png'
 
-const BACKGROUNDS = [bg1, bg2, bg3, bg4, bg5]
-const INTERVAL_MS = 5000
+// ─── Video sources ───────────────────────────────────────────────────────────
+// Place the actual .mp4 files in public/videos/ and update these paths.
+// Until the files are available the poster image is shown as a static fallback.
+const VIDEO_SRCS: string[] = [
+  // '/videos/hero-vid1.mp4',
+  // '/videos/hero-vid2.mp4',
+  // '/videos/hero-vid3.mp4',
+  // '/videos/hero-vid4.mp4',
+  // '/videos/hero-vid5.mp4',
+]
+
+const POSTER = poster1
+
+const jakarta = (weight: number) => ({
+  fontFamily: "'Plus Jakarta Sans', sans-serif",
+  fontWeight: weight,
+})
 
 export default function Hero() {
-  const [active, setActive] = useState(0)
+  const navigate = useNavigate()
+  const videoRef = useRef<HTMLVideoElement>(null)
 
+  // Ensure video plays on mount (needed on some browsers)
   useEffect(() => {
-    const id = setInterval(() => {
-      setActive((i) => (i + 1) % BACKGROUNDS.length)
-    }, INTERVAL_MS)
-    return () => clearInterval(id)
+    videoRef.current?.play().catch(() => {})
   }, [])
 
+  const hasVideo = VIDEO_SRCS.length > 0
+
   return (
-    <section className="relative h-256 w-full overflow-hidden font-jakarta">
-
-      {/* ── Cycling backgrounds (cross-fade) ── */}
-      {BACKGROUNDS.map((src, i) => (
+    <section
+      className="relative overflow-hidden w-full"
+      style={{ height: '1024px' }}
+    >
+      {/* ── Background: video (when available) or poster fallback ── */}
+      {hasVideo ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={POSTER}
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          {VIDEO_SRCS.map((src) => (
+            <source key={src} src={src} type="video/mp4" />
+          ))}
+        </video>
+      ) : (
+        /* Static poster fallback — swap poster2 for alternate look */
         <img
-          key={src}
-          src={src}
+          src={poster2}
           alt=""
-          className="absolute inset-0 size-full object-cover transition-opacity duration-1000"
-          style={{ opacity: i === active ? 1 : 0 }}
+          className="absolute inset-0 w-full h-full object-cover"
         />
-      ))}
+      )}
 
-      {/* ── Gradient overlay ── */}
-      <div className="absolute inset-0 bg-linear-to-t from-surface-dark to-transparent to-50%" />
+      {/* ── Gradient overlay: bottom #101604 → top transparent ── */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to top, #101604 0%, rgba(16,22,4,0) 50%)',
+        }}
+      />
 
       {/* ── Content ── */}
-      <div className="relative mx-auto h-full w-full max-w-page px-30">
-        <div className="mx-auto flex h-full w-full max-w-content flex-col justify-end gap-16 pb-20">
-
-          <div className="flex flex-col items-start gap-4">
-            <p className="text-[12px] font-medium uppercase tracking-[1.98px] text-foreground-light">
-              Global sourcing · Import &amp; export
-            </p>
-            <h1 className="text-[120px] font-bold leading-30 tracking-[-2px] text-foreground-light-warm">
+      <div
+        className="absolute flex flex-col items-start"
+        style={{ bottom: '80px', left: '120px', width: '1200px', gap: '64px' }}
+      >
+        {/* Eyebrow + headline */}
+        <div className="flex flex-col items-start w-full" style={{ gap: '16px' }}>
+          <p
+            className="text-[#f8f8f8] text-[12px] uppercase w-full"
+            style={{ ...jakarta(500), letterSpacing: '1.98px' }}
+          >
+            Global sourcing · Import &amp; export
+          </p>
+          <div className="flex flex-col items-start w-full">
+            <p
+              className="text-[#f8f6f1] text-[120px] w-full"
+              style={{ ...jakarta(700), letterSpacing: '-2px', lineHeight: '120px' }}
+            >
               From Earth
-              <br />
+            </p>
+            <p
+              className="text-[#f8f6f1] text-[120px] w-full"
+              style={{ ...jakarta(700), letterSpacing: '-2px', lineHeight: '120px' }}
+            >
               to market.
-            </h1>
+            </p>
+          </div>
+        </div>
+
+        {/* Border rule + bottom row */}
+        <div
+          className="flex flex-col items-start justify-end w-full"
+          style={{
+            gap: '40px',
+            borderTop: '1px solid rgba(156,156,156,0.5)',
+            paddingTop: '32px',
+          }}
+        >
+          {/* Body + buttons */}
+          <div className="flex items-end justify-between w-full">
+            <p
+              className="text-[#f8f8f8] text-[16px]"
+              style={{ ...jakarta(400), lineHeight: '29.25px', width: '588px' }}
+            >
+              Earth sources, buys and moves products and natural resources — agriculture, energy,
+              minerals, metals and raw materials from where they are produced to the markets that
+              need them.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex items-center" style={{ gap: '16px' }}>
+              {/* Start Trading */}
+              <button
+                onClick={() => navigate('/marketplace')}
+                className="flex items-center justify-center"
+                style={{
+                  background: '#aee74a',
+                  height: '48px',
+                  padding: '16px 24px',
+                  borderRadius: '30px',
+                  gap: '8px',
+                }}
+              >
+                <span
+                  className="text-[#0c2310] text-[14px] whitespace-nowrap"
+                  style={{ ...jakarta(500), letterSpacing: '-0.28px' }}
+                >
+                  Start Trading
+                </span>
+                <img src={arrowRight} alt="" className="size-[24px] shrink-0" />
+              </button>
+
+              {/* Explore all Resources */}
+              <button
+                className="flex items-center justify-center"
+                style={{
+                  background: '#404438',
+                  height: '48px',
+                  padding: '16px 28px',
+                  borderRadius: '30px',
+                }}
+              >
+                <span
+                  className="text-[14px] whitespace-nowrap"
+                  style={{
+                    ...jakarta(500),
+                    letterSpacing: '-0.28px',
+                    background: 'linear-gradient(179.16deg, #ffffff 4.99%, rgba(255,255,255,0.86) 85.73%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Explore all Resources
+                </span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col items-start gap-10 border-t border-border-subtle/50 pt-8">
-            <div className="flex w-full items-end justify-between">
-              <p className="w-147 text-[16px] leading-[29.25px] text-foreground-light">
-                Earth sources, buys and moves products and natural resources — agriculture, energy,
-                minerals, metals and raw materials from where they are produced to the markets that
-                need them.
-              </p>
-              <div className="flex items-center gap-4">
-                <Button variant="accent">Start Trading</Button>
-                <Button variant="dark">Explore all Resources</Button>
-              </div>
-            </div>
-
-            {/* ── Scroll indicator + slide dots ── */}
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img src={scrollDown} alt="" className="size-6" />
-                <p className="text-[12px] uppercase tracking-[1.98px] text-foreground-light/75">
-                  Scroll
-                </p>
-              </div>
-
-              {/* Slide dots */}
-              <div className="flex items-center gap-2">
-                {BACKGROUNDS.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActive(i)}
-                    aria-label={`Background ${i + 1}`}
-                    className="transition-all duration-300"
-                    style={{
-                      width: i === active ? '24px' : '6px',
-                      height: '6px',
-                      borderRadius: '999px',
-                      background: i === active ? '#fff' : 'rgba(255,255,255,0.4)',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+          {/* Scroll indicator */}
+          <div className="flex items-center" style={{ gap: '12px', height: '24px' }}>
+            <img src={scrollIcon} alt="" className="size-[24px] shrink-0" />
+            <span
+              className="text-[12px] uppercase whitespace-nowrap"
+              style={{
+                ...jakarta(400),
+                letterSpacing: '1.98px',
+                color: 'rgba(248,248,248,0.75)',
+              }}
+            >
+              Scroll
+            </span>
           </div>
-
         </div>
       </div>
     </section>
