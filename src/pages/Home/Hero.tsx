@@ -1,66 +1,48 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import scrollIcon from '../../assets/icons/hero-scroll.svg'
 import arrowRight from '../../assets/icons/hero-arrow-right.svg'
-// Poster frames used as video fallback backgrounds
-import poster1 from '../../assets/images/hero-poster-1.png'
-import poster2 from '../../assets/images/hero-poster-2.png'
+import slide1 from '../../assets/images/hero-slide-1.png'
+import slide2 from '../../assets/images/hero-slide-6.png'
+import slide3 from '../../assets/images/hero-slide-7.png'
+import slide4 from '../../assets/images/hero-slide-8.png'
+import slide5 from '../../assets/images/hero-slide-9.png'
 
-// ─── Video sources ───────────────────────────────────────────────────────────
-// Place the actual .mp4 files in public/videos/ and update these paths.
-// Until the files are available the poster image is shown as a static fallback.
-const VIDEO_SRCS: string[] = [
-  // '/videos/hero-vid1.mp4',
-  // '/videos/hero-vid2.mp4',
-  // '/videos/hero-vid3.mp4',
-  // '/videos/hero-vid4.mp4',
-  // '/videos/hero-vid5.mp4',
-]
+const SLIDES = [slide1, slide2, slide3, slide4, slide5]
+const INTERVAL_MS = 5000
 
-const POSTER = poster1
-
-const jakarta = (weight: number) => ({
+const jakarta = (weight: number): React.CSSProperties => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
   fontWeight: weight,
 })
 
 export default function Hero() {
   const navigate = useNavigate()
-  const hasVideo = VIDEO_SRCS.length > 0
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [])
 
   return (
-    <section
-      className="relative overflow-hidden w-full"
-      style={{ height: '1024px' }}
-    >
-      {/* ── Background: video (when available) or poster fallback ── */}
-      {hasVideo ? (
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster={POSTER}
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          {VIDEO_SRCS.map((src) => (
-            <source key={src} src={src} type="video/mp4" />
-          ))}
-        </video>
-      ) : (
-        /* Static poster fallback — swap poster2 for alternate look */
-        <img
-          src={poster2}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      )}
+    <section className="relative overflow-hidden w-full" style={{ height: '1024px' }}>
 
-      {/* ── Gradient overlay: bottom #101604 → top transparent ── */}
+      {/* ── Cycling backgrounds ── */}
+      {SLIDES.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+          style={{ opacity: i === active ? 1 : 0 }}
+        />
+      ))}
+
+      {/* ── Gradient overlay ── */}
       <div
         className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(to top, #101604 0%, rgba(16,22,4,0) 50%)',
-        }}
+        style={{ background: 'linear-gradient(to top, #101604 0%, rgba(16,22,4,0) 50%)' }}
       />
 
       {/* ── Content ── */}
@@ -92,16 +74,16 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Border rule + bottom row */}
+        {/* Divider + bottom row */}
         <div
-          className="flex flex-col items-start justify-end w-full"
+          className="flex flex-col items-start w-full"
           style={{
             gap: '40px',
             borderTop: '1px solid rgba(156,156,156,0.5)',
             paddingTop: '32px',
           }}
         >
-          {/* Body + buttons */}
+          {/* Body + CTAs */}
           <div className="flex items-end justify-between w-full">
             <p
               className="text-[#f8f8f8] text-[16px]"
@@ -112,24 +94,14 @@ export default function Hero() {
               need them.
             </p>
 
-            {/* CTAs */}
             <div className="flex items-center" style={{ gap: '16px' }}>
               {/* Start Trading */}
               <button
                 onClick={() => navigate('/marketplace')}
                 className="flex items-center justify-center"
-                style={{
-                  background: '#aee74a',
-                  height: '48px',
-                  padding: '16px 24px',
-                  borderRadius: '30px',
-                  gap: '8px',
-                }}
+                style={{ background: '#aee74a', height: '48px', padding: '16px 24px', borderRadius: '30px', gap: '8px' }}
               >
-                <span
-                  className="text-[#0c2310] text-[14px] whitespace-nowrap"
-                  style={{ ...jakarta(500), letterSpacing: '-0.28px' }}
-                >
+                <span className="text-[#0c2310] text-[14px] whitespace-nowrap" style={{ ...jakarta(500), letterSpacing: '-0.28px' }}>
                   Start Trading
                 </span>
                 <img src={arrowRight} alt="" className="size-[24px] shrink-0" />
@@ -138,12 +110,7 @@ export default function Hero() {
               {/* Explore all Resources */}
               <button
                 className="flex items-center justify-center"
-                style={{
-                  background: '#404438',
-                  height: '48px',
-                  padding: '16px 28px',
-                  borderRadius: '30px',
-                }}
+                style={{ background: '#404438', height: '48px', padding: '16px 28px', borderRadius: '30px' }}
               >
                 <span
                   className="text-[14px] whitespace-nowrap"
@@ -161,19 +128,38 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="flex items-center" style={{ gap: '12px', height: '24px' }}>
-            <img src={scrollIcon} alt="" className="size-[24px] shrink-0" />
-            <span
-              className="text-[12px] uppercase whitespace-nowrap"
-              style={{
-                ...jakarta(400),
-                letterSpacing: '1.98px',
-                color: 'rgba(248,248,248,0.75)',
-              }}
-            >
-              Scroll
-            </span>
+          {/* Scroll + dots */}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center" style={{ gap: '12px', height: '24px' }}>
+              <img src={scrollIcon} alt="" className="size-[24px] shrink-0" />
+              <span
+                className="text-[12px] uppercase whitespace-nowrap"
+                style={{ ...jakarta(400), letterSpacing: '1.98px', color: 'rgba(248,248,248,0.75)' }}
+              >
+                Scroll
+              </span>
+            </div>
+
+            {/* Slide indicator dots */}
+            <div className="flex items-center" style={{ gap: '8px' }}>
+              {SLIDES.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActive(i)}
+                  aria-label={`Slide ${i + 1}`}
+                  style={{
+                    width: i === active ? '24px' : '6px',
+                    height: '6px',
+                    borderRadius: '999px',
+                    background: i === active ? '#fff' : 'rgba(255,255,255,0.4)',
+                    transition: 'all 0.3s',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
