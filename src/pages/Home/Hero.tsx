@@ -1,4 +1,3 @@
-import { useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import scrollIcon from '../../assets/icons/hero-scroll.svg'
 import arrowRight from '../../assets/icons/hero-arrow-right.svg'
@@ -26,13 +25,6 @@ const jakarta = (weight: number) => ({
 
 export default function Hero() {
   const navigate = useNavigate()
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  // Ensure video plays on mount (needed on some browsers)
-  useEffect(() => {
-    videoRef.current?.play().catch(() => {})
-  }, [])
-
   const hasVideo = VIDEO_SRCS.length > 0
 
   return (
@@ -43,7 +35,6 @@ export default function Hero() {
       {/* ── Background: video (when available) or poster fallback ── */}
       {hasVideo ? (
         <video
-          ref={videoRef}
           autoPlay
           muted
           loop
