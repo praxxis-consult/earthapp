@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OnboardingLayout from '../../components/layout/OnboardingLayout'
 import OnboardingHeader from '../../components/layout/OnboardingHeader'
 import GradientButton from '../../components/ui/GradientButton'
+import SetupDoneModal from '../../components/ui/SetupDoneModal'
 import editIcon from '../../assets/icons/onboarding-edit.svg'
 import verifyIcon from '../../assets/icons/onboarding-verify.svg'
 import { jakarta } from '../../utils/styles'
@@ -37,8 +39,10 @@ function SummaryRow({ children }: { children: ReactNode }) {
 
 export default function ReviewDetails() {
   const navigate = useNavigate()
+  const [showSetupDone, setShowSetupDone] = useState(false)
 
   return (
+    <>
     <OnboardingLayout scrollable>
       <OnboardingHeader
         onBack={() => navigate(-1)}
@@ -125,11 +129,19 @@ export default function ReviewDetails() {
       </div>
 
       <GradientButton
-        onClick={() => navigate('/')}
+        onClick={() => setShowSetupDone(true)}
         style={{ position: 'absolute', left: '120px', top: '990px', width: '580px' }}
       >
         Complete Setup
       </GradientButton>
     </OnboardingLayout>
+
+    {showSetupDone && (
+      <SetupDoneModal
+        onDashboard={() => { setShowSetupDone(false); navigate('/dashboard') }}
+        onClose={() => setShowSetupDone(false)}
+      />
+    )}
+    </>
   )
 }
