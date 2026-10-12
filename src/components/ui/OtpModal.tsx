@@ -161,6 +161,7 @@ export default function OtpModal({ onClose }: OtpModalProps) {
         {/* Bottom section: CTA + register */}
         <div className="flex flex-col gap-[24px] items-center w-full">
           <button
+            onClick={() => { onClose(); navigate('/dashboard') }}
             className="flex h-[48px] items-center justify-center rounded-[30px] w-full"
             style={{ background: '#007c53' }}
           >

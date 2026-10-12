@@ -12,6 +12,10 @@ import Location from '../pages/Onboarding/Location'
 import VerifyId from '../pages/Onboarding/VerifyId'
 import BankDetails from '../pages/Onboarding/BankDetails'
 import ReviewDetails from '../pages/Onboarding/ReviewDetails'
+import Products from '../pages/Dashboard/Products'
+import ProductsList from '../pages/Dashboard/ProductsList'
+import DashboardProductDetail from '../pages/Dashboard/ProductDetail'
+import AddProduct from '../pages/Dashboard/AddProduct'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
 
@@ -31,6 +35,10 @@ export default function AppRoutes() {
 
       {/* Dashboard (own layout: sidebar + topbar, no Navbar/Footer) */}
       <Route path="/dashboard" element={<DashboardOverview />} />
+      <Route path="/dashboard/products" element={<Products />} />
+      <Route path="/dashboard/products/add" element={<AddProduct />} />
+      <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
+      <Route path="/dashboard/products-list" element={<ProductsList />} />
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
