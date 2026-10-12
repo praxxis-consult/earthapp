@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import logoMark from '../../assets/icons/logo-mark.svg'
 import arrowDown from '../../assets/icons/arrow-down.svg'
 import arrowRight from '../../assets/icons/arrow-right.svg'
+import LoginModal from '../ui/LoginModal'
+import OtpModal from '../ui/OtpModal'
 
 const jakartaMedium: React.CSSProperties = {
   fontFamily: 'Plus Jakarta Sans, sans-serif',
@@ -12,7 +15,11 @@ const navLinkClass =
   'text-[#807e7e] text-[12px] font-medium tracking-[1.98px] uppercase whitespace-nowrap leading-[16.5px] hover:text-[#0c2310] transition-colors'
 
 export default function Navbar() {
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [otpOpen, setOtpOpen] = useState(false)
+
   return (
+    <>
     <nav className="bg-white w-full">
       <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px]">
 
@@ -49,13 +56,13 @@ export default function Navbar() {
       <div className="flex gap-[16px] items-center shrink-0">
 
         {/* Sign in — ghost */}
-        <NavLink
-          to="/signin"
+        <button
+          onClick={() => setLoginOpen(true)}
           className="flex h-[48px] items-center justify-center px-[24px] rounded-[30px] shrink-0 hover:bg-gray-50 transition-colors text-[#0c2310] text-[14px] font-medium leading-normal tracking-[-0.28px] whitespace-nowrap"
           style={jakartaMedium}
         >
           Sign in
-        </NavLink>
+        </button>
 
         {/* Start Trading — primary */}
         <NavLink
@@ -80,5 +87,14 @@ export default function Navbar() {
       </div>
       </div>
     </nav>
+
+    {loginOpen && (
+      <LoginModal
+        onClose={() => setLoginOpen(false)}
+        onProceed={() => { setLoginOpen(false); setOtpOpen(true) }}
+      />
+    )}
+    {otpOpen && <OtpModal onClose={() => setOtpOpen(false)} />}
+    </>
   )
 }
