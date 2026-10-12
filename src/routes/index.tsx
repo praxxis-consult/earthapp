@@ -7,6 +7,11 @@ import ProductDetail from '../pages/Marketplace/ProductDetail'
 import PlaceOrder from '../pages/Marketplace/PlaceOrder'
 import Signup from '../pages/Auth/Signup'
 import SignupOtp from '../pages/Auth/SignupOtp'
+import StoreName from '../pages/Onboarding/StoreName'
+import Location from '../pages/Onboarding/Location'
+import VerifyId from '../pages/Onboarding/VerifyId'
+import BankDetails from '../pages/Onboarding/BankDetails'
+import ReviewDetails from '../pages/Onboarding/ReviewDetails'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
 
@@ -16,6 +21,13 @@ export default function AppRoutes() {
       {/* Standalone auth pages (no Navbar/Footer) */}
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup/verify" element={<SignupOtp />} />
+
+      {/* Onboarding flow (no Navbar/Footer) */}
+      <Route path="/onboarding/store" element={<StoreName />} />
+      <Route path="/onboarding/location" element={<Location />} />
+      <Route path="/onboarding/verify-id" element={<VerifyId />} />
+      <Route path="/onboarding/bank" element={<BankDetails />} />
+      <Route path="/onboarding/review" element={<ReviewDetails />} />
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
