@@ -175,7 +175,7 @@ export default function Footer() {
       {/* ── Legal bar ── */}
       {/* BUILDER: mt-[80px] added to push the bar down from the top row,
           matching the overall 80px top/bottom padding rhythm of the footer */}
-      <div className="flex items-center justify-between py-[24px] border-t border-[rgba(156,156,156,0.5)] mt-[80px]">
+      <div className="flex items-center justify-between py-[24px] border-t border-[rgba(156,156,156,0.5)] mt-[142px]">
         <span
           className="text-[14px] text-white font-normal leading-[20px] whitespace-nowrap"
           style={jakartaRegular}

@@ -2,20 +2,42 @@ import searchIcon from '../../assets/icons/db-search.svg'
 import notificationIcon from '../../assets/icons/db-notification.svg'
 import verifyIcon from '../../assets/icons/db-verify.svg'
 import chevronDownIcon from '../../assets/icons/db-chevron-down.svg'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { jakarta } from '../../utils/styles'
+import { useAuth } from '../../feature/authentication/useAuth'
+import { initials } from '../../data/orders'
 
 export default function DashboardTopbar() {
+  const { account } = useAuth()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const name = account ? `${account.firstName} ${account.lastName}` : ''
   return (
     <header className="bg-white flex items-center justify-between h-[96px] px-[24px] shrink-0">
       {/* Search bar */}
-      <div className="bg-[#f7f7f7] flex gap-[8px] items-center h-[48px] px-[16px] rounded-[30px] w-[400px]">
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const q = query.trim()
+          navigate(q ? `/dashboard/products?q=${encodeURIComponent(q)}` : '/dashboard/products')
+        }}
+        className="bg-[#f7f7f7] flex gap-[8px] items-center h-[48px] px-[16px] rounded-[30px] w-[400px]"
+      >
         <div className="relative shrink-0 size-[20px]">
           <img src={searchIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
-        <p className="text-[#807e7e] text-[13px]" style={jakarta(400)}>
-          Search orders and products ...
-        </p>
-      </div>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search orders and products ..."
+          aria-label="Search orders and products"
+          className="flex-1 min-w-0 bg-transparent text-[#101604] text-[13px] outline-none placeholder:text-[#807e7e]"
+          style={jakarta(400)}
+        />
+      </form>
 
       {/* Right: notification + user */}
       <div className="flex gap-[24px] items-center">
@@ -26,14 +48,14 @@ export default function DashboardTopbar() {
         <div className="flex gap-[8px] items-center">
           {/* Avatar initials */}
           <div className="bg-[#f2f8f6] flex items-center justify-center rounded-full size-[40px] shrink-0">
-            <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>PA</p>
+            <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>{name ? initials(name) : ''}</p>
           </div>
 
           {/* Name + role */}
           <div className="flex flex-col gap-[2px] items-start justify-center">
             <div className="flex gap-[2px] items-center">
               <p className="text-[#101604] text-[16px] whitespace-nowrap" style={jakarta(600)}>
-                Prince Akpolo
+                {name}
               </p>
               <div className="relative shrink-0 size-[16px]">
                 <img src={verifyIcon} alt="" className="absolute block inset-0 max-w-none size-full" />

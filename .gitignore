@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .claude/
 .env
+
+# Design references and raw node dumps (local only)
+figma-refs/

@@ -98,7 +98,7 @@ export default function WhatWeDeal() {
             </p>
           </div>
 
-          <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-2">
+          <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto">
             {categories.map((category) => (
               <div
                 key={category.title}

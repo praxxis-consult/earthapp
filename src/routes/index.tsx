@@ -16,8 +16,15 @@ import Products from '../pages/Dashboard/Products'
 import ProductsList from '../pages/Dashboard/ProductsList'
 import DashboardProductDetail from '../pages/Dashboard/ProductDetail'
 import AddProduct from '../pages/Dashboard/AddProduct'
+import Orders from '../pages/Dashboard/Orders'
+import OrderDetail from '../pages/Dashboard/OrderDetail'
+import Messages from '../pages/Dashboard/Messages'
+import Payout from '../pages/Dashboard/Payout'
+import Referral from '../pages/Dashboard/Referral'
+import Settings from '../pages/Dashboard/Settings'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
+import RequireAuth from '../feature/authentication/RequireAuth'
 
 export default function AppRoutes() {
   return (
@@ -26,19 +33,28 @@ export default function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup/verify" element={<SignupOtp />} />
 
-      {/* Onboarding flow (no Navbar/Footer) */}
-      <Route path="/onboarding/store" element={<StoreName />} />
-      <Route path="/onboarding/location" element={<Location />} />
-      <Route path="/onboarding/verify-id" element={<VerifyId />} />
-      <Route path="/onboarding/bank" element={<BankDetails />} />
-      <Route path="/onboarding/review" element={<ReviewDetails />} />
+      {/* Signed-in only: onboarding and the dashboard (no Navbar/Footer) */}
+      <Route element={<RequireAuth />}>
+        <Route path="/onboarding/store" element={<StoreName />} />
+        <Route path="/onboarding/location" element={<Location />} />
+        <Route path="/onboarding/verify-id" element={<VerifyId />} />
+        <Route path="/onboarding/bank" element={<BankDetails />} />
+        <Route path="/onboarding/review" element={<ReviewDetails />} />
 
-      {/* Dashboard (own layout: sidebar + topbar, no Navbar/Footer) */}
-      <Route path="/dashboard" element={<DashboardOverview />} />
-      <Route path="/dashboard/products" element={<Products />} />
-      <Route path="/dashboard/products/add" element={<AddProduct />} />
-      <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
-      <Route path="/dashboard/products-list" element={<ProductsList />} />
+        {/* Dashboard (own layout: sidebar + topbar, no Navbar/Footer) */}
+        <Route path="/dashboard" element={<DashboardOverview />} />
+        <Route path="/dashboard/products" element={<Products />} />
+        <Route path="/dashboard/products/add" element={<AddProduct />} />
+        <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
+        <Route path="/dashboard/products/:id/edit" element={<AddProduct />} />
+        <Route path="/dashboard/products-list" element={<ProductsList />} />
+        <Route path="/dashboard/orders" element={<Orders />} />
+        <Route path="/dashboard/orders/:id" element={<OrderDetail />} />
+        <Route path="/dashboard/messages" element={<Messages />} />
+        <Route path="/dashboard/payout" element={<Payout />} />
+        <Route path="/dashboard/referrals" element={<Referral />} />
+        <Route path="/dashboard/settings" element={<Settings />} />
+      </Route>
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />

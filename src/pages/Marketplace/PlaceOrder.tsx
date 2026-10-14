@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { products } from '../../data/products'
+import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
+import { naira } from '../../lib/productView'
 import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
 import arrowLeft from '../../assets/icons/po-arrow-left.svg'
 import arrowRight from '../../assets/icons/po-arrow-right.svg'
@@ -10,47 +11,44 @@ import badgeCheck from '../../assets/icons/po-badge-check.svg'
 import cameraIcon from '../../assets/icons/po-camera.svg'
 import starIcon from '../../assets/icons/po-star.svg'
 import trendIcon from '../../assets/icons/po-trend.svg'
-import thumb1 from '../../assets/images/po-thumb-1.png'
-import thumb2 from '../../assets/images/po-thumb-2.png'
-import thumb3 from '../../assets/images/po-thumb-3.png'
-import thumb4 from '../../assets/images/po-thumb-4.png'
-import cocoaMain from '../../assets/images/po-cocoa-main.png'
 
 const jakarta = (weight: number) => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
   fontWeight: weight,
 })
 
-const THUMBNAILS = [thumb1, thumb2, thumb3, thumb4]
-const MIN_QTY = 20
-const STEP = 5
+const STEP = 1
 
 export default function PlaceOrder() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const product = products.find((p) => p.id === id)
-
+  // undefined while loading, null when the API has no such public listing
+  const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const [activeThumb, setActiveThumb] = useState(0)
-  const [qty, setQty] = useState(MIN_QTY)
   const [modalOpen, setModalOpen] = useState(false)
+  // The quantity starts at the listing's minimum order once it loads.
+  const [qtyState, setQtyState] = useState<{ id: string; qty: number } | null>(null)
+  const qty = qtyState && qtyState.id === id ? qtyState.qty : (product?.moq ?? 1)
+  const setQty = (update: (q: number) => number) => setQtyState({ id: id ?? '', qty: update(qty) })
+
 
   if (!product) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-[#807e7e] text-[16px]" style={jakarta(400)}>
-          Product not found.
+          {product === undefined ? 'Loading…' : 'This listing is not available.'}
         </p>
       </div>
     )
   }
 
-  const estimatedValue = (qty * product.priceNum).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  })
-
-  const mainImage = cocoaMain
+  const MIN_QTY = product.moq
+  const THUMBNAILS = product.images
+  const unit = product.unit
+  const units = (n: number) => `${n} ${unit}${n === 1 ? '' : 's'}`
+  const estimatedValue = naira(qty * product.priceNum).replace(/\.00$/, '')
+  const mainImage = THUMBNAILS[activeThumb] ?? product.image ?? ''
+  const inStock = product.available > 0
 
   return (
     <div className="bg-white w-full pb-[72px]">
@@ -85,7 +83,7 @@ export default function PlaceOrder() {
 
               {/* Thumbnails column */}
               <div className="flex flex-col gap-[14px] shrink-0 w-[96px]">
-                {THUMBNAILS.map((src, i) => (
+                {THUMBNAILS.slice(0, 4).map((src, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveThumb(i)}
@@ -126,11 +124,11 @@ export default function PlaceOrder() {
               <div className="flex gap-[10px] items-center">
                 <img src={cameraIcon} alt="" className="size-[20px] shrink-0" />
                 <span className="text-[#34473a] text-[14px]" style={jakarta(400)}>
-                  Photos captured at Guayas Cooperative · 18 Sep 2026
+                  Photos from {product.store.storeName} · listed {product.listed}
                 </span>
               </div>
               <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
-                {activeThumb + 1} / {THUMBNAILS.length + 4}
+                {Math.min(activeThumb + 1, Math.max(THUMBNAILS.length, 1))} / {Math.max(THUMBNAILS.length, 1)}
               </span>
             </div>
           </div>
@@ -150,17 +148,14 @@ export default function PlaceOrder() {
                 </div>
                 <div className="bg-[#f7f7f7] flex items-center px-[14px] py-[7px] rounded-[999px]">
                   <span className="text-[#34473a] text-[12px]" style={jakarta(500)}>
-                    In stock
+                    {inStock ? 'In stock' : 'Out of stock'}
                   </span>
                 </div>
               </div>
               <div className="flex gap-[6px] items-center">
                 <img src={starIcon} alt="" className="size-[16px] shrink-0" />
-                <span className="text-[#0c2310] text-[12px]" style={jakarta(600)}>
-                  {product.rating}
-                </span>
                 <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
-                  ({product.reviewCount} trades)
+                  No reviews yet
                 </span>
               </div>
             </div>
@@ -189,14 +184,14 @@ export default function PlaceOrder() {
                     {product.price}{' '}
                   </span>
                   <span className="text-[#807e7e] text-[14px]" style={jakarta(500)}>
-                    / tonne
+                    / {unit}
                   </span>
                 </p>
               </div>
               <div className="flex flex-col gap-[3px] items-end">
                 <img src={trendIcon} alt="" className="h-[30px] w-[94px]" />
                 <span className="text-[#007c53] text-[12px]" style={jakarta(600)}>
-                  +3.2% · 30 days
+                  Listed {product.listed}
                 </span>
               </div>
             </div>
@@ -206,7 +201,7 @@ export default function PlaceOrder() {
               {[
                 { label: 'Origin', value: product.location },
                 { label: 'Available', value: product.quantity },
-                { label: 'Minimum', value: `${MIN_QTY} tonnes` },
+                { label: 'Minimum', value: units(MIN_QTY) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-[4px] flex-1 min-w-0">
                   <span className="text-[#807e7e] text-[12px] whitespace-nowrap" style={jakarta(400)}>
@@ -226,7 +221,7 @@ export default function PlaceOrder() {
                   Order quantity
                 </span>
                 <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
-                  Minimum {MIN_QTY} tonnes
+                  Minimum {units(MIN_QTY)}
                 </span>
               </div>
               <div className="bg-[#f7f7f7] border border-[#e4dede] flex h-[52px] items-center justify-between px-[18px] rounded-[999px] w-full">
@@ -239,10 +234,10 @@ export default function PlaceOrder() {
                   −
                 </button>
                 <span className="text-[#0c2310] text-[16px]" style={jakarta(600)}>
-                  {qty} tonnes
+                  {units(qty)}
                 </span>
                 <button
-                  onClick={() => setQty((q) => q + STEP)}
+                  onClick={() => setQty((q) => Math.min(Math.max(product.available, MIN_QTY), q + STEP))}
                   className="text-[#0c2310] text-[22px] leading-none"
                   style={jakarta(500)}
                   aria-label="Increase quantity"
@@ -265,7 +260,8 @@ export default function PlaceOrder() {
             {/* Place order button */}
             <button
               onClick={() => setModalOpen(true)}
-              className="bg-[#008f63] flex gap-[8px] h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full"
+              disabled={!inStock}
+              className="bg-[#008f63] flex gap-[8px] h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full disabled:opacity-60"
             >
               <span className="text-white text-[14px]" style={jakarta(600)}>
                 Place order

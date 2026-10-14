@@ -3,46 +3,36 @@ import { jakarta } from '../../utils/styles'
 
 interface OnboardingHeaderProps {
   onBack: () => void
-  /** 1-based step number. Omit for pages without a progress bar (e.g. ReviewDetails). */
+  /** 1-based step number. Omit for pages without a progress bar (Review details, sign-up). */
   step?: number
   totalSteps?: number
   title: string
   subtitle: string
 }
 
-function BackArrow() {
+/** Figma "Frame 2147237045": the 16px arrow-down turned to point left, then "Back". */
+export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className="flex items-center justify-center relative shrink-0 size-[16px]">
-      <div className="flex-none rotate-90">
-        <div className="relative size-[16px]">
-          <img src={arrowDown} alt="" className="absolute block inset-0 max-w-none size-full" />
-        </div>
-      </div>
-    </div>
+    <button type="button" onClick={onClick} className="flex gap-[8px] items-center">
+      <span className="flex items-center justify-center size-[16px] rotate-90">
+        <img src={arrowDown} alt="" className="size-[16px]" />
+      </span>
+      <span className="text-[#807e7e] text-[16px] leading-[24px] whitespace-nowrap" style={jakarta(500)}>
+        Back
+      </span>
+    </button>
   )
 }
 
-export default function OnboardingHeader({
-  onBack,
-  step,
-  totalSteps = 4,
-  title,
-  subtitle,
-}: OnboardingHeaderProps) {
+/**
+ * Figma "Frame 2147237504": Back, the step line with four 139×4 bars (gap 8), then the title
+ * (24/32) and subtitle (16/24), stacked with a 24px gap.
+ */
+export default function OnboardingHeader({ onBack, step, totalSteps = 4, title, subtitle }: OnboardingHeaderProps) {
   return (
-    <div
-      className="absolute flex flex-col gap-[24px] items-start"
-      style={{ left: '120px', top: '120px', width: '580px' }}
-    >
-      {/* Back button */}
-      <button onClick={onBack} className="flex gap-[8px] items-center">
-        <BackArrow />
-        <span className="text-[#807e7e] text-[16px] leading-[24px] whitespace-nowrap" style={jakarta(500)}>
-          Back
-        </span>
-      </button>
+    <div className="flex flex-col gap-[24px] items-start w-full">
+      <BackButton onClick={onBack} />
 
-      {/* Step progress bar */}
       {step !== undefined && (
         <div className="flex flex-col gap-[8px] items-start w-full">
           <p className="text-[#131313] text-[12px] leading-[20px]" style={jakarta(600)}>
@@ -52,7 +42,7 @@ export default function OnboardingHeader({
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
                 key={i}
-                className="h-[4px] rounded-[10px] w-[139px]"
+                className="h-[4px] rounded-[10px] flex-1"
                 style={{ background: i < step ? '#007c53' : 'rgba(0,124,83,0.1)' }}
               />
             ))}
@@ -60,14 +50,11 @@ export default function OnboardingHeader({
         </div>
       )}
 
-      {/* Title + subtitle */}
       <div className="flex flex-col gap-[8px] items-start w-full">
-        <div className="flex h-[32px] items-center justify-center w-[500px]">
-          <p className="text-[#101604] text-[24px] leading-[32px] w-[500px]" style={jakarta(600)}>
-            {title}
-          </p>
-        </div>
-        <p className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
+        <h1 className="text-[#101604] text-[24px] leading-[32px] w-full max-w-[500px]" style={jakarta(600)}>
+          {title}
+        </h1>
+        <p className="text-[#807e7e] text-[16px] leading-[24px] w-full" style={jakarta(400)}>
           {subtitle}
         </p>
       </div>

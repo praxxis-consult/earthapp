@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import searchIcon from '../../assets/icons/mp-search.svg'
@@ -6,7 +6,9 @@ import locationIcon from '../../assets/icons/mp-location.svg'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
 import arrowLeft from '../../assets/icons/mp-arrow-left.svg'
-import { products } from '../../data/products'
+import { DEFAULT_REGION, REGIONS } from '../../lib/catalog'
+import { useListRegionQuery } from '../../feature/marketplace/catalogApiSlice'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 
 const jakarta = (weight: number) => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -15,22 +17,28 @@ const jakarta = (weight: number) => ({
 
 const ITEMS_PER_PAGE = 9
 
-const categories = ['All Resources', 'Agriculture', 'Energy', 'Minerals', 'Metals', 'Forestry', 'Raw Materials']
 const sortOptions = ['Most recent', 'Price: Low to High', 'Price: High to Low']
-
-const allCountries = ['Global', ...Array.from(new Set(products.map((p) => p.country))).sort()]
 
 export default function Marketplace() {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('All Resources')
   const [search, setSearch] = useState('')
-  const [location, setLocation] = useState('Global')
+  // The catalogue API lists stores per region, so the location picker is the region (Nigeria's states).
+  const [location, setLocation] = useState(DEFAULT_REGION)
+  const listing = useListRegionQuery({ region: location })
+  const { data: categoryList = [] } = useGetCategoriesQuery()
+  const loading = listing.isFetching || listing.currentData === undefined
+  const products = useMemo(() => (loading ? [] : (listing.currentData ?? [])), [loading, listing.currentData])
+  const loadError = listing.error ? 'We could not load the marketplace. Check your connection and try again.' : ''
+  const categoryNames = useMemo(() => categoryList.map((c) => c.name), [categoryList])
   const [sort, setSort] = useState('Most recent')
   const [page, setPage] = useState(1)
   const [locationOpen, setLocationOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const locationRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
+
+  const categories = ['All Resources', ...categoryNames]
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -46,11 +54,13 @@ export default function Marketplace() {
   const filtered = products
     .filter((p) => {
       const matchCat = activeCategory === 'All Resources' || p.category === activeCategory
-      const matchLoc = location === 'Global' || p.country === location
-      const matchSearch = search === '' ||
-        p.title.toLowerCase().includes(search.toLowerCase()) ||
-        p.location.toLowerCase().includes(search.toLowerCase())
-      return matchCat && matchLoc && matchSearch
+      const q = search.toLowerCase()
+      const matchSearch =
+        q === '' ||
+        p.title.toLowerCase().includes(q) ||
+        p.location.toLowerCase().includes(q) ||
+        p.store.storeName.toLowerCase().includes(q)
+      return matchCat && matchSearch
     })
     .sort((a, b) => {
       if (sort === 'Price: Low to High') return a.priceNum - b.priceNum
@@ -116,7 +126,7 @@ export default function Marketplace() {
                 </button>
                 {locationOpen && (
                   <div className="absolute top-[52px] left-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[180px] overflow-hidden">
-                    {allCountries.map((c) => (
+                    {REGIONS.map((c) => (
                       <button
                         key={c}
                         onClick={() => { setLocation(c); setLocationOpen(false); setPage(1) }}
@@ -194,12 +204,12 @@ export default function Marketplace() {
         <div className="grid grid-cols-3 gap-[24px] mt-[24px]">
           {paginated.length === 0 ? (
             <div className="col-span-3 text-center py-[64px] text-[#807e7e] text-[16px]" style={jakarta(400)}>
-              No commodities match your filters.
+              {loading ? 'Loading listings…' : loadError || `No listings in ${location} match your filters yet.`}
             </div>
           ) : (
             paginated.map((p) => (
               <div
-                key={p.title}
+                key={p.id}
                 className="border border-[#e4dede] rounded-[30px] overflow-hidden flex flex-col"
               >
                 <div className="h-[200px] bg-[#eee] overflow-hidden shrink-0">
@@ -215,6 +225,9 @@ export default function Marketplace() {
                       </p>
                       <p className="text-[#007c53] tracking-[-0.36px] leading-[24px] whitespace-nowrap" style={jakarta(700)}>
                         {p.price}
+                        <span className="text-[#807e7e] text-[12px]" style={jakarta(500)}>
+                          {' '}/ {p.unit}
+                        </span>
                       </p>
                     </div>
                     <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>

@@ -1,4 +1,6 @@
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { useAuth } from '../../feature/authentication/useAuth'
 import salesEmptyGraph from '../../assets/images/db-graph-sales-empty.svg'
 import viewsEmptyGraph from '../../assets/images/db-graph-views-empty.svg'
 import salesGraph from '../../assets/images/db-graph-sales.svg'
@@ -19,17 +21,7 @@ const HAS_ORDERS = false
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat']
 
-function StatCard({
-  label,
-  value,
-  sub,
-  gradient,
-}: {
-  label: string
-  value: string
-  sub?: string
-  gradient?: boolean
-}) {
+function StatCard({ label, value, sub, gradient }: { label: string; value: string; sub?: string; gradient?: boolean }) {
   return (
     <div
       className="h-[120px] rounded-[20px] overflow-hidden px-[24px] pt-[16px] pb-[12px] flex flex-col justify-between"
@@ -39,17 +31,11 @@ function StatCard({
           : { background: 'white' }
       }
     >
-      <p
-        className="text-[14px] leading-[24px]"
-        style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}
-      >
+      <p className="text-[14px] leading-[24px]" style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}>
         {label}
       </p>
       <div className="flex items-baseline gap-[8px]">
-        <p
-          className="text-[32px] leading-[48px]"
-          style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}
-        >
+        <p className="text-[32px] leading-[48px]" style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}>
           {value}
         </p>
         {sub && (
@@ -89,7 +75,9 @@ function ChartCard({
 
       {/* 7 days pill */}
       <div className="absolute top-[16px] right-[24px] bg-[#f7f7f7] flex gap-[8px] h-[40px] items-center justify-center px-[16px] rounded-[30px] z-10">
-        <p className="text-[#101604] text-[13px]" style={jakarta(600)}>7 days</p>
+        <p className="text-[#101604] text-[13px]" style={jakarta(600)}>
+          7 days
+        </p>
         <div className="relative shrink-0 size-[16px]">
           <img src={arrowDownIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
@@ -126,7 +114,8 @@ function ChartCard({
             {pinValue}
             {pinValueSuffix && (
               <span className="text-[#807e7e] text-[13px]" style={jakarta(500)}>
-                {' '}{pinValueSuffix}
+                {' '}
+                {pinValueSuffix}
               </span>
             )}
           </p>
@@ -210,7 +199,10 @@ function OrdersTable() {
                   <div className="size-[40px] rounded-full overflow-hidden border-[1.5px] border-white shrink-0">
                     <img src={productThumb} alt="" className="size-full object-cover" />
                   </div>
-                  <p className="text-[#101928] text-[14px] leading-[24px] capitalize whitespace-nowrap" style={jakarta(400)}>
+                  <p
+                    className="text-[#101928] text-[14px] leading-[24px] capitalize whitespace-nowrap"
+                    style={jakarta(400)}
+                  >
                     {row.item}
                   </p>
                 </div>
@@ -239,6 +231,8 @@ function OrdersTable() {
 }
 
 export default function DashboardOverview() {
+  const navigate = useNavigate()
+  const { account } = useAuth()
   const earned = HAS_ORDERS ? '₦16,178.75' : '₦0.00'
   const completed = HAS_ORDERS ? '3' : '0'
   const rating = HAS_ORDERS ? '4.8' : '0'
@@ -251,14 +245,16 @@ export default function DashboardOverview() {
 
   return (
     <DashboardLayout>
-      <div className="px-[26px] pt-[40px] pb-[24px]">
+      <div className="px-[24px] pt-[36px] pb-[24px]">
         {/* Header row: greeting + Add product CTA */}
         <div className="flex items-center justify-between">
-          <p className="text-[#101604] text-[32px] leading-none" style={jakarta(700)}>
-            Welcome, Akpolo
+          <p className="text-[#101604] text-[32px] leading-[40px]" style={jakarta(700)}>
+            Welcome, {account?.firstName ?? ''}
           </p>
 
           <button
+            type="button"
+            onClick={() => navigate('/dashboard/products/add')}
             className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0"
             style={{ backgroundImage: CTA_BG }}
           >
@@ -275,7 +271,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Stat cards */}
-        <div className="mt-[24px] grid grid-cols-4 gap-[16px]">
+        <div className="mt-[20px] grid grid-cols-4 gap-[16px]">
           <StatCard label="Earned this week" value={earned} gradient />
           <StatCard label="Awaiting orders" value="0" />
           <StatCard label="Completed orders" value={completed} />
@@ -306,7 +302,7 @@ export default function DashboardOverview() {
           {/* Panel header */}
           <div className="flex items-start justify-between px-[24px] pt-[24px]">
             <div className="flex flex-col gap-[8px]">
-              <p className="text-[#101604] text-[20px] leading-none" style={jakarta(600)}>
+              <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
                 New orders
               </p>
               <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -314,7 +310,7 @@ export default function DashboardOverview() {
               </p>
             </div>
             {HAS_ORDERS && (
-              <div className="flex gap-[8px] items-center">
+              <button type="button" onClick={() => navigate('/dashboard/orders')} className="flex gap-[8px] items-center">
                 <p className="text-[#007c53] text-[14px] leading-[24px]" style={jakarta(500)}>
                   View all
                 </p>
@@ -326,7 +322,7 @@ export default function DashboardOverview() {
                     style={{ transform: 'rotate(90deg)' }}
                   />
                 </div>
-              </div>
+              </button>
             )}
           </div>
 
@@ -334,10 +330,13 @@ export default function DashboardOverview() {
           {HAS_ORDERS ? (
             <OrdersTable />
           ) : (
-            <div className="flex flex-col items-center py-[32px] gap-[16px] pb-[40px]">
+            <div className="flex flex-col items-center pt-[40px] pb-[64px]">
               {/* Empty state illustration */}
               <div className="relative size-[200px]">
-                <div className="absolute" style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}>
+                <div
+                  className="absolute"
+                  style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}
+                >
                   <img src={emptyBgIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
                 </div>
                 <div
@@ -345,18 +344,14 @@ export default function DashboardOverview() {
                   style={{ left: '31.56px', top: '21.67px', width: '137.713px', height: '162.27px' }}
                 >
                   <div style={{ transform: 'rotate(-20.53deg)' }}>
-                    <img
-                      src={emptyIllustrationIcon}
-                      alt=""
-                      style={{ width: '95.564px', height: '137.487px' }}
-                    />
+                    <img src={emptyIllustrationIcon} alt="" style={{ width: '95.564px', height: '137.487px' }} />
                   </div>
                 </div>
               </div>
 
               {/* Empty state text */}
               <div className="flex flex-col gap-[8px] items-center text-center">
-                <p className="text-[#101604] text-[20px]" style={jakarta(600)}>
+                <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
                   No new order yet
                 </p>
                 <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
