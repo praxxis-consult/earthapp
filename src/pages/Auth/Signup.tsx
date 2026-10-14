@@ -8,6 +8,7 @@ import flagUs from '../../assets/icons/signup-flag-us.svg'
 import checkboxUnchecked from '../../assets/icons/signup-checkbox.svg'
 import LoginModal from '../../components/ui/LoginModal'
 import OtpModal from '../../components/ui/OtpModal'
+import { accounts, ApiError, describeError, type AccountType } from '../../services/earthApi'
 
 const jakarta = (weight: number): React.CSSProperties => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -17,18 +18,30 @@ const jakarta = (weight: number): React.CSSProperties => ({
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 const ACCOUNT_TYPES = ['Buyer', 'Seller', 'Both']
+const ACCOUNT_TYPE_API: Record<string, AccountType> = { Buyer: 'BUYING', Seller: 'SELLING', Both: 'BOTH' }
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+/** The API's field paths, mapped to sentences a person can act on. */
+const FIELD_MESSAGES: Record<string, string> = {
+  accountType: 'Choose an account type.',
+  firstName: 'Enter your first name.',
+  lastName: 'Enter your last name.',
+  email: 'Enter a valid email address.',
+  phoneNumber: 'Enter a valid phone number.',
+  termsConsent: 'You need to agree to the terms to continue.',
+}
 
 const COUNTRIES = [
-  { code: '+1',   flag: '🇺🇸', name: 'United States',  flagSvg: flagUs },
-  { code: '+44',  flag: '🇬🇧', name: 'United Kingdom', flagSvg: null },
-  { code: '+234', flag: '🇳🇬', name: 'Nigeria',         flagSvg: null },
-  { code: '+1',   flag: '🇨🇦', name: 'Canada',          flagSvg: null },
-  { code: '+61',  flag: '🇦🇺', name: 'Australia',       flagSvg: null },
-  { code: '+49',  flag: '🇩🇪', name: 'Germany',         flagSvg: null },
-  { code: '+33',  flag: '🇫🇷', name: 'France',          flagSvg: null },
-  { code: '+91',  flag: '🇮🇳', name: 'India',           flagSvg: null },
-  { code: '+86',  flag: '🇨🇳', name: 'China',           flagSvg: null },
-  { code: '+55',  flag: '🇧🇷', name: 'Brazil',          flagSvg: null },
+  { code: '+1', flag: '🇺🇸', name: 'United States', flagSvg: flagUs },
+  { code: '+44', flag: '🇬🇧', name: 'United Kingdom', flagSvg: null },
+  { code: '+234', flag: '🇳🇬', name: 'Nigeria', flagSvg: null },
+  { code: '+1', flag: '🇨🇦', name: 'Canada', flagSvg: null },
+  { code: '+61', flag: '🇦🇺', name: 'Australia', flagSvg: null },
+  { code: '+49', flag: '🇩🇪', name: 'Germany', flagSvg: null },
+  { code: '+33', flag: '🇫🇷', name: 'France', flagSvg: null },
+  { code: '+91', flag: '🇮🇳', name: 'India', flagSvg: null },
+  { code: '+86', flag: '🇨🇳', name: 'China', flagSvg: null },
+  { code: '+55', flag: '🇧🇷', name: 'Brazil', flagSvg: null },
 ]
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
@@ -45,23 +58,48 @@ function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?
   )
 }
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null
+  return (
+    <p id={id} className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+      {message}
+    </p>
+  )
+}
+
 function TextInput({
-  id, type = 'text', value, onChange, placeholder,
+  id,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  error,
+  autoComplete,
 }: {
-  id?: string; type?: string; value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
+  id?: string
+  type?: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  placeholder: string
+  error?: string
+  autoComplete?: string
 }) {
   return (
-    <input
-      id={id}
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]"
-      style={{ ...jakarta(400), color: '#101604' }}
-    />
+    <>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error && id ? `${id}-error` : undefined}
+        className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e] aria-[invalid=true]:border-[#b13b3b]"
+        style={{ ...jakarta(400), color: '#101604' }}
+      />
+      {id && <FieldError id={`${id}-error`} message={error} />}
+    </>
   )
 }
 
@@ -84,20 +122,64 @@ function BackArrow() {
 export default function Signup() {
   const navigate = useNavigate()
 
-  const [accountType,    setAccountType]    = useState('')
-  const [accountOpen,    setAccountOpen]    = useState(false)
-  const [firstName,      setFirstName]      = useState('')
-  const [lastName,       setLastName]       = useState('')
-  const [email,          setEmail]          = useState('')
-  const [phone,          setPhone]          = useState('')
-  const [country,        setCountry]        = useState(COUNTRIES[0])
-  const [countryOpen,    setCountryOpen]    = useState(false)
-  const [agreed,         setAgreed]         = useState(false)
-  const [loginOpen,      setLoginOpen]      = useState(false)
-  const [otpOpen,        setOtpOpen]        = useState(false)
+  const [accountType, setAccountType] = useState('')
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [country, setCountry] = useState(COUNTRIES[0])
+  const [countryOpen, setCountryOpen] = useState(false)
+  const [agreed, setAgreed] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [otpEmail, setOtpEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formError, setFormError] = useState('')
 
   const accountRef = useRef<HTMLDivElement>(null)
   const countryRef = useRef<HTMLDivElement>(null)
+
+  async function createAccount() {
+    const next: Record<string, string> = {}
+    if (!ACCOUNT_TYPE_API[accountType]) next.accountType = FIELD_MESSAGES.accountType
+    if (!firstName.trim()) next.firstName = FIELD_MESSAGES.firstName
+    if (!lastName.trim()) next.lastName = FIELD_MESSAGES.lastName
+    if (!EMAIL.test(email.trim())) next.email = FIELD_MESSAGES.email
+    const digits = phone.replace(/\D/g, '')
+    // The design calls the phone optional; the API requires one, so say so before sending.
+    if (!digits) next.phoneNumber = 'Enter your phone number.'
+    if (!agreed) next.termsConsent = FIELD_MESSAGES.termsConsent
+    setErrors(next)
+    setFormError('')
+    if (Object.keys(next).length) return
+
+    setBusy(true)
+    try {
+      await accounts.create({
+        accountType: ACCOUNT_TYPE_API[accountType],
+        firstName: firstName.trim().slice(0, 100),
+        lastName: lastName.trim().slice(0, 100),
+        email: email.trim().toLowerCase(),
+        phoneNumber: `${country.code}${digits.replace(/^0+/, '')}`,
+        termsConsent: true,
+      })
+      navigate('/signup/verify', { state: { email: email.trim().toLowerCase() } })
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400 && err.errors.length) {
+        const mapped: Record<string, string> = {}
+        for (const [path] of Object.entries(err.fieldErrors)) mapped[path] = FIELD_MESSAGES[path] ?? 'Check this field.'
+        setErrors(mapped)
+        setFormError(Object.keys(mapped).length ? '' : describeError(err))
+      } else if (err instanceof ApiError && err.status === 409) {
+        setFormError('An account already exists for this email.')
+      } else {
+        setFormError(describeError(err))
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -113,7 +195,6 @@ export default function Signup() {
     <div className="bg-white w-full h-screen overflow-hidden">
       {/* ── Max-width container ── */}
       <div className="max-w-[1440px] mx-auto relative h-full">
-
         {/* ── Right panel ──────────────────────────────────────────────────── */}
         <div className="-translate-y-1/2 absolute bg-[#e3e3e3] h-[976px] overflow-clip right-[24px] rounded-[25px] top-1/2 w-[676px]">
           {/* Farm image — exact Figma crop coordinates */}
@@ -121,7 +202,11 @@ export default function Signup() {
             className="absolute"
             style={{ bottom: '-0.39px', right: '-112.4px', width: '1464.401px', height: '976.387px' }}
           >
-            <img src={farmImg} alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" />
+            <img
+              src={farmImg}
+              alt=""
+              className="absolute inset-0 max-w-none object-cover pointer-events-none size-full"
+            />
           </div>
           {/* Gradient overlay */}
           <div
@@ -159,7 +244,6 @@ export default function Signup() {
           className="absolute flex flex-col gap-[16px] items-start"
           style={{ left: '120px', top: '272px', width: '580px' }}
         >
-
           {/* Account type */}
           <div className="flex flex-col gap-[8px] w-full relative" ref={accountRef}>
             <FieldLabel>Account type</FieldLabel>
@@ -198,7 +282,10 @@ export default function Signup() {
               {ACCOUNT_TYPES.map((type, i) => (
                 <button
                   key={type}
-                  onClick={() => { setAccountType(type); setAccountOpen(false) }}
+                  onClick={() => {
+                    setAccountType(type)
+                    setAccountOpen(false)
+                  }}
                   className="w-full text-left px-[16px] py-[14px] text-[14px] tracking-[-0.28px] leading-[24px] hover:bg-[#f7f7f7] transition-colors"
                   style={{
                     ...jakarta(400),
@@ -210,6 +297,7 @@ export default function Signup() {
                 </button>
               ))}
             </div>
+            <FieldError id="account-type-error" message={errors.accountType} />
           </div>
 
           {/* First name + Last name */}
@@ -221,6 +309,8 @@ export default function Signup() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Enter your first name"
+                autoComplete="given-name"
+                error={errors.firstName}
               />
             </div>
             <div className="flex flex-col gap-[8px] items-start w-[282px]">
@@ -230,6 +320,8 @@ export default function Signup() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Enter your last name"
+                autoComplete="family-name"
+                error={errors.lastName}
               />
             </div>
           </div>
@@ -243,6 +335,8 @@ export default function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
+              autoComplete="email"
+              error={errors.email}
             />
           </div>
 
@@ -250,16 +344,14 @@ export default function Signup() {
           <div className="flex flex-col gap-[8px] items-start w-full">
             <p className="text-[#101604] text-[16px] leading-[0] tracking-[-0.32px] w-full" style={jakarta(500)}>
               <span className="leading-[24px]">Phone no. </span>
-              <span className="text-[#807e7e] leading-[24px]" style={jakarta(400)}>(Optional)</span>
+              <span className="text-[#807e7e] leading-[24px]" style={jakarta(400)}>
+                (Optional)
+              </span>
             </p>
             <div className="bg-[#f7f7f7] flex gap-[16px] h-[48px] items-center px-[16px] py-[8px] rounded-[30px] w-full relative">
-
               {/* Country code selector */}
               <div ref={countryRef} className="relative shrink-0">
-                <button
-                  onClick={() => setCountryOpen((o) => !o)}
-                  className="flex gap-[8px] items-center outline-none"
-                >
+                <button onClick={() => setCountryOpen((o) => !o)} className="flex gap-[8px] items-center outline-none">
                   <div className="flex gap-[4px] items-center">
                     {country.flagSvg ? (
                       <div className="relative shrink-0 size-[24px]">
@@ -268,7 +360,10 @@ export default function Signup() {
                     ) : (
                       <span className="text-[20px] leading-none">{country.flag}</span>
                     )}
-                    <span className="text-[#807e7e] text-[14px] leading-[1.4] whitespace-nowrap text-center" style={jakarta(400)}>
+                    <span
+                      className="text-[#807e7e] text-[14px] leading-[1.4] whitespace-nowrap text-center"
+                      style={jakarta(400)}
+                    >
                       {country.code}
                     </span>
                   </div>
@@ -297,13 +392,20 @@ export default function Signup() {
                   {COUNTRIES.map((c, i) => (
                     <button
                       key={`${c.name}-${i}`}
-                      onClick={() => { setCountry(c); setCountryOpen(false) }}
+                      onClick={() => {
+                        setCountry(c)
+                        setCountryOpen(false)
+                      }}
                       className="w-full flex items-center gap-[10px] px-[14px] py-[12px] hover:bg-[#f7f7f7] transition-colors text-left"
                       style={{ borderBottom: i < COUNTRIES.length - 1 ? '1px solid #f5f5f5' : 'none' }}
                     >
                       <span className="text-[18px] leading-none shrink-0">{c.flag}</span>
-                      <span className="text-[13px] text-[#101604] flex-1 truncate" style={jakarta(400)}>{c.name}</span>
-                      <span className="text-[13px] text-[#807e7e] shrink-0" style={jakarta(500)}>{c.code}</span>
+                      <span className="text-[13px] text-[#101604] flex-1 truncate" style={jakarta(400)}>
+                        {c.name}
+                      </span>
+                      <span className="text-[13px] text-[#807e7e] shrink-0" style={jakarta(500)}>
+                        {c.code}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -317,8 +419,12 @@ export default function Signup() {
                 placeholder="Enter your phone number"
                 className="flex-1 bg-transparent text-[14px] tracking-[-0.28px] leading-[24px] outline-none min-w-0 placeholder:text-[#807e7e] whitespace-nowrap"
                 style={{ ...jakarta(400), color: '#101604' }}
+                autoComplete="tel-national"
+                aria-invalid={errors.phoneNumber ? true : undefined}
+                aria-describedby={errors.phoneNumber ? 'phone-error' : undefined}
               />
             </div>
+            <FieldError id="phone-error" message={errors.phoneNumber} />
           </div>
 
           {/* Terms checkbox */}
@@ -332,7 +438,13 @@ export default function Signup() {
               {agreed ? (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <rect width="20" height="20" rx="4.5" fill="#007c53" />
-                  <path d="M5 10.5L8.5 14L15 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M5 10.5L8.5 14L15 7"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               ) : (
                 <img src={checkboxUnchecked} alt="" className="absolute block inset-0 max-w-none size-full" />
@@ -340,22 +452,27 @@ export default function Signup() {
             </button>
             <p className="text-[#101604] text-[14px] leading-[20px] w-[552px]" style={jakarta(400)}>
               {`By clicking "Create Account", you agree to the `}
-              <button
-                className="text-[#007c53] underline decoration-solid"
-                style={jakarta(500)}
-              >
+              <button className="text-[#007c53] underline decoration-solid" style={jakarta(500)}>
                 Terms of Service
               </button>
               {' and '}
-              <button
-                className="text-[#007c53] underline decoration-solid"
-                style={jakarta(500)}
-              >
+              <button className="text-[#007c53] underline decoration-solid" style={jakarta(500)}>
                 Privacy Policy
               </button>
               {' of Earth.'}
             </p>
           </div>
+          <FieldError id="terms-error" message={errors.termsConsent} />
+          {formError && (
+            <p role="alert" className="text-[#b13b3b] text-[14px] leading-[20px] w-full" style={jakarta(400)}>
+              {formError}{' '}
+              {formError.startsWith('An account already exists') && (
+                <button onClick={() => setLoginOpen(true)} className="text-[#007c53] underline" style={jakarta(500)}>
+                  Log in instead
+                </button>
+              )}
+            </p>
+          )}
         </div>
 
         {/* ── CTA ──────────────────────────────────────────────────────────── */}
@@ -364,8 +481,10 @@ export default function Signup() {
           style={{ left: '120px', top: '760px', width: '580px' }}
         >
           <button
-            onClick={() => navigate('/signup/verify')}
-            className="border border-[#789ebb] flex h-[48px] items-center justify-center overflow-clip px-[24px] py-[8px] rounded-[30px] w-full"
+            onClick={createAccount}
+            disabled={busy}
+            aria-busy={busy || undefined}
+            className="border border-[#789ebb] flex h-[48px] items-center justify-center overflow-clip px-[24px] py-[8px] rounded-[30px] w-full disabled:opacity-70 disabled:cursor-wait"
             style={{
               backgroundImage:
                 'linear-gradient(90deg,rgb(0,124,83) 0%,rgb(0,124,83) 100%),linear-gradient(176.5deg,rgb(117,163,199) 8.078%,rgb(48,94,130) 78.737%)',
@@ -375,11 +494,10 @@ export default function Signup() {
               className="bg-clip-text text-[14px] text-transparent text-center whitespace-nowrap"
               style={{
                 ...jakarta(500),
-                backgroundImage:
-                  'linear-gradient(178.92deg,rgb(255,255,255) 4.9851%,rgba(255,255,255,0.76) 85.731%)',
+                backgroundImage: 'linear-gradient(178.92deg,rgb(255,255,255) 4.9851%,rgba(255,255,255,0.76) 85.731%)',
               }}
             >
-              Create Account
+              {busy ? 'Creating account…' : 'Create Account'}
             </span>
           </button>
 
@@ -390,17 +508,21 @@ export default function Signup() {
             </button>
           </p>
         </div>
-
-      </div>{/* end max-width container */}
+      </div>
+      {/* end max-width container */}
 
       {/* Auth modals */}
       {loginOpen && (
         <LoginModal
+          initialEmail={email}
           onClose={() => setLoginOpen(false)}
-          onProceed={() => { setLoginOpen(false); setOtpOpen(true) }}
+          onProceed={(to) => {
+            setLoginOpen(false)
+            setOtpEmail(to)
+          }}
         />
       )}
-      {otpOpen && <OtpModal onClose={() => setOtpOpen(false)} />}
+      {otpEmail && <OtpModal email={otpEmail} onClose={() => setOtpEmail('')} />}
     </div>
   )
 }

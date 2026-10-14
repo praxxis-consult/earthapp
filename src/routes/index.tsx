@@ -19,6 +19,7 @@ import AddProduct from '../pages/Dashboard/AddProduct'
 import Orders from '../pages/Dashboard/Orders'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
+import RequireAuth from '../auth/RequireAuth'
 
 export default function AppRoutes() {
   return (
@@ -27,7 +28,8 @@ export default function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup/verify" element={<SignupOtp />} />
 
-      {/* Onboarding flow (no Navbar/Footer) */}
+      {/* Signed-in only: onboarding and the dashboard (no Navbar/Footer) */}
+      <Route element={<RequireAuth />}>
       <Route path="/onboarding/store" element={<StoreName />} />
       <Route path="/onboarding/location" element={<Location />} />
       <Route path="/onboarding/verify-id" element={<VerifyId />} />
@@ -41,6 +43,7 @@ export default function AppRoutes() {
       <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
       <Route path="/dashboard/products-list" element={<ProductsList />} />
       <Route path="/dashboard/orders" element={<Orders />} />
+      </Route>
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
