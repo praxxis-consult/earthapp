@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { products } from '../../data/products'
+import { getListing, type Listing } from '../../lib/catalog'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import dollarCircle from '../../assets/icons/pd-dollar-circle.svg'
@@ -15,19 +16,31 @@ const jakarta = (weight: number, italic = false) => ({
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const product = products.find((p) => p.id === id)
+  const [loaded, setLoaded] = useState<{ id: string; product: Listing | null } | null>(null)
+  const product = loaded && loaded.id === id ? loaded.product : undefined
+
+  useEffect(() => {
+    let live = true
+    if (id) getListing(id).then((p) => live && setLoaded({ id, product: p }))
+    return () => {
+      live = false
+    }
+  }, [id])
 
   if (!product) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-[#807e7e] text-[16px]" style={jakarta(400)}>
-          Product not found.
+          {product === undefined ? 'Loading…' : 'This listing is not available.'}
         </p>
       </div>
     )
   }
 
-  const [para1, para2] = product.details.split('\n\n')
+  const [para1, ...rest] = product.description.split(/\n\s*\n/)
+  const para2 = rest.join('\n\n')
+  const thumbnails = product.images.slice(1, 3)
+  const extraPhotos = Math.max(0, product.images.length - 3)
 
   return (
     <div className="bg-white w-full pb-[120px]">
@@ -95,9 +108,9 @@ export default function ProductDetail() {
             className="absolute top-0 bottom-[52.4%] bg-[#ededed] rounded-[20px] overflow-hidden"
             style={{ left: '76.5%', right: 0 }}
           >
-            {product.thumbnails[0] ? (
+            {thumbnails[0] ? (
               <img
-                src={product.thumbnails[0]}
+                src={thumbnails[0]}
                 alt=""
                 className="absolute top-0 left-1/2 -translate-x-1/2 w-full object-cover"
                 style={{ height: '238px' }}
@@ -116,9 +129,9 @@ export default function ProductDetail() {
             className="absolute top-[52.4%] bottom-0 bg-[#ededed] rounded-[20px] overflow-hidden"
             style={{ left: '76.5%', right: 0 }}
           >
-            {product.thumbnails[1] ? (
+            {thumbnails[1] ? (
               <img
-                src={product.thumbnails[1]}
+                src={thumbnails[1]}
                 alt=""
                 className="absolute top-0 left-1/2 -translate-x-1/2 w-full object-cover"
                 style={{ height: '238px' }}
@@ -132,7 +145,7 @@ export default function ProductDetail() {
             ) : null}
 
             {/* Gradient overlay with "+N" counter */}
-            {product.extraPhotos > 0 && (
+            {extraPhotos > 0 && (
               <div
                 className="absolute inset-0 flex items-center justify-center gap-[8px]"
                 style={{ background: 'linear-gradient(to top, #141414 1%, rgba(20,20,20,0))' }}
@@ -142,7 +155,7 @@ export default function ProductDetail() {
                   className="text-white text-[40px] leading-[48px]"
                   style={jakarta(700)}
                 >
-                  {product.extraPhotos}
+                  {extraPhotos}
                 </span>
               </div>
             )}
@@ -174,6 +187,7 @@ export default function ProductDetail() {
             {/* Metadata */}
             <div className="flex flex-col gap-[16px]">
               {[
+                { label: 'Sold by', value: product.store.storeName },
                 { label: 'Location', value: product.location },
                 { label: 'Quantity', value: product.quantity },
                 { label: 'Listed', value: product.listed },
@@ -193,13 +207,11 @@ export default function ProductDetail() {
                 <span className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
                   Vendor's rating
                 </span>
+                {/* Reviews are not on the API yet; the row stays as designed until they are. */}
                 <div className="flex gap-[4px] items-center">
-                  <span className="text-[#807e7e] text-[16px] leading-[24px] text-right" style={jakarta(400)}>
-                    {product.rating}
-                  </span>
                   <img src={starIcon} alt="" className="size-[16px]" />
                   <span className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(500, true)}>
-                    ({product.reviewCount} reviews)
+                    No reviews yet
                   </span>
                 </div>
               </div>
@@ -229,6 +241,8 @@ export default function ProductDetail() {
 
               {/* Send message */}
               <button
+                type="button"
+                title="Buyer messaging opens with the messaging API"
                 className="bg-[#f7f7f7] h-[48px] flex items-center justify-center px-[28px] py-[16px] rounded-[30px] w-full"
               >
                 <span className="text-[#101604] text-[14px] tracking-[-0.14px]" style={jakarta(500)}>
