@@ -16,6 +16,7 @@ import Products from '../pages/Dashboard/Products'
 import ProductsList from '../pages/Dashboard/ProductsList'
 import DashboardProductDetail from '../pages/Dashboard/ProductDetail'
 import AddProduct from '../pages/Dashboard/AddProduct'
+import Orders from '../pages/Dashboard/Orders'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
 
@@ -39,6 +40,7 @@ export default function AppRoutes() {
       <Route path="/dashboard/products/add" element={<AddProduct />} />
       <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
       <Route path="/dashboard/products-list" element={<ProductsList />} />
+      <Route path="/dashboard/orders" element={<Orders />} />
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
