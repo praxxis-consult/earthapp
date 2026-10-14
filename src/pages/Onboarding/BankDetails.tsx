@@ -27,7 +27,7 @@ const BANKS_BY_COUNTRY: Record<string, string[]> = {
 }
 
 const inputClass =
-  'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
+  'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
 
 /**
  * The design resolves the account name from the bank ("Checking the bank for the name…"). The API
@@ -79,11 +79,7 @@ export default function BankDetails() {
         subtitle="Your share goes straight to your bank. The account must be in the same name as your ID."
       />
 
-      {/* Form starts at 352px for BankDetails (extra subtitle line) */}
-      <div
-        className="absolute flex flex-col gap-[16px] items-start"
-        style={{ left: '120px', top: '352px', width: '580px' }}
-      >
+      <div className="mt-[40px] flex flex-col gap-[16px] items-start w-full">
         <FormDropdown
           label="Country"
           value={countryName(b.country)}
@@ -103,7 +99,7 @@ export default function BankDetails() {
         <div className="flex flex-col gap-[8px] items-start w-full">
           <label
             htmlFor="account-number"
-            className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full"
+            className="text-[#101604] text-[14px] leading-[24px] w-full"
             style={jakarta(500)}
           >
             Account number
@@ -123,7 +119,7 @@ export default function BankDetails() {
         <div className="flex flex-col gap-[8px] items-start w-full">
           <label
             htmlFor="account-name"
-            className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full"
+            className="text-[#101604] text-[14px] leading-[24px] w-full"
             style={jakarta(500)}
           >
             Account name
@@ -147,10 +143,7 @@ export default function BankDetails() {
         )}
       </div>
 
-      <GradientButton
-        onClick={confirm}
-        style={{ position: 'absolute', left: '120px', top: '768px', width: '580px', opacity: busy ? 0.7 : 1 }}
-      >
+      <GradientButton onClick={confirm} className="mt-[64px] w-full" style={{ opacity: busy ? 0.7 : 1 }}>
         {busy ? 'Saving…' : 'Confirm account'}
       </GradientButton>
     </OnboardingLayout>

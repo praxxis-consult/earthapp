@@ -30,10 +30,10 @@ function SectionHeading({ title, onEdit }: { title: string; onEdit: () => void }
 function SummaryField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-[4px] items-start flex-1 min-w-0">
-      <p className="text-[#807e7e] text-[12px] w-full" style={jakarta(400)}>
+      <p className="text-[#807e7e] text-[12px] leading-[15px] w-full" style={jakarta(400)}>
         {label}
       </p>
-      <div className="text-[#101604] text-[14px] w-full" style={jakarta(500)}>
+      <div className="text-[#101604] text-[14px] leading-[18px] w-full" style={jakarta(500)}>
         {children}
       </div>
     </div>
@@ -95,18 +95,15 @@ export default function ReviewDetails() {
 
   return (
     <>
-      <OnboardingLayout scrollable>
+      <OnboardingLayout>
         <OnboardingHeader
           onBack={() => navigate(-1)}
           title="Review Details"
           subtitle="Kindly review all the details below to make sure that the information you submitted is correct and up to date."
         />
 
-        {/* Review sections */}
-        <div
-          className="absolute flex flex-col gap-[24px] items-start"
-          style={{ left: '120px', top: '296px', width: '580px' }}
-        >
+        {/* Review sections (623:20847): 40px below the header, 24px apart */}
+        <div className="mt-[40px] flex flex-col gap-[24px] items-start w-full">
           {/* Store details */}
           <div className="flex flex-col gap-[16px] items-start w-full">
             <SectionHeading title="Store details" onEdit={() => navigate('/onboarding/store')} />
@@ -191,10 +188,7 @@ export default function ReviewDetails() {
           )}
         </div>
 
-        <GradientButton
-          onClick={completeSetup}
-          style={{ position: 'absolute', left: '120px', top: '990px', width: '580px', opacity: busy ? 0.7 : 1 }}
-        >
+        <GradientButton onClick={completeSetup} className="mt-[64px] w-full" style={{ opacity: busy ? 0.7 : 1 }}>
           {busy ? 'Submitting…' : 'Complete Setup'}
         </GradientButton>
       </OnboardingLayout>

@@ -51,10 +51,7 @@ export default function VerifyId() {
           subtitle="We check your Identity Number against a selfie."
         />
 
-        <div
-          className="absolute flex flex-col gap-[16px] items-start"
-          style={{ left: '120px', top: '328px', width: '580px' }}
-        >
+        <div className="mt-[40px] flex flex-col gap-[16px] items-start w-full">
           <FormDropdown
             label="Means of identity"
             value={idTypeLabel(draft.identityType)}
@@ -66,7 +63,7 @@ export default function VerifyId() {
           <div className="flex flex-col gap-[8px] items-start w-full">
             <label
               htmlFor="id-number"
-              className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full"
+              className="text-[#101604] text-[14px] leading-[24px] w-full"
               style={jakarta(500)}
             >
               Identification number
@@ -78,7 +75,7 @@ export default function VerifyId() {
               maxLength={100}
               onChange={(e) => update({ identityNumber: e.target.value })}
               placeholder="Enter identification number"
-              className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]"
+              className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]"
               style={{ ...jakarta(400), color: '#101604' }}
             />
           </div>
@@ -107,10 +104,7 @@ export default function VerifyId() {
           )}
         </div>
 
-        <GradientButton
-          onClick={next}
-          style={{ position: 'absolute', left: '120px', top: '568px', width: '580px', opacity: busy ? 0.7 : 1 }}
-        >
+        <GradientButton onClick={next} className="mt-[64px] w-full" style={{ opacity: busy ? 0.7 : 1 }}>
           {busy ? 'Saving…' : draft.selfieUrl ? 'Proceed' : 'Next, take selfie'}
         </GradientButton>
       </OnboardingLayout>

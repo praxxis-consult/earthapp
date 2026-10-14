@@ -10,8 +10,8 @@ import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '..
 import { jakarta } from '../../utils/styles'
 
 const inputClass =
-  'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
-const labelClass = 'text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full'
+  'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
+const labelClass = 'text-[#101604] text-[14px] leading-[24px] w-full'
 
 /**
  * The design has one Address line with "Select from map"; the API (and the review step) want
@@ -51,10 +51,7 @@ export default function Location() {
         subtitle="Let us know what you are selling. You can add more later."
       />
 
-      <div
-        className="absolute flex flex-col gap-[16px] items-start"
-        style={{ left: '120px', top: '328px', width: '580px' }}
-      >
+      <div className="mt-[40px] flex flex-col gap-[16px] items-start w-full">
         <FormDropdown
           label="Country"
           value={countryName(a.country)}
@@ -109,7 +106,7 @@ export default function Location() {
               maxLength={240}
               onChange={(e) => set({ street: e.target.value })}
               placeholder="Enter address"
-              className="bg-transparent flex-1 text-[14px] leading-[24px] tracking-[-0.28px] outline-none placeholder:text-[#807e7e]"
+              className="bg-transparent flex-1 text-[14px] leading-[24px] outline-none placeholder:text-[#807e7e]"
               style={{ ...jakarta(400), color: '#101604' }}
             />
             {/* "Select from map" needs a maps key; shown as designed, inert until one exists. */}
@@ -141,7 +138,7 @@ export default function Location() {
               style={{ ...jakarta(400), color: '#101604' }}
             />
           </div>
-          <p className="text-[#807e7e] text-[14px]" style={jakarta(400)}>
+          <p className="text-[#807e7e] text-[14px] leading-[18px]" style={jakarta(400)}>
             Something a delivery agent can ask a passer-by.
           </p>
         </div>
@@ -153,10 +150,7 @@ export default function Location() {
         )}
       </div>
 
-      <GradientButton
-        onClick={proceed}
-        style={{ position: 'absolute', left: '120px', top: '778px', width: '580px', opacity: busy ? 0.7 : 1 }}
-      >
+      <GradientButton onClick={proceed} className="mt-[64px] w-full" style={{ opacity: busy ? 0.7 : 1 }}>
         {busy ? 'Saving…' : 'Proceed'}
       </GradientButton>
     </OnboardingLayout>
