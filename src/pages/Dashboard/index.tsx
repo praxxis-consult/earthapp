@@ -19,17 +19,7 @@ const HAS_ORDERS = false
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat']
 
-function StatCard({
-  label,
-  value,
-  sub,
-  gradient,
-}: {
-  label: string
-  value: string
-  sub?: string
-  gradient?: boolean
-}) {
+function StatCard({ label, value, sub, gradient }: { label: string; value: string; sub?: string; gradient?: boolean }) {
   return (
     <div
       className="h-[120px] rounded-[20px] overflow-hidden px-[24px] pt-[16px] pb-[12px] flex flex-col justify-between"
@@ -39,17 +29,11 @@ function StatCard({
           : { background: 'white' }
       }
     >
-      <p
-        className="text-[14px] leading-[24px]"
-        style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}
-      >
+      <p className="text-[14px] leading-[24px]" style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}>
         {label}
       </p>
       <div className="flex items-baseline gap-[8px]">
-        <p
-          className="text-[32px] leading-[48px]"
-          style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}
-        >
+        <p className="text-[32px] leading-[48px]" style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}>
           {value}
         </p>
         {sub && (
@@ -89,7 +73,9 @@ function ChartCard({
 
       {/* 7 days pill */}
       <div className="absolute top-[16px] right-[24px] bg-[#f7f7f7] flex gap-[8px] h-[40px] items-center justify-center px-[16px] rounded-[30px] z-10">
-        <p className="text-[#101604] text-[13px]" style={jakarta(600)}>7 days</p>
+        <p className="text-[#101604] text-[13px]" style={jakarta(600)}>
+          7 days
+        </p>
         <div className="relative shrink-0 size-[16px]">
           <img src={arrowDownIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
@@ -126,7 +112,8 @@ function ChartCard({
             {pinValue}
             {pinValueSuffix && (
               <span className="text-[#807e7e] text-[13px]" style={jakarta(500)}>
-                {' '}{pinValueSuffix}
+                {' '}
+                {pinValueSuffix}
               </span>
             )}
           </p>
@@ -210,7 +197,10 @@ function OrdersTable() {
                   <div className="size-[40px] rounded-full overflow-hidden border-[1.5px] border-white shrink-0">
                     <img src={productThumb} alt="" className="size-full object-cover" />
                   </div>
-                  <p className="text-[#101928] text-[14px] leading-[24px] capitalize whitespace-nowrap" style={jakarta(400)}>
+                  <p
+                    className="text-[#101928] text-[14px] leading-[24px] capitalize whitespace-nowrap"
+                    style={jakarta(400)}
+                  >
                     {row.item}
                   </p>
                 </div>
@@ -337,7 +327,10 @@ export default function DashboardOverview() {
             <div className="flex flex-col items-center py-[32px] gap-[16px] pb-[40px]">
               {/* Empty state illustration */}
               <div className="relative size-[200px]">
-                <div className="absolute" style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}>
+                <div
+                  className="absolute"
+                  style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}
+                >
                   <img src={emptyBgIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
                 </div>
                 <div
@@ -345,11 +338,7 @@ export default function DashboardOverview() {
                   style={{ left: '31.56px', top: '21.67px', width: '137.713px', height: '162.27px' }}
                 >
                   <div style={{ transform: 'rotate(-20.53deg)' }}>
-                    <img
-                      src={emptyIllustrationIcon}
-                      alt=""
-                      style={{ width: '95.564px', height: '137.487px' }}
-                    />
+                    <img src={emptyIllustrationIcon} alt="" style={{ width: '95.564px', height: '137.487px' }} />
                   </div>
                 </div>
               </div>

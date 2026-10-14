@@ -41,6 +41,7 @@ export default function AppRoutes() {
       <Route path="/dashboard/products" element={<Products />} />
       <Route path="/dashboard/products/add" element={<AddProduct />} />
       <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
+      <Route path="/dashboard/products/:id/edit" element={<AddProduct />} />
       <Route path="/dashboard/products-list" element={<ProductsList />} />
       <Route path="/dashboard/orders" element={<Orders />} />
       </Route>
