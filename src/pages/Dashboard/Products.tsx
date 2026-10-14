@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import Toast from '../../components/ui/Toast'
@@ -83,7 +83,14 @@ export default function Products() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data, error: loadError } = useGetMyProductsQuery()
-  const items = useMemo(() => (data ? [...data].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) : null), [data])
+  const [searchParams, setSearchParams] = useSearchParams()
+  // The topbar search lands here with ?q=; it matches the name, SKU and category.
+  const q = searchParams.get('q')?.trim().toLowerCase() ?? ''
+  const items = useMemo(() => {
+    if (!data) return null
+    const sorted = [...data].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    return q ? sorted.filter((p) => [p.productName, p.sku, p.categoryId].some((v) => v?.toLowerCase().includes(q))) : sorted
+  }, [data, q])
   const error = loadError ? describeError(loadError) : ''
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -112,6 +119,14 @@ export default function Products() {
     <DashboardLayout>
       <div className="relative px-[24px] pt-[40px] pb-[32px] flex flex-col gap-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
+        {q && (
+          <p className="mt-[16px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
+            Results for “{searchParams.get('q')}”{' '}
+            <button type="button" onClick={() => setSearchParams({})} className="text-[#007c53]" style={jakarta(500)}>
+              Clear
+            </button>
+          </p>
+        )}
 
         {/* Page heading */}
         <div className="flex items-start justify-between w-full">
