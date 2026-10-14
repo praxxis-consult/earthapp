@@ -245,10 +245,10 @@ export default function DashboardOverview() {
 
   return (
     <DashboardLayout>
-      <div className="px-[26px] pt-[40px] pb-[24px]">
+      <div className="px-[24px] pt-[36px] pb-[24px]">
         {/* Header row: greeting + Add product CTA */}
         <div className="flex items-center justify-between">
-          <p className="text-[#101604] text-[32px] leading-none" style={jakarta(700)}>
+          <p className="text-[#101604] text-[32px] leading-[40px]" style={jakarta(700)}>
             Welcome, {account?.firstName ?? ''}
           </p>
 
@@ -271,7 +271,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Stat cards */}
-        <div className="mt-[24px] grid grid-cols-4 gap-[16px]">
+        <div className="mt-[20px] grid grid-cols-4 gap-[16px]">
           <StatCard label="Earned this week" value={earned} gradient />
           <StatCard label="Awaiting orders" value="0" />
           <StatCard label="Completed orders" value={completed} />
@@ -302,7 +302,7 @@ export default function DashboardOverview() {
           {/* Panel header */}
           <div className="flex items-start justify-between px-[24px] pt-[24px]">
             <div className="flex flex-col gap-[8px]">
-              <p className="text-[#101604] text-[20px] leading-none" style={jakarta(600)}>
+              <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
                 New orders
               </p>
               <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -330,7 +330,7 @@ export default function DashboardOverview() {
           {HAS_ORDERS ? (
             <OrdersTable />
           ) : (
-            <div className="flex flex-col items-center py-[32px] gap-[16px] pb-[40px]">
+            <div className="flex flex-col items-center pt-[40px] pb-[64px]">
               {/* Empty state illustration */}
               <div className="relative size-[200px]">
                 <div
@@ -351,7 +351,7 @@ export default function DashboardOverview() {
 
               {/* Empty state text */}
               <div className="flex flex-col gap-[8px] items-center text-center">
-                <p className="text-[#101604] text-[20px]" style={jakarta(600)}>
+                <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
                   No new order yet
                 </p>
                 <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
