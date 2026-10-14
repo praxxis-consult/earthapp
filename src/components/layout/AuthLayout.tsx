@@ -17,8 +17,9 @@ export default function AuthLayout({ children, images }: AuthLayoutProps) {
   return (
     <div className="bg-white min-h-screen">
       <div className="mx-auto flex max-w-[1440px] items-start px-[24px] py-[24px] min-h-screen">
-        <main className="flex-1 min-w-0 pt-[96px] pb-[48px] pl-[clamp(16px,6.67vw,96px)] pr-[40px]">
-          <div className="w-full max-w-[580px]">{children}</div>
+        {/* Below lg the photo panel is gone, so the copy column takes the full width with the outer 24px gutters. */}
+        <main className="flex-1 min-w-0 pt-[96px] pb-[48px] pl-[clamp(16px,6.67vw,96px)] pr-[40px] max-lg:px-0 max-lg:pt-[32px] max-lg:pb-[24px]">
+          <div className="w-full max-w-[580px] max-lg:mx-auto">{children}</div>
         </main>
         <aside
           className="sticky top-[24px] hidden lg:block shrink-0 w-[clamp(320px,46.94vw,676px)] h-[calc(100vh-48px)] rounded-[25px] overflow-hidden bg-[#e3e3e3]"

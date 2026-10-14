@@ -61,6 +61,8 @@ export default function Messages() {
   // The first chat opens on arrival, so it starts read.
   const [chats, setChats] = useState<Chat[]>(() => seed.map((c, i) => (i === 0 ? { ...c, unread: 0 } : c)))
   const [activeId, setActiveId] = useState(seed[0].id)
+  // Below lg the list and the conversation are two screens; opening a chat moves to the second.
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
   const [tab, setTab] = useState<'all' | 'unread'>('all')
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState('')
@@ -86,6 +88,7 @@ export default function Messages() {
 
   function open(id: string) {
     setActiveId(id)
+    setMobileView('chat')
     setChats((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0 } : c)))
   }
 
@@ -155,12 +158,12 @@ export default function Messages() {
   return (
     <DashboardLayout>
       <div
-        className="px-[24px] pt-[24px] pb-[24px] flex gap-[16px] items-start"
+        className="px-[24px] pt-[24px] pb-[24px] flex gap-[16px] items-start max-md:px-[16px] max-md:pt-[16px] max-md:pb-[16px]"
         style={{ height: 'calc(100vh - 96px)' }}
       >
         {/* Chat list */}
         <section
-          className="w-[400px] shrink-0 h-full bg-white rounded-[20px] p-[20px] flex flex-col gap-[16px] overflow-hidden"
+          className={`w-[400px] shrink-0 h-full bg-white rounded-[20px] p-[20px] flex flex-col gap-[16px] overflow-hidden max-lg:w-full max-md:p-[16px] ${mobileView === 'chat' ? 'max-lg:hidden' : ''}`}
           aria-label="Chats"
         >
           <label className="flex items-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7]">
@@ -245,11 +248,19 @@ export default function Messages() {
 
         {/* Chat pane */}
         <section
-          className="flex-1 min-w-0 h-full bg-white rounded-[20px] flex flex-col overflow-hidden"
+          className={`flex-1 min-w-0 h-full bg-white rounded-[20px] flex flex-col overflow-hidden max-lg:w-full ${mobileView === 'list' ? 'max-lg:hidden' : ''}`}
           aria-label={`Chat with ${active.name}`}
         >
-          <header className="flex items-center justify-between h-[88px] px-[20px] border-b border-[#f7f7f7] shrink-0">
-            <div className="flex items-center gap-[12px]">
+          <header className="flex items-center justify-between h-[88px] px-[20px] border-b border-[#f7f7f7] shrink-0 max-md:px-[16px] max-md:h-[72px]">
+            <div className="flex items-center gap-[12px] min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileView('list')}
+                aria-label="Back to chats"
+                className="lg:hidden flex items-center justify-center size-[36px] -ml-[8px] rounded-full shrink-0 hover:bg-[#f7f7f7]"
+              >
+                <img src={arrowRightIcon} alt="" className="size-[20px] rotate-180" />
+              </button>
               <Avatar chat={active} />
               <div className="flex flex-col gap-[2px]">
                 <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(600)}>
@@ -275,7 +286,7 @@ export default function Messages() {
             </a>
           </header>
 
-          <div ref={history} className="flex-1 overflow-y-auto p-[24px] flex flex-col gap-[24px]">
+          <div ref={history} className="flex-1 overflow-y-auto p-[24px] flex flex-col gap-[24px] max-md:p-[16px]">
             <div className="flex justify-center">
               <span
                 className="rounded-[12px] bg-[#f7f7f7] px-[12px] py-[6px] text-[#807e7e] text-[11px] leading-[14px]"
@@ -299,7 +310,7 @@ export default function Messages() {
               if (m.kind === 'invoice')
                 return (
                   <div key={m.id} className="flex justify-end">
-                    <div className="w-[368px] rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
+                    <div className="w-[368px] max-w-full rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
                       <div className="flex items-center gap-[12px] bg-[#edf7f3] p-[14px]">
                         <span className="flex items-center justify-center size-[32px] rounded-[10px] bg-white">
                           <img src={receiptIcon} alt="" className="size-[16px]" />
@@ -346,7 +357,7 @@ export default function Messages() {
               if (m.kind === 'product')
                 return (
                   <div key={m.id} className="flex justify-end">
-                    <div className="w-[423px] rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px]">
+                    <div className="w-[423px] max-w-full rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px] max-sm:flex-wrap">
                       <img src={m.image ?? productThumb} alt="" className="size-[48px] rounded-[12px] object-cover shrink-0" />
                       <div className="flex flex-col gap-[4px] flex-1 min-w-0">
                         <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
@@ -409,7 +420,7 @@ export default function Messages() {
               return (
                 <div key={m.id} className={`flex items-end gap-[12px] ${mine ? 'justify-end' : ''}`}>
                   {!mine && <Avatar chat={active} size={40} />}
-                  <div className={`flex flex-col gap-[4px] max-w-[420px] ${mine ? 'items-end' : ''}`}>
+                  <div className={`flex flex-col gap-[4px] max-w-[420px] max-md:max-w-[85%] ${mine ? 'items-end' : ''}`}>
                     <div
                       className={`px-[16px] py-[12px] ${mine ? 'rounded-[16px] rounded-br-[4px] bg-[#007c53]' : 'rounded-[16px] rounded-bl-[4px] bg-[#f7f7f7]'}`}
                     >
@@ -448,7 +459,7 @@ export default function Messages() {
               {attachOpen && (
                 <div
                   role="menu"
-                  className="absolute bottom-[56px] left-0 z-30 w-[375px] rounded-[24px] border border-[#d9d9d9] bg-white py-[8px]"
+                  className="absolute bottom-[56px] left-0 z-30 w-[375px] max-w-[calc(100vw-72px)] rounded-[24px] border border-[#d9d9d9] bg-white py-[8px]"
                   style={{ boxShadow: '0 5px 15px 5px rgba(0,0,0,0.02), 0 3px 10px -2px rgba(0,0,0,0.1)' }}
                 >
                   <button type="button" role="menuitem" onClick={openPicker} className="flex h-[72px] w-full items-center gap-[8px] border-b border-[#f7f7f7] px-[16px] text-left hover:bg-[#f7f7f7]">
@@ -493,7 +504,7 @@ export default function Messages() {
       {picker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-[16px]" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setPicker(null)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <MenuList hint={picker.length ? 'Choose a listing to send' : 'Loading your listings…'}>
+            <MenuList width={Math.min(375, window.innerWidth - 32)} hint={picker.length ? 'Choose a listing to send' : 'Loading your listings…'}>
               {picker.map((p) => (
                 <MenuItem key={p.id} label={`${p.productName ?? 'Product'} · ${nairaFmt(Number(p.price ?? 0))}`} selected={false} onSelect={() => sendProduct(p)} />
               ))}

@@ -13,8 +13,7 @@ export default function AccountCreatedModal({ onSetupStore, onClose }: AccountCr
       body={
         <>
           Welcome to Earth, the marketplace for everything that
-          <br />
-          grows from the land. Your account is ready.
+          <br className="max-md:hidden" /> grows from the land. Your account is ready.
         </>
       }
       primary={{ label: 'Setup store', onClick: onSetupStore }}

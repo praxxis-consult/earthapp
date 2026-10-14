@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 // Illustrations — No Favorites
 import noFavoritesBg from '../../assets/images/empty-states/no-favorites-bg.svg'
 import noFavoritesTag2Card from '../../assets/images/empty-states/no-favorites-tag2-card.svg'
@@ -443,11 +444,24 @@ const stateConfigs: Record<EmptyStateVariant, StateConfig> = {
 
 export default function EmptyState({ variant, scale = 0.5, className = '' }: EmptyStateProps) {
   const config = stateConfigs[variant]
-  const displaySize = 800 * scale
+  const ref = useRef<HTMLDivElement>(null)
+  // On a screen narrower than the card (phones), shrink to the space the parent gives it.
+  const [fit, setFit] = useState(scale)
+  useLayoutEffect(() => {
+    const parent = ref.current?.parentElement
+    if (!parent) return
+    const observer = new ResizeObserver(([entry]) => {
+      setFit(Math.min(scale, entry.contentRect.width / 800))
+    })
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [scale])
+  const displaySize = 800 * fit
 
   return (
     // Outer wrapper collapses layout footprint to the scaled size
     <div
+      ref={ref}
       className={className}
       style={{ width: displaySize, height: displaySize, flexShrink: 0 }}
     >
@@ -459,7 +473,7 @@ export default function EmptyState({ variant, scale = 0.5, className = '' }: Emp
           height: '800px',
           borderRadius: config.borderRadius,
           boxShadow: '0px 18px 110px 0px rgba(208, 208, 208, 0.47)',
-          transform: `scale(${scale})`,
+          transform: `scale(${fit})`,
           transformOrigin: 'top left',
         }}
       >

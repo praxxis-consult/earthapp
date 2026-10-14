@@ -60,8 +60,8 @@ export default function Location() {
           onSelect={(name) => set({ country: countryCode(name) })}
         />
 
-        <div className="flex gap-[16px] items-start w-full">
-          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0">
+        <div className="flex gap-[16px] items-start w-full max-sm:flex-col">
+          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0 max-sm:w-full">
             <label htmlFor="region" className={labelClass} style={jakarta(500)}>
               Region/State
             </label>
@@ -76,7 +76,7 @@ export default function Location() {
               style={{ ...jakarta(400), color: '#101604' }}
             />
           </div>
-          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0">
+          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0 max-sm:w-full">
             <label htmlFor="area" className={labelClass} style={jakarta(500)}>
               Area
             </label>

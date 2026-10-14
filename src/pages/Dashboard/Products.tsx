@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import DataTable from '../../components/ui/DataTable'
 import Pager from '../../components/ui/Pager'
 import Toast from '../../components/ui/Toast'
 import emptyBg from '../../assets/icons/db-empty-bg.svg'
@@ -23,7 +24,7 @@ function AddProductButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0"
+      className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0 max-md:w-full"
       style={{ backgroundImage: CTA_BG }}
     >
       <div className="relative shrink-0 size-[24px]">
@@ -41,8 +42,8 @@ function AddProductButton({ onClick }: { onClick: () => void }) {
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] relative overflow-hidden">
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-[24px] items-center w-[429px]">
+    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] flex items-center justify-center overflow-hidden max-md:h-auto max-md:py-[48px] max-md:px-[16px]">
+      <div className="flex flex-col gap-[24px] items-center w-[429px] max-w-full">
         <div className="flex flex-col items-center relative shrink-0 w-full">
           <div className="relative size-[200px]">
             <div className="absolute h-[140px] left-[23.57px] top-[16.07px] w-[153.208px]">
@@ -70,9 +71,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     </div>
   )
 }
-
-const HEAD =
-  'h-[44px] px-[24px] text-left text-[#807e7e] text-[12px] leading-[15px] tracking-[-0.06px] whitespace-nowrap'
 
 /**
  * Figma products 462:6490: title block, table card (1px #f7f7f7 frame, radius 20; columns
@@ -117,7 +115,7 @@ export default function Products() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[40px] pb-[32px] flex flex-col gap-[24px]">
+      <div className="relative px-[24px] pt-[40px] pb-[32px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
         {q && (
           <p className="mt-[16px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -129,7 +127,7 @@ export default function Products() {
         )}
 
         {/* Page heading */}
-        <div className="flex items-start justify-between w-full">
+        <div className="flex items-start justify-between w-full max-md:flex-col max-md:gap-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[490px]">
             <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
               Products
@@ -146,114 +144,94 @@ export default function Products() {
             {error}
           </p>
         ) : items === null ? (
-          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px]" aria-busy="true" />
+          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] max-md:h-[320px]" aria-busy="true" />
         ) : items.length === 0 ? (
           <EmptyState onAdd={() => navigate('/dashboard/products/add')} />
         ) : (
           <div className="flex flex-col gap-[16px]">
-            <div className="rounded-[20px] border border-[#f7f7f7] bg-white overflow-hidden">
-              <table className="w-full table-fixed border-collapse">
-                <colgroup>
-                  <col />
-                  <col style={{ width: 230 }} />
-                  <col style={{ width: 181 }} />
-                  <col style={{ width: 124 }} />
-                  <col style={{ width: 154 }} />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-[#807e7e]">
-                    <th className={HEAD} style={jakarta(600)}>
-                      Product
-                    </th>
-                    <th className={HEAD} style={jakarta(600)}>
-                      Sold as
-                    </th>
-                    <th className={HEAD} style={jakarta(600)}>
-                      Price
-                    </th>
-                    <th className={HEAD} style={jakarta(600)}>
-                      In Stock
-                    </th>
-                    <th className={`${HEAD} text-center`} style={jakarta(600)}>
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((p) => {
+            <DataTable
+              rows={rows}
+              rowKey={(p) => p.id}
+              onRowClick={(p) => navigate(`/dashboard/products/${p.id}`)}
+              columns={[
+                {
+                  key: 'product',
+                  header: 'Product',
+                  card: 'title',
+                  cell: (p) => {
+                    const image = p.images?.find((i) => i.isPrimary)?.url ?? p.images?.[0]?.url ?? productThumb
+                    return (
+                      <div className="flex items-center gap-[12px] min-w-0">
+                        {/* Figma "Form Control": 20px, radius 3.33, 1.25px #d0d5dd */}
+                        <input
+                          type="checkbox"
+                          checked={selected.has(p.id)}
+                          onChange={() => toggle(p.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${p.productName ?? 'product'}`}
+                          className="size-[20px] shrink-0 appearance-none rounded-[3.33px] border-[1.25px] border-[#d0d5dd] bg-white checked:bg-[#007c53] checked:border-[#007c53] cursor-pointer"
+                        />
+                        <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white bg-[#e4baca]">
+                          <img src={image} alt="" className="size-full object-cover" />
+                        </span>
+                        <p className="text-[#101928] text-[14px] leading-[24px] truncate" style={jakarta(600)}>
+                          {p.productName || 'Untitled product'}
+                        </p>
+                      </div>
+                    )
+                  },
+                },
+                {
+                  key: 'soldAs',
+                  header: 'Sold as',
+                  width: 230,
+                  cell: (p) => (
+                    <p className="text-[#101928] text-[14px] leading-[24px] truncate" style={jakarta(500)}>
+                      {soldAsLabel(p)}
+                    </p>
+                  ),
+                },
+                {
+                  key: 'price',
+                  header: 'Price',
+                  width: 181,
+                  cell: (p) => (
+                    <p className="text-[#101928] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(400)}>
+                      {p.price ? naira(p.price) : '-'}
+                    </p>
+                  ),
+                },
+                {
+                  key: 'stock',
+                  header: 'In Stock',
+                  width: 124,
+                  cell: (p) => (
+                    <p className="text-[#101928] text-[14px] leading-[24px]" style={jakarta(400)}>
+                      {p.status === 'DRAFT' && p.availableQuantity == null ? '-' : (p.availableQuantity ?? 0)}
+                    </p>
+                  ),
+                },
+                {
+                  key: 'status',
+                  header: 'Status',
+                  width: 154,
+                  align: 'center',
+                  card: 'badge',
+                  cell: (p) => {
                     const status = listingStatus(p)
                     const style = LISTING_STYLE[status]
-                    const image = p.images?.find((i) => i.isPrimary)?.url ?? p.images?.[0]?.url ?? productThumb
-                    const open = () => navigate(`/dashboard/products/${p.id}`)
                     return (
-                      <tr
-                        key={p.id}
-                        onClick={open}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') open()
-                        }}
-                        tabIndex={0}
-                        className="border-b border-[#f7f7f7] last:border-b-0 cursor-pointer hover:bg-[#fbfbfb] focus-visible:outline-2 focus-visible:outline-[#007c53] focus-visible:-outline-offset-2"
+                      <span
+                        className="inline-flex items-center justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px] whitespace-nowrap"
+                        style={{ ...jakarta(600), background: style.bg, color: style.color }}
                       >
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex items-center gap-[12px] min-w-0">
-                            {/* Figma "Form Control": 20px, radius 3.33, 1.25px #d0d5dd */}
-                            <input
-                              type="checkbox"
-                              checked={selected.has(p.id)}
-                              onChange={() => toggle(p.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label={`Select ${p.productName ?? 'product'}`}
-                              className="size-[20px] shrink-0 appearance-none rounded-[3.33px] border-[1.25px] border-[#d0d5dd] bg-white checked:bg-[#007c53] checked:border-[#007c53] cursor-pointer"
-                            />
-                            <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white bg-[#e4baca]">
-                              <img src={image} alt="" className="size-full object-cover" />
-                            </span>
-                            <p className="text-[#101928] text-[14px] leading-[24px] truncate" style={jakarta(600)}>
-                              {p.productName || 'Untitled product'}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex items-center">
-                            <p className="text-[#101928] text-[14px] leading-[24px] truncate" style={jakarta(500)}>
-                              {soldAsLabel(p)}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex items-center">
-                            <p
-                              className="text-[#101928] text-[14px] leading-[24px] whitespace-nowrap"
-                              style={jakarta(400)}
-                            >
-                              {p.price ? naira(p.price) : '-'}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex items-center">
-                            <p className="text-[#101928] text-[14px] leading-[24px]" style={jakarta(400)}>
-                              {p.status === 'DRAFT' && p.availableQuantity == null ? '-' : (p.availableQuantity ?? 0)}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] flex items-center justify-center">
-                            <span
-                              className="inline-flex items-center justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px] whitespace-nowrap"
-                              style={{ ...jakarta(600), background: style.bg, color: style.color }}
-                            >
-                              {status}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
+                        {status}
+                      </span>
                     )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  },
+                },
+              ]}
+            />
 
             {/* Pager, as on the orders page */}
             <Pager page={current} pageCount={pageCount} onChange={setPage} />

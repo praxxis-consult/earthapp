@@ -36,6 +36,9 @@ const SHIPPING_TERMS = [
   'If a seller is unable to process your request and declines the order, or if an order expires unaccepted, a 100% refund is automatically returned to your original payment method without escrow lockups or manual support requests. Earth securely holds all buyer funds in escrow throughout the transaction lifecycle, ensuring payments are only released to the seller upon verified delivery and buyer receipt.',
 ]
 
+/** A row that scrolls sideways on phones (thumbnails, tabs) with the scrollbar hidden. */
+const SCROLL_MD = 'max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden'
+
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`
 
 /** Five stars at a size, the first `filled` lit (Figma "ic:round-star" / "ph:star-light"). */
@@ -109,7 +112,7 @@ export default function ProductDetail() {
 
   return (
     <div className="bg-white w-full pb-[80px]">
-      <div className="max-w-[1200px] mx-auto pt-[64px]">
+      <div className="max-w-[1200px] mx-auto pt-[64px] max-xl:px-[24px] max-md:px-[16px] max-md:pt-[32px]">
         <button type="button" onClick={() => navigate(-1)} className="flex gap-[8px] items-center">
           <img src={backIcon} alt="" className="size-[16px]" />
           <span className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(500)}>
@@ -117,20 +120,20 @@ export default function ProductDetail() {
           </span>
         </button>
 
-        <div className="mt-[40px] flex gap-[24px] items-start">
+        <div className="mt-[40px] flex gap-[24px] items-start max-lg:flex-col max-md:mt-[24px]">
           {/* Gallery (663:28963) */}
-          <div className="flex w-[588px] shrink-0 gap-[16px]">
-            <div className="h-[480px] w-[397px] overflow-hidden rounded-[20px] bg-[#ededed]">
+          <div className="flex w-[588px] shrink-0 gap-[16px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none max-md:flex-col">
+            <div className="h-[480px] w-[397px] overflow-hidden rounded-[20px] bg-[#ededed] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-md:flex-none max-md:w-full max-md:h-auto max-md:aspect-[4/3]">
               {product.image && <img src={product.image} alt={product.title} className="size-full object-cover" />}
             </div>
-            <div className="flex w-[175px] flex-col gap-[16px]">
+            <div className={`flex w-[175px] flex-col gap-[16px] max-md:w-full max-md:flex-row ${SCROLL_MD}`}>
               {[0, 1, 2].map((i) => (
-                <div key={i} className="relative h-[150px] overflow-hidden rounded-[20px] bg-[#ededed]">
+                <div key={i} className="relative h-[150px] overflow-hidden rounded-[20px] bg-[#ededed] max-md:h-[96px] max-md:w-[96px] max-md:shrink-0 max-md:rounded-[16px]">
                   {thumbs[i] && <img src={thumbs[i]} alt="" className="size-full object-cover" />}
                   {i === 2 && extra > 0 && (
                     <div className="absolute inset-0 flex items-center justify-center gap-[8px]" style={{ background: 'linear-gradient(180deg, rgba(20,20,20,0) 0%, #141414 100%)' }}>
                       <img src={plusIcon} alt="" className="size-[20px]" />
-                      <span className="text-white text-[32px] leading-[48px]" style={jakarta(600)}>
+                      <span className="text-white text-[32px] leading-[48px] max-md:text-[20px] max-md:leading-[28px]" style={jakarta(600)}>
                         {extra}
                       </span>
                     </div>
@@ -141,7 +144,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Panel (687:7112) */}
-          <div className="flex w-[588px] shrink-0 flex-col gap-[24px]">
+          <div className="flex w-[588px] shrink-0 flex-col gap-[24px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none">
             <div className="flex flex-col gap-[24px]">
               <div className="flex h-[32px] items-center gap-[8px]">
                 <span className="rounded-full bg-[#aee74a] px-[12px] py-[6px] text-[#101604] text-[12px] leading-[15px]" style={jakarta(600)}>
@@ -198,13 +201,13 @@ export default function ProductDetail() {
                 </div>
               </div>
               {/* Key facts (687:7143): 1px #f7f7f7 above and below, 18px padding, three 184px columns */}
-              <div className="flex gap-[18px] border-y border-[#f7f7f7] py-[17px]">
+              <div className="flex gap-[18px] border-y border-[#f7f7f7] py-[17px] max-md:gap-[12px]">
                 {[
                   ['Location', product.location],
                   ['Available', plural(product.available, product.unit)],
                   ['MOQ', plural(product.moq, product.unit)],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex w-[184px] flex-col gap-[4px]">
+                  <div key={label} className="flex w-[184px] flex-col gap-[4px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0">
                     <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
                       {label}
                     </p>
@@ -234,11 +237,11 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            <div className="flex gap-[16px]">
+            <div className="flex gap-[16px] max-sm:flex-col">
               <button
                 type="button"
                 title="Buyer messaging opens with the messaging API"
-                className="flex h-[48px] flex-1 items-center justify-center gap-[8px] rounded-[30px] bg-[#f7f7f7] px-[24px] text-[#101604] text-[14px] leading-[18px]"
+                className="flex h-[48px] flex-1 max-sm:flex-none items-center justify-center gap-[8px] rounded-[30px] bg-[#f7f7f7] px-[24px] text-[#101604] text-[14px] leading-[18px]"
                 style={jakarta(500)}
               >
                 <img src={smsIcon} alt="" className="size-[20px]" />
@@ -248,7 +251,7 @@ export default function ProductDetail() {
                 type="button"
                 onClick={() => setOrdering(true)}
                 disabled={!inStock}
-                className="flex h-[48px] flex-1 items-center justify-center gap-[8px] rounded-[30px] bg-[#007c53] px-[24px] text-white text-[14px] leading-[18px] disabled:opacity-60"
+                className="flex h-[48px] flex-1 max-sm:flex-none items-center justify-center gap-[8px] rounded-[30px] bg-[#007c53] px-[24px] text-white text-[14px] leading-[18px] disabled:opacity-60"
                 style={jakarta(500)}
               >
                 Place order
@@ -260,7 +263,7 @@ export default function ProductDetail() {
 
         {/* Tabs (663:28946) */}
         <div className="mt-[40px] flex flex-col gap-[24px]">
-          <div className="flex items-center gap-[16px]" role="tablist">
+          <div className={`flex items-center gap-[16px] ${SCROLL_MD}`} role="tablist">
             {TABS.map((t) => (
               <button
                 key={t.key}
@@ -268,7 +271,7 @@ export default function ProductDetail() {
                 role="tab"
                 aria-selected={tab === t.key}
                 onClick={() => setTab(t.key)}
-                className="h-[39px] rounded-[30px] border px-[16px] text-[12px] leading-[15px]"
+                className="h-[39px] rounded-[30px] border px-[16px] text-[12px] leading-[15px] whitespace-nowrap shrink-0"
                 style={{ ...jakarta(500), color: tab === t.key ? '#007c53' : '#807e7e', borderColor: tab === t.key ? '#007c53' : 'transparent' }}
               >
                 {t.label}
@@ -283,12 +286,12 @@ export default function ProductDetail() {
               </p>
               {/* Supplier preview (663:28805): 112 tall, #f7f7f7, radius 16, 80px avatar */}
               <div className="flex items-center gap-[16px] rounded-[16px] bg-[#f7f7f7] p-[16px]">
-                <span className="flex size-[80px] items-center justify-center rounded-[15px] bg-[#f2f8f6] text-[#007c53] text-[24px]" style={jakarta(700)}>
+                <span className="flex size-[80px] shrink-0 items-center justify-center rounded-[15px] bg-[#f2f8f6] text-[#007c53] text-[24px] max-md:size-[56px] max-md:text-[18px]" style={jakarta(700)}>
                   {initials(product.store.storeName)}
                 </span>
                 <div className="flex flex-1 flex-col gap-[8px] min-w-0">
-                  <div className="flex items-center gap-[12px]">
-                    <p className="text-[#101604] text-[18px] leading-[24px] truncate" style={jakarta(600)}>
+                  <div className="flex items-center gap-[12px] max-md:flex-wrap max-md:gap-y-[4px]">
+                    <p className="text-[#101604] text-[18px] leading-[24px] truncate max-md:text-[16px]" style={jakarta(600)}>
                       {product.store.storeName}
                     </p>
                     <span className="flex items-center gap-[4px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -323,8 +326,8 @@ export default function ProductDetail() {
                 ))}
               </div>
               {/* 666:29259 */}
-              <div className="flex items-center gap-[16px] rounded-[16px] bg-[#f7f7f7] p-[16px]">
-                <span className="flex size-[48px] items-center justify-center rounded-full bg-[#f2f8f6]">
+              <div className="flex items-center gap-[16px] rounded-[16px] bg-[#f7f7f7] p-[16px] max-md:flex-wrap">
+                <span className="flex size-[48px] shrink-0 items-center justify-center rounded-full bg-[#f2f8f6]">
                   <img src={documentIcon} alt="" className="size-[20px]" />
                 </span>
                 <div className="flex flex-1 flex-col gap-[4px]">
@@ -346,8 +349,8 @@ export default function ProductDetail() {
           {tab === 'reviews' && (
             <div className="flex flex-col gap-[40px]">
               {/* Summary (668:30257): the average, its stars and the five share bars */}
-              <div className="flex w-[711px] items-center gap-[24px]">
-                <div className="flex w-[116px] flex-col items-center gap-[16px]">
+              <div className="flex w-[711px] items-center gap-[24px] max-lg:w-full max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
+                <div className="flex w-[116px] flex-col items-center gap-[16px] max-md:w-full">
                   <p className="text-[#101604] text-[56px] leading-[71px]" style={jakarta(700)}>
                     {summary.count ? summary.average.toFixed(1) : '0.0'}
                   </p>
@@ -356,13 +359,13 @@ export default function ProductDetail() {
                     {summary.count ? `${summary.count} Buyer Rating${summary.count === 1 ? '' : 's'}` : 'No buyer ratings yet'}
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col gap-[8px]">
+                <div className="flex flex-1 flex-col gap-[8px] max-md:w-full">
                   {summary.share.map((row) => (
                     <div key={row.stars} className="flex h-[24px] items-center gap-[12px]">
-                      <div className="relative h-[5px] w-[424px] rounded-[25px]" style={{ background: 'rgba(0,124,83,0.05)' }}>
-                        <div className="absolute -top-px left-0 h-[7px] rounded-[25px] bg-[#007c53]" style={{ width: `${(row.pct / 100) * 424}px` }} />
+                      <div className="relative h-[5px] w-[424px] rounded-[25px] max-lg:w-auto max-lg:flex-1" style={{ background: 'rgba(0,124,83,0.05)' }}>
+                        <div className="absolute -top-px left-0 h-[7px] rounded-[25px] bg-[#007c53]" style={{ width: `${row.pct}%` }} />
                       </div>
-                      <div className="flex items-center gap-[12px]">
+                      <div className="flex shrink-0 items-center gap-[12px]">
                         <Stars filled={row.stars} size={16} />
                         <span className="text-[#101604] text-[14px] leading-[24px] w-[32px]" style={jakarta(400)}>
                           {row.pct}%
@@ -379,14 +382,14 @@ export default function ProductDetail() {
                   {reviews.slice(0, shown).map((r) => (
                     <article key={r.id} className="flex flex-col gap-[16px]">
                       <div className="flex gap-[8px]">
-                        <span className="flex size-[56px] items-center justify-center rounded-full bg-[#f2f8f6] text-[#007c53] text-[16px]" style={jakarta(700)}>
+                        <span className="flex size-[56px] shrink-0 items-center justify-center rounded-full bg-[#f2f8f6] text-[#007c53] text-[16px]" style={jakarta(700)}>
                           {initials(r.author)}
                         </span>
-                        <div className="flex flex-col gap-[8px]">
+                        <div className="flex min-w-0 flex-col gap-[8px]">
                           <p className="text-[#121212] text-[18px] leading-[24px]" style={jakarta(600)}>
                             {r.author}
                           </p>
-                          <div className="flex items-center gap-[8px]">
+                          <div className="flex items-center gap-[8px] max-md:flex-wrap">
                             <span className="flex items-center gap-[4px]">
                               {[1, 2, 3, 4, 5].map((i) => (
                                 <img key={i} src={i <= r.rating ? reviewStarOn : reviewStarOff} alt="" className="size-[20px]" />

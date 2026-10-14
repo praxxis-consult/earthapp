@@ -31,7 +31,7 @@ function ProductDetailsTab() {
       {/* Left: narrative */}
       <div className="flex flex-1 flex-col gap-[24px] items-start min-w-0">
         <div className="flex flex-col gap-[14px] w-full">
-          <p className="text-[#0c2310] text-[32px] tracking-[-0.64px] leading-normal w-full" style={jakarta(700)}>
+          <p className="text-[#0c2310] text-[32px] tracking-[-0.64px] leading-normal w-full max-md:text-[24px]" style={jakarta(700)}>
             Clean flavor, fully traceable origin
           </p>
           <p className="text-[#807e7e] text-[16px] leading-[1.7] w-full" style={jakarta(400)}>
@@ -46,12 +46,12 @@ function ProductDetailsTab() {
         </div>
 
         {/* Supplier preview */}
-        <div className="bg-[#f7f7f7] flex gap-[16px] items-center p-[18px] rounded-[16px] w-full">
+        <div className="bg-[#f7f7f7] flex gap-[16px] items-center p-[18px] rounded-[16px] w-full max-md:flex-col max-md:items-start max-md:gap-[12px]">
           <div className="relative rounded-[16px] shrink-0 size-[64px] overflow-hidden">
             <img src={supplierImg} alt="Guayas Cacao Cooperative" className="absolute inset-0 w-full h-full object-cover rounded-[16px]" />
           </div>
-          <div className="flex flex-1 flex-col gap-[5px] items-start min-w-0">
-            <div className="flex gap-[7px] items-center">
+          <div className="flex flex-1 flex-col gap-[5px] items-start min-w-0 max-md:w-full">
+            <div className="flex gap-[7px] items-center max-md:flex-wrap">
               <span className="text-[#0c2310] text-[16px]" style={jakarta(600)}>Guayas Cacao Cooperative</span>
               <img src={badgeCheck} alt="" className="size-[16px] shrink-0" />
             </div>
@@ -66,12 +66,12 @@ function ProductDetailsTab() {
       </div>
 
       {/* Right: Lot specification */}
-      <div className="flex flex-col gap-[6px] items-start shrink-0 w-[430px]">
+      <div className="flex flex-col gap-[6px] items-start shrink-0 w-[430px] max-lg:w-full">
         <p className="text-[#0c2310] text-[20px] whitespace-nowrap" style={jakarta(600)}>Lot specification</p>
         {SPECS.map(({ label, value }) => (
           <div key={label} className="border-b border-[#e4dede] flex items-start justify-between py-[13px] text-[14px] w-full">
             <span className="text-[#807e7e] whitespace-nowrap" style={jakarta(400)}>{label}</span>
-            <span className="text-[#0c2310] text-right w-[210px]" style={jakarta(600)}>{value}</span>
+            <span className="text-[#0c2310] text-right w-[210px] max-md:w-auto max-md:flex-1 max-md:pl-[16px]" style={jakarta(600)}>{value}</span>
           </div>
         ))}
         <div className="flex gap-[8px] items-center pt-[16px]">
@@ -123,7 +123,7 @@ function ShippingTab() {
       {/* Left: shipping narrative */}
       <div className="flex flex-1 flex-col gap-[24px] items-start min-w-0">
         <div className="flex flex-col gap-[12px] w-full">
-          <p className="text-[#0c2310] text-[32px] tracking-[-0.64px] leading-normal w-full" style={jakarta(700)}>
+          <p className="text-[#0c2310] text-[32px] tracking-[-0.64px] leading-normal w-full max-md:text-[24px]" style={jakarta(700)}>
             From Guayas to your nominated port
           </p>
           <p className="text-[#807e7e] text-[16px] leading-[1.7] w-full" style={jakarta(400)}>
@@ -134,7 +134,7 @@ function ShippingTab() {
         </div>
 
         {/* Delivery journey steps */}
-        <div className="flex gap-[10px] items-start w-full">
+        <div className="flex gap-[10px] items-start w-full max-md:flex-col">
           {DELIVERY_STEPS.map(({ icon, duration, title, body }) => (
             <div
               key={title}
@@ -174,12 +174,12 @@ function ShippingTab() {
       </div>
 
       {/* Right: Delivery & purchase terms */}
-      <div className="flex flex-col gap-[6px] items-start shrink-0 w-[430px]">
+      <div className="flex flex-col gap-[6px] items-start shrink-0 w-[430px] max-lg:w-full">
         <p className="text-[#0c2310] text-[20px]" style={jakarta(600)}>Delivery &amp; purchase terms</p>
         {SHIPPING_TERMS.map(({ label, value }) => (
           <div key={label} className="border-b border-[#e4dede] flex items-start justify-between py-[13px] text-[14px] w-full">
             <span className="text-[#807e7e] whitespace-nowrap" style={jakarta(400)}>{label}</span>
-            <span className="text-[#0c2310] text-right w-[220px]" style={jakarta(600)}>{value}</span>
+            <span className="text-[#0c2310] text-right w-[220px] max-md:w-auto max-md:flex-1 max-md:pl-[16px]" style={jakarta(600)}>{value}</span>
           </div>
         ))}
         {/* Packaging note */}
@@ -220,21 +220,21 @@ export default function PlaceOrderModal({ onClose }: PlaceOrderModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-[16px]"
       style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white flex flex-col p-[32px] rounded-[30px] w-[1200px] max-h-[90vh] overflow-y-auto"
+        className="bg-white flex flex-col p-[32px] rounded-[30px] w-[1200px] max-w-full max-h-[90vh] overflow-y-auto max-md:p-[20px] max-md:rounded-[20px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Tab bar (full width, above both columns) ── */}
-        <div className="border-b border-[#e4dede] flex gap-[28px] items-start w-full mb-[24px]">
+        <div className="border-b border-[#e4dede] flex gap-[28px] items-start w-full shrink-0 mb-[24px] max-md:gap-[16px] max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-[14px] text-[14px] shrink-0 transition-colors ${
+              className={`pb-[14px] text-[14px] shrink-0 whitespace-nowrap transition-colors ${
                 activeTab === tab
                   ? 'border-b-2 border-[#007c53] text-[#0c2310]'
                   : 'text-[#807e7e]'
@@ -247,7 +247,7 @@ export default function PlaceOrderModal({ onClose }: PlaceOrderModalProps) {
         </div>
 
         {/* ── Tab content (two-column layout) ── */}
-        <div className="flex gap-[48px] items-start w-full">
+        <div className="flex gap-[48px] items-start w-full max-lg:flex-col max-lg:gap-[32px]">
           {activeTab === 'Product details' && <ProductDetailsTab />}
           {activeTab === 'Shipping & terms' && <ShippingTab />}
           {activeTab === 'Documents' && (

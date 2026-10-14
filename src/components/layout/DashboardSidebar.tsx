@@ -26,7 +26,13 @@ const NAV_ITEMS = [
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
 ]
 
-export default function DashboardSidebar() {
+interface DashboardSidebarProps {
+  /** Rendered inside the phone/tablet drawer: fills the panel and shows a close button. */
+  inDrawer?: boolean
+  onClose?: () => void
+}
+
+export default function DashboardSidebar({ inDrawer = false, onClose }: DashboardSidebarProps) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const { store } = useStore()
@@ -63,7 +69,11 @@ export default function DashboardSidebar() {
   }
 
   return (
-    <aside className="w-[299px] shrink-0 bg-white flex flex-col h-screen sticky top-0 overflow-hidden">
+    <aside
+      className={`w-[299px] shrink-0 bg-white flex flex-col ${
+        inDrawer ? 'min-h-full' : 'h-screen sticky top-0 overflow-hidden'
+      }`}
+    >
       {/* Logo */}
       <div className="flex gap-[8px] items-center px-[24px] pt-[24px] pb-[16px]">
         <div className="h-[48px] relative shrink-0 w-[46.629px]">
@@ -72,6 +82,18 @@ export default function DashboardSidebar() {
         <p className="text-[#0c2310] text-[40.65px] leading-none lowercase" style={{ fontFamily: "'Goldman', serif", fontWeight: 400 }}>
           <span className="uppercase">E</span>arth
         </p>
+        {inDrawer && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="ml-auto flex size-[44px] items-center justify-center rounded-full text-[#101604] hover:bg-[#f7f7f7]"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Store card */}
@@ -96,6 +118,7 @@ export default function DashboardSidebar() {
             key={href}
             to={href}
             end={href === '/dashboard'}
+            onClick={inDrawer ? onClose : undefined}
             className={({ isActive }) =>
               `flex gap-[4px] h-[48px] items-center overflow-clip px-[16px] py-[12px] rounded-[15px] w-full transition-colors ${
                 isActive ? 'bg-[rgba(0,124,83,0.05)]' : 'hover:bg-[#f7f7f7]'

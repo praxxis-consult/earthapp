@@ -11,6 +11,10 @@ import slide5 from '../../assets/images/hero-slide-9.png'
 const SLIDES = [slide1, slide2, slide3, slide4, slide5]
 const INTERVAL_MS = 5000
 
+// 120/120 on the frame; 72 on tablets and 48 on phones so both lines fit without wrapping.
+const headlineClass =
+  'text-[#f8f6f1] text-[120px] leading-[120px] tracking-[-2px] w-full max-lg:text-[72px] max-lg:leading-[76px] max-md:text-[48px] max-md:leading-[52px] max-md:tracking-[-1px]'
+
 const jakarta = (weight: number): React.CSSProperties => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
   fontWeight: weight,
@@ -26,7 +30,7 @@ export default function Hero() {
   }, [])
 
   return (
-    <section className="relative overflow-hidden w-full" style={{ height: '1024px' }}>
+    <section className="relative overflow-hidden w-full h-[1024px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
 
       {/* ── Cycling backgrounds ── */}
       {SLIDES.map((src, i) => (
@@ -46,10 +50,8 @@ export default function Hero() {
       />
 
       {/* ── Content ── */}
-      <div
-        className="absolute flex flex-col items-start"
-        style={{ bottom: '80px', left: '120px', width: '1200px', gap: '64px' }}
-      >
+      {/* The 1200 block sits at 120/80 on the 1440 frame; it gets gutters under 1280 and flows on phones and tablets. */}
+      <div className="absolute flex flex-col items-start bottom-[80px] left-[120px] w-[1200px] gap-[64px] max-xl:left-[24px] max-xl:w-[calc(100%-48px)] max-lg:relative max-lg:bottom-auto max-lg:left-auto max-lg:w-full max-lg:gap-[40px] max-lg:px-[24px] max-lg:pt-[200px] max-lg:pb-[48px] max-md:px-[16px] max-md:pt-[160px] max-md:pb-[40px]">
         {/* Eyebrow + headline */}
         <div className="flex flex-col items-start w-full" style={{ gap: '16px' }}>
           <p
@@ -59,16 +61,10 @@ export default function Hero() {
             Global sourcing · Import &amp; export
           </p>
           <div className="flex flex-col items-start w-full">
-            <p
-              className="text-[#f8f6f1] text-[120px] w-full"
-              style={{ ...jakarta(700), letterSpacing: '-2px', lineHeight: '120px' }}
-            >
+            <p className={headlineClass} style={jakarta(700)}>
               From Earth
             </p>
-            <p
-              className="text-[#f8f6f1] text-[120px] w-full"
-              style={{ ...jakarta(700), letterSpacing: '-2px', lineHeight: '120px' }}
-            >
+            <p className={headlineClass} style={jakarta(700)}>
               to market.
             </p>
           </div>
@@ -84,17 +80,17 @@ export default function Hero() {
           }}
         >
           {/* Body + CTAs */}
-          <div className="flex items-end justify-between w-full">
+          <div className="flex items-end justify-between w-full max-lg:flex-col max-lg:items-start max-lg:gap-[24px]">
             <p
-              className="text-[#f8f8f8] text-[16px]"
-              style={{ ...jakarta(400), lineHeight: '29.25px', width: '588px' }}
+              className="text-[#f8f8f8] text-[16px] w-[588px] max-lg:w-full max-lg:max-w-[588px]"
+              style={{ ...jakarta(400), lineHeight: '29.25px' }}
             >
               Earth sources, buys and moves products and natural resources — agriculture, energy,
               minerals, metals and raw materials from where they are produced to the markets that
               need them.
             </p>
 
-            <div className="flex items-center" style={{ gap: '16px' }}>
+            <div className="flex items-center max-md:flex-wrap" style={{ gap: '16px' }}>
               {/* Start Trading */}
               <button
                 onClick={() => navigate('/marketplace')}
@@ -130,7 +126,7 @@ export default function Hero() {
 
           {/* Scroll + dots */}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center" style={{ gap: '12px', height: '24px' }}>
+            <div className="flex items-center max-md:hidden" style={{ gap: '12px', height: '24px' }}>
               <img src={scrollIcon} alt="" className="size-[24px] shrink-0" />
               <span
                 className="text-[12px] uppercase whitespace-nowrap"
@@ -141,7 +137,7 @@ export default function Hero() {
             </div>
 
             {/* Slide indicator dots */}
-            <div className="flex items-center" style={{ gap: '8px' }}>
+            <div className="flex items-center max-md:ml-auto" style={{ gap: '8px' }}>
               {SLIDES.map((_, i) => (
                 <button
                   key={i}

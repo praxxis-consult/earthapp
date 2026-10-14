@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
+import DataTable from '../../components/ui/DataTable'
 import { naira } from '../../data/orders'
-import { orderLimit, paid, payouts, pending, received } from '../../data/payouts'
+import { orderLimit, paid, payouts, pending, received, type Payout } from '../../data/payouts'
 import { jakarta } from '../../utils/styles'
 
 const PAGE_SIZE = 10
-const HEAD = 'h-[44px] px-[24px] text-[#807e7e] text-[12px] leading-[15px] tracking-[-0.06px] whitespace-nowrap'
-const CELL = 'h-[72px] px-[24px] flex items-center'
 
 /**
  * Figma payout 592:15295: title, Paid (gradient) and Pending cards, the order-limit card with its
@@ -25,7 +24,7 @@ export default function Payout() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[47px] pb-[24px] flex flex-col gap-[24px]">
+      <div className="px-[24px] pt-[47px] pb-[24px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Payouts
@@ -36,7 +35,7 @@ export default function Payout() {
         </div>
 
         {/* Paid / Pending (594:15599, 594:15603): 136 tall, radius 20, label 14/24, figure 32/48 Bold, note 12/15 */}
-        <div className="flex gap-[16px]">
+        <div className="flex gap-[16px] max-md:flex-col">
           <div
             className="flex-1 h-[136px] rounded-[20px] pl-[25px] pr-[24px] pt-[24px] flex flex-col gap-[16px]"
             style={{ backgroundImage: 'linear-gradient(128.3deg, #aee74a -19.5%, #007c53 46%)' }}
@@ -70,7 +69,7 @@ export default function Payout() {
 
         {/* Order limit (594:15620): radius 20, padding 20, gap 16 */}
         <section className="bg-white rounded-[20px] p-[20px] flex flex-col gap-[16px]">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
             <div className="flex flex-col gap-[3px] max-w-[310px]">
               <h2 className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
                 Your order limit
@@ -79,7 +78,7 @@ export default function Payout() {
                 New stores start with a limit on orders in progress. It grows as you complete orders without problems.
               </p>
             </div>
-            <div className="flex flex-col items-end gap-[8px]">
+            <div className="flex flex-col items-end gap-[8px] max-sm:flex-row max-sm:items-center">
               <p className="text-[#807e7e] text-[10px] leading-[13px]" style={jakarta(500)}>
                 Current limit:
               </p>
@@ -130,75 +129,60 @@ export default function Payout() {
           <h2 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Transactions
           </h2>
-          <div className="rounded-[20px] border border-[#f7f7f7] bg-white overflow-hidden">
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col />
-                <col style={{ width: 179 }} />
-                <col style={{ width: 168 }} />
-                <col style={{ width: 168 }} />
-                <col style={{ width: 169 }} />
-                <col style={{ width: 168 }} />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-[#807e7e]">
-                  <th className={`${HEAD} text-left`} style={jakarta(600)}>
-                    Order
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    Amount
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    Commission
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    VAT
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    Delivery fee
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    You receive
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => (
-                  <tr key={p.orderId} className="border-b border-[#f7f7f7] last:border-b-0">
-                    <td className="p-0">
-                      <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                        <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
-                          {p.orderId}
-                        </p>
-                        <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
-                          {p.buyer}, {p.date}
-                        </p>
-                      </div>
-                    </td>
-                    {[p.amount, -p.commission, -p.vat, p.deliveryFee].map((v, i) => (
-                      <td key={i} className="p-0">
-                        <div className={`${CELL} justify-end`}>
-                          <p
-                            className="text-[#101604] text-[14px] leading-[24px] whitespace-nowrap"
-                            style={jakarta(400)}
-                          >
-                            {v < 0 ? `−${naira(-v)}` : naira(v)}
-                          </p>
-                        </div>
-                      </td>
-                    ))}
-                    <td className="p-0">
-                      <div className={`${CELL} justify-end`}>
-                        <p className="text-[#007c53] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(600)}>
-                          {naira(received(p))}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            rows={rows}
+            rowKey={(p) => p.orderId}
+            columns={[
+              {
+                key: 'order',
+                header: 'Order',
+                card: 'title',
+                cell: (p) => (
+                  <div className="flex flex-col min-w-0">
+                    <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+                      {p.orderId}
+                    </p>
+                    <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
+                      {p.buyer}, {p.date}
+                    </p>
+                  </div>
+                ),
+              },
+              ...(
+                [
+                  ['amount', 'Amount', 179, (p: Payout) => p.amount],
+                  ['commission', 'Commission', 168, (p: Payout) => -p.commission],
+                  ['vat', 'VAT', 168, (p: Payout) => -p.vat],
+                  ['deliveryFee', 'Delivery fee', 169, (p: Payout) => p.deliveryFee],
+                ] as const
+              ).map(([key, header, width, value]) => ({
+                key,
+                header,
+                width,
+                align: 'right' as const,
+                cell: (p: Payout) => {
+                  const v = value(p)
+                  return (
+                    <p className="text-[#101604] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(400)}>
+                      {v < 0 ? `−${naira(-v)}` : naira(v)}
+                    </p>
+                  )
+                },
+              })),
+              {
+                key: 'received',
+                header: 'You receive',
+                width: 168,
+                align: 'right',
+                card: 'footer',
+                cell: (p) => (
+                  <p className="text-[#007c53] text-[14px] leading-[24px] whitespace-nowrap max-md:text-[16px] max-md:leading-[20px]" style={jakarta(600)}>
+                    {naira(received(p))}
+                  </p>
+                ),
+              },
+            ]}
+          />
           <Pager page={current} pageCount={pageCount} onChange={setPage} />
         </div>
       </div>

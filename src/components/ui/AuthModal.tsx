@@ -33,7 +33,7 @@ export default function AuthModal({ children, onClose, onSubmit, labelledBy }: A
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className="relative flex w-[580px] max-w-full flex-col gap-[40px] rounded-[24px] bg-white p-[40px]"
+        className="relative flex w-[580px] max-w-full max-h-[calc(100vh-32px)] overflow-y-auto flex-col gap-[40px] rounded-[24px] bg-white p-[40px] max-md:gap-[32px] max-md:p-[24px]"
         onClick={(e) => e.stopPropagation()}
         onSubmit={onSubmit}
         noValidate
@@ -41,7 +41,7 @@ export default function AuthModal({ children, onClose, onSubmit, labelledBy }: A
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-[40px] top-[40px] flex size-[24px] items-center justify-center"
+          className="absolute right-[40px] top-[40px] flex size-[24px] items-center justify-center max-md:right-[24px] max-md:top-[24px]"
           aria-label="Close"
         >
           <img src={authCancel} alt="" className="size-[24px]" />

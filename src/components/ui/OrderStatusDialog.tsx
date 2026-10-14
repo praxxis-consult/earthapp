@@ -51,15 +51,15 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
 
   const shell = (width: number, radius: number, children: React.ReactNode) => (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-[16px]"
       style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-white relative flex flex-col"
-        style={{ width, borderRadius: radius }}
+        className="bg-white relative flex flex-col w-full my-auto"
+        style={{ maxWidth: width, borderRadius: radius }}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -71,7 +71,7 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
     return shell(
       648,
       20,
-      <div className="flex flex-col gap-[24px] px-[24px] pt-[15px] pb-[15px]">
+      <div className="flex flex-col gap-[24px] px-[24px] pt-[15px] pb-[15px] max-md:px-[16px]">
         <div className="flex items-center justify-between h-[24px]">
           <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
             Confirm Order Status
@@ -88,13 +88,13 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="relative h-[264px] w-full rounded-[20px] overflow-hidden flex items-center justify-center"
+            className="relative h-[264px] w-full rounded-[20px] overflow-hidden flex items-center justify-center max-md:h-[232px]"
             style={{ border: '0.8px solid #807e7e' }}
           >
             {preview ? (
               <img src={preview} alt="Package photo" className="absolute inset-0 size-full object-cover" />
             ) : (
-              <div className="flex w-[422px] flex-col items-center gap-[40px]">
+              <div className="flex w-[422px] max-w-full flex-col items-center gap-[40px] max-md:gap-[24px] max-md:px-[16px]">
                 <img src={uploadIcon} alt="" className="size-[64px]" />
                 <div className="flex flex-col items-center gap-[8px]">
                   <p className="text-[#101604] text-[20px] leading-[27px]" style={jakarta(600)}>
@@ -151,7 +151,7 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
   return shell(
     580,
     24,
-    <div className="flex flex-col gap-[40px] items-center p-[24px]">
+    <div className="flex flex-col gap-[40px] items-center p-[24px] max-md:gap-[24px] max-md:p-[16px]">
       <div className="flex flex-col items-center gap-[24px] w-full">
         <img src={badge} alt="" className="size-[160px]" />
         <div className="flex flex-col items-center gap-[8px] text-center w-full">

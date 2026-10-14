@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
+import DataTable from '../../components/ui/DataTable'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
@@ -10,7 +11,7 @@ import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import emptyBg from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import { orders, naira, type Order, type OrderStatus } from '../../data/orders'
-import { jakarta } from '../../utils/styles'
+import { jakarta, SCROLL_ROW } from '../../utils/styles'
 
 const PAGE_SIZE = 7
 
@@ -45,7 +46,7 @@ const inRange = (o: Order, range: Range) => {
 function StatCard({ label, value, sub, gradient }: { label: string; value: number; sub?: string; gradient?: boolean }) {
   return (
     <div
-      className="h-[120px] rounded-[20px] overflow-hidden pl-[25px] pr-[24px] pt-[16px] pb-[16px] flex flex-col gap-[16px]"
+      className="h-[120px] rounded-[20px] overflow-hidden pl-[25px] pr-[24px] pt-[16px] pb-[16px] flex flex-col gap-[16px] max-md:h-auto max-md:min-h-[120px] max-md:pl-[16px] max-md:pr-[16px]"
       style={
         gradient
           ? // BUILDER: Figma gradient handles for the 261×120 card, converted to a CSS angle + stop offsets.
@@ -73,7 +74,6 @@ function StatCard({ label, value, sub, gradient }: { label: string; value: numbe
   )
 }
 
-const HEAD = 'text-[#807e7e] text-[12px] leading-[15px] tracking-[-0.06px] whitespace-nowrap'
 const CELL = 'text-[#101928] text-[14px] leading-[24px]'
 
 export default function Orders() {
@@ -132,7 +132,7 @@ export default function Orders() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px]">
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {/* Heading (561:3641): title 24/32 SemiBold, intro 16/24 Regular, gap 8 */}
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
@@ -143,7 +143,7 @@ export default function Orders() {
           </p>
         </div>
 
-        <div className="grid grid-cols-4 gap-[16px]">
+        <div className="grid grid-cols-4 gap-[16px] max-lg:grid-cols-2">
           <StatCard label="Total Orders" value={orders.length} sub="all time" gradient />
           <StatCard label="Awaiting orders" value={counts.new} />
           <StatCard label="In progress" value={inProgress} />
@@ -151,7 +151,7 @@ export default function Orders() {
         </div>
 
         {/* All orders panel (561:3651): white, radius 20, padding 24 */}
-        <div className="bg-white rounded-[20px] p-[24px] flex flex-col">
+        <div className="bg-white rounded-[20px] p-[24px] flex flex-col max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -162,7 +162,7 @@ export default function Orders() {
           </div>
 
           {/* Status tabs (561:3935): pills pad 10/12 radius 30, gap 12; count pill pad 2/6, 9px Bold */}
-          <div className="mt-[16px] flex items-center gap-[12px] flex-wrap" role="tablist" aria-label="Order status">
+          <div className={`mt-[16px] flex items-center gap-[12px] flex-wrap ${SCROLL_ROW}`} role="tablist" aria-label="Order status">
             {TABS.map(({ key, label }) => {
               const active = key === tab
               return (
@@ -172,7 +172,7 @@ export default function Orders() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => select(key)}
-                  className="flex items-center gap-[7px] h-[35px] px-[12px] rounded-[30px] transition-colors"
+                  className="flex items-center gap-[7px] h-[35px] px-[12px] rounded-[30px] transition-colors max-md:shrink-0"
                   style={{ background: active ? '#f2f8f6' : '#f7f7f7' }}
                 >
                   <span
@@ -197,8 +197,8 @@ export default function Orders() {
           </div>
 
           {/* Search + range + filters (561:4005) */}
-          <div className="mt-[16px] flex items-center justify-between gap-[16px]">
-            <label className="flex items-center gap-[8px] h-[48px] w-[588px] max-w-full px-[16px] rounded-[30px] bg-[#f7f7f7]">
+          <div className="mt-[16px] flex items-center justify-between gap-[16px] max-md:flex-col max-md:items-stretch max-md:gap-[12px]">
+            <label className="flex items-center gap-[8px] h-[48px] w-[588px] max-w-full px-[16px] rounded-[30px] bg-[#f7f7f7] max-md:w-full">
               <img src={searchIcon} alt="" className="size-[20px] shrink-0" />
               <input
                 type="search"
@@ -213,14 +213,14 @@ export default function Orders() {
                 style={jakarta(400)}
               />
             </label>
-            <div className="flex items-center gap-[16px] shrink-0">
-              <div className="relative">
+            <div className="flex items-center gap-[16px] shrink-0 max-md:gap-[12px]">
+              <div className="relative max-md:flex-1">
                 <button
                   type="button"
                   onClick={() => setRangeOpen((o) => !o)}
                   aria-haspopup="listbox"
                   aria-expanded={rangeOpen}
-                  className="flex items-center justify-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7]"
+                  className="flex items-center justify-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7] max-md:w-full"
                 >
                   <img src={calendarIcon} alt="" className="size-[20px]" />
                   <span className="text-[#101604] text-[13px] leading-[16px] whitespace-nowrap" style={jakarta(600)}>
@@ -256,7 +256,7 @@ export default function Orders() {
               </div>
               <button
                 type="button"
-                className="flex items-center justify-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7]"
+                className="flex items-center justify-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7] max-md:flex-1"
               >
                 <img src={filterIcon} alt="" className="size-[20px]" />
                 <span className="text-[#101604] text-[13px] leading-[16px]" style={jakarta(600)}>
@@ -297,116 +297,100 @@ export default function Orders() {
           ) : (
             <>
               {/* Table (561:4221): 1px #f7f7f7 frame, radius 10; header 44 + 1px #807e7e rule; rows 72 + 1px #f7f7f7 */}
-              <div className="mt-[24px] rounded-[10px] border border-[#f7f7f7] overflow-hidden">
-                <table className="w-full table-fixed border-collapse">
-                  <colgroup>
-                    <col style={{ width: 192 }} />
-                    <col style={{ width: 146 }} />
-                    <col />
-                    <col style={{ width: 105 }} />
-                    <col style={{ width: 119 }} />
-                    <col style={{ width: 104 }} />
-                    <col style={{ width: 100 }} />
-                  </colgroup>
-                  <thead>
-                    <tr className="bg-[#f7f7f7] border-b border-[#807e7e]">
-                      <th className={`h-[44px] px-[24px] text-left ${HEAD}`} style={jakarta(600)}>
-                        Order
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-left ${HEAD}`} style={jakarta(600)}>
-                        Buyer
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-left ${HEAD}`} style={jakarta(600)}>
-                        Items
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-center ${HEAD}`} style={jakarta(600)}>
-                        Quantity
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-right ${HEAD}`} style={jakarta(600)}>
-                        Price
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-center ${HEAD}`} style={jakarta(600)}>
-                        Delivery
-                      </th>
-                      <th className={`h-[44px] px-[24px] text-center ${HEAD}`} style={jakarta(600)}>
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((o) => (
-                      <tr
-                        key={o.id}
-                        onClick={() => navigate(`/dashboard/orders/${o.id}`)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            navigate(`/dashboard/orders/${o.id}`)
-                          }
-                        }}
-                        tabIndex={0}
-                        className="bg-white border-b border-[#f7f7f7] last:border-b-0 cursor-pointer hover:bg-[#fbfbfb] focus-visible:outline-2 focus-visible:outline-[#007c53] focus-visible:-outline-offset-2"
-                      >
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <p className={CELL} style={jakarta(600)}>
-                              {o.id}
-                            </p>
-                            <p className="text-[#807e7e] text-[12px] leading-[17px] truncate" style={jakarta(400)}>
-                              {o.placed}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <p className={CELL} style={jakarta(400)}>
-                              {o.buyer.name}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <div className="flex items-center gap-[12px] min-w-0">
-                              <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white">
-                                <img src={o.item.image} alt="" className="size-full object-cover" />
-                              </span>
-                              <p className={`${CELL} capitalize truncate`} style={jakarta(400)}>
-                                {o.item.title}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-0 text-center">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
-                              {o.item.qty}x ({o.item.weightKg} kg)
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0 text-right">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
-                              {naira(o.item.price)}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0 text-center">
-                          <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                            <p className={CELL} style={jakarta(400)}>
-                              {o.delivery.method}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-0">
-                          <div className="h-[72px] flex items-center justify-center">
-                            <OrderStatusBadge status={o.status} maxWidth={92} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                rows={rows}
+                rowKey={(o) => o.id}
+                onRowClick={(o) => navigate(`/dashboard/orders/${o.id}`)}
+                rowLabel={(o) => `Order ${o.id}, ${o.buyer.name}`}
+                head="tinted"
+                radius={10}
+                designWidth={1043}
+                className="mt-[24px] max-md:mt-[16px]"
+                columns={[
+                  {
+                    key: 'order',
+                    header: 'Order',
+                    width: 192,
+                    card: 'title',
+                    cell: (o) => (
+                      <div className="flex flex-col min-w-0">
+                        <p className={CELL} style={jakarta(600)}>
+                          {o.id}
+                        </p>
+                        <p className="text-[#807e7e] text-[12px] leading-[17px] truncate" style={jakarta(400)}>
+                          {o.placed}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'buyer',
+                    header: 'Buyer',
+                    width: 146,
+                    cell: (o) => (
+                      <p className={CELL} style={jakarta(400)}>
+                        {o.buyer.name}
+                      </p>
+                    ),
+                  },
+                  {
+                    key: 'items',
+                    header: 'Items',
+                    cell: (o) => (
+                      <div className="flex items-center gap-[12px] min-w-0">
+                        <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white">
+                          <img src={o.item.image} alt="" className="size-full object-cover" />
+                        </span>
+                        <p className={`${CELL} capitalize truncate`} style={jakarta(400)}>
+                          {o.item.title}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'quantity',
+                    header: 'Quantity',
+                    width: 105,
+                    align: 'center',
+                    cell: (o) => (
+                      <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
+                        {o.item.qty}x ({o.item.weightKg} kg)
+                      </p>
+                    ),
+                  },
+                  {
+                    key: 'price',
+                    header: 'Price',
+                    width: 119,
+                    // The frame (561:3325) starts every price at the same x, 24px in; it is not right-aligned.
+                    align: 'left',
+                    cell: (o) => (
+                      <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
+                        {naira(o.item.price)}
+                      </p>
+                    ),
+                  },
+                  {
+                    key: 'delivery',
+                    header: 'Delivery',
+                    width: 104,
+                    align: 'center',
+                    cell: (o) => (
+                      <p className={CELL} style={jakarta(400)}>
+                        {o.delivery.method}
+                      </p>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    width: 100,
+                    align: 'center',
+                    card: 'badge',
+                    cell: (o) => <OrderStatusBadge status={o.status} maxWidth={92} />,
+                  },
+                ]}
+              />
 
               {/* Pagination (561:5295): 74 tall, padding 16/64, gap 16, 1px #f7f7f7 frame, radius 20 */}
               <Pager page={current} pageCount={pageCount} onChange={setPage} />

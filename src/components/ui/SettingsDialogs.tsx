@@ -37,7 +37,7 @@ function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes',
         onSubmit={onSubmit}
         noValidate
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-[648px] max-w-[calc(100%-48px)] rounded-[20px] p-[20px] flex flex-col gap-[16px]"
+        className="bg-white w-[648px] max-w-[calc(100%-48px)] my-auto rounded-[20px] p-[20px] flex flex-col gap-[16px] max-md:max-w-[calc(100%-32px)] max-md:p-[16px]"
       >
         <div className="flex items-center justify-between h-[24px]">
           <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>

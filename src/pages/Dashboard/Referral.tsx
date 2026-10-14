@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
+import DataTable from '../../components/ui/DataTable'
 import banner from '../../assets/images/referral-banner.jpg'
 import giftIcon from '../../assets/icons/ref-gift.svg'
 import linkIcon from '../../assets/icons/ref-link.svg'
@@ -32,7 +33,6 @@ const ROLE_STYLE = {
   Seller: { bg: 'rgba(0,124,83,0.05)', color: '#007c53' },
 }
 
-const HEAD = 'h-[44px] px-[24px] text-[#807e7e] text-[12px] leading-[15px] tracking-[-0.06px] whitespace-nowrap'
 
 const slug = (s: string) =>
   s
@@ -79,7 +79,7 @@ export default function Referral() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[47px] pb-[24px] flex flex-col gap-[24px]">
+      <div className="px-[24px] pt-[47px] pb-[24px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Refer family &amp; friends
@@ -91,7 +91,7 @@ export default function Referral() {
 
         {/* Banner (623:21036): 262 tall, radius 25, photo under a 50% #0c0b09 wash, copy at 24/40 */}
         <div
-          className="relative h-[262px] rounded-[25px] overflow-hidden"
+          className="relative h-[262px] rounded-[25px] overflow-hidden max-md:h-auto"
           style={{ backgroundImage: 'linear-gradient(100deg, #aee74a -20%, #007c53 84%)' }}
         >
           <img
@@ -101,7 +101,7 @@ export default function Referral() {
             style={{ objectPosition: '50% 40%' }}
           />
           <div className="absolute inset-0" style={{ background: 'rgba(12,11,9,0.5)' }} />
-          <div className="relative flex flex-col gap-[24px] px-[24px] pt-[40px] max-w-[567px]">
+          <div className="relative flex flex-col gap-[24px] px-[24px] pt-[40px] max-w-[567px] max-md:px-[16px] max-md:py-[24px]">
             <div className="flex flex-col gap-[16px]">
               <span
                 className="inline-flex h-[32px] w-fit items-center gap-[8px] rounded-[30px] px-[12px]"
@@ -121,11 +121,11 @@ export default function Referral() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-[16px]">
+            <div className="flex items-center gap-[16px] max-md:flex-col max-md:items-stretch max-md:gap-[12px]">
               <button
                 type="button"
                 onClick={copy}
-                className="flex h-[48px] w-[399px] max-w-full items-center justify-between rounded-[30px] px-[16px] border"
+                className="flex h-[48px] w-[399px] max-w-full items-center justify-between rounded-[30px] px-[16px] border max-md:w-full"
                 style={{ background: 'rgba(64,68,56,0.5)', borderColor: 'rgba(248,246,241,0.4)' }}
                 aria-label={copied ? 'Link copied' : 'Copy your referral link'}
               >
@@ -140,7 +140,7 @@ export default function Referral() {
               <button
                 type="button"
                 onClick={share}
-                className="flex h-[48px] items-center gap-[8px] rounded-[30px] bg-[#aee74a] px-[24px]"
+                className="flex h-[48px] items-center gap-[8px] rounded-[30px] bg-[#aee74a] px-[24px] max-md:justify-center"
               >
                 <img src={exportIcon} alt="" className="size-[20px]" />
                 <span className="text-[#0c2310] text-[14px] leading-[18px]" style={jakarta(500)}>
@@ -155,61 +155,53 @@ export default function Referral() {
           <h2 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Activities
           </h2>
-          <div className="rounded-[20px] border border-[#f7f7f7] bg-white overflow-hidden">
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col />
-                <col style={{ width: 283 }} />
-                <col style={{ width: 319 }} />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-[#807e7e]">
-                  <th className={`${HEAD} text-left`} style={jakarta(600)}>
-                    User
-                  </th>
-                  <th className={`${HEAD} text-center`} style={jakarta(600)}>
-                    Signed up as
-                  </th>
-                  <th className={`${HEAD} text-right`} style={jakarta(600)}>
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.email} className="border-b border-[#f7f7f7] last:border-b-0">
-                    <td className="p-0">
-                      <div className="h-[72px] px-[24px] flex flex-col justify-center">
-                        <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
-                          {r.name}
-                        </p>
-                        <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
-                          {r.email}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-0">
-                      <div className="h-[72px] flex items-center justify-center">
-                        <span
-                          className="inline-flex min-w-[74px] justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px]"
-                          style={{ ...jakarta(600), background: ROLE_STYLE[r.as].bg, color: ROLE_STYLE[r.as].color }}
-                        >
-                          {r.as}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-0">
-                      <div className="h-[72px] px-[24px] flex items-center justify-end">
-                        <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(500)}>
-                          {r.date}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            rows={rows}
+            rowKey={(r) => r.email}
+            columns={[
+              {
+                key: 'user',
+                header: 'User',
+                card: 'title',
+                cell: (r) => (
+                  <div className="flex flex-col min-w-0">
+                    <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+                      {r.name}
+                    </p>
+                    <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
+                      {r.email}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                key: 'as',
+                header: 'Signed up as',
+                width: 283,
+                align: 'center',
+                card: 'badge',
+                cell: (r) => (
+                  <span
+                    className="inline-flex min-w-[74px] justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px]"
+                    style={{ ...jakarta(600), background: ROLE_STYLE[r.as].bg, color: ROLE_STYLE[r.as].color }}
+                  >
+                    {r.as}
+                  </span>
+                ),
+              },
+              {
+                key: 'date',
+                header: 'Date',
+                width: 319,
+                align: 'right',
+                cell: (r) => (
+                  <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(500)}>
+                    {r.date}
+                  </p>
+                ),
+              },
+            ]}
+          />
           <Pager page={current} pageCount={pageCount} onChange={setPage} />
         </div>
       </div>

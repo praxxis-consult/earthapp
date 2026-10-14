@@ -119,11 +119,11 @@ export default function ProductDetail() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px]">
+      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
 
         {/* Back + title row */}
-        <div className="flex items-start justify-between w-full">
+        <div className="flex items-start justify-between w-full max-md:flex-col max-md:gap-[16px]">
           <div className="flex flex-col gap-[24px] max-w-[490px]">
             <button onClick={() => navigate('/dashboard/products')} className="flex gap-[8px] items-center">
               <div className="flex items-center justify-center size-[16px]" style={{ transform: 'rotate(90deg)' }}>
@@ -139,12 +139,12 @@ export default function ProductDetail() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-[16px] pt-[8px]">
+          <div className="flex items-center gap-[16px] pt-[8px] max-md:w-full max-md:pt-0 max-md:gap-[12px]">
             {/* The API has no delete yet; the button stays as designed but says so. */}
             <button
               disabled
               title="Deleting a listing is not available yet"
-              className="bg-[#f5ebed] flex gap-[8px] h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] opacity-60 cursor-not-allowed"
+              className="bg-[#f5ebed] flex gap-[8px] h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] opacity-60 cursor-not-allowed max-md:w-auto max-md:flex-1 max-md:px-[16px]"
             >
               <div className="relative shrink-0 size-[20px]">
                 <img src={trashIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
@@ -156,7 +156,7 @@ export default function ProductDetail() {
             <button
               onClick={() => navigate(`/dashboard/products/${id}/edit`)}
               disabled={!product}
-              className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] disabled:opacity-60"
+              className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] disabled:opacity-60 max-md:w-auto max-md:flex-1 max-md:px-[16px]"
               style={{ backgroundImage: CTA_BG }}
             >
               <div className="relative shrink-0 size-[20px]">
@@ -181,9 +181,9 @@ export default function ProductDetail() {
         {product && (
           <>
             {/* Photo + info card */}
-            <div className="bg-white flex items-center justify-between p-[24px] rounded-[20px] w-full overflow-hidden">
+            <div className="bg-white flex items-center justify-between p-[24px] rounded-[20px] w-full overflow-hidden max-lg:flex-col max-lg:items-stretch max-lg:gap-[24px] max-md:p-[16px]">
               {/* Photo gallery: cover, second photo, third photo or placeholder */}
-              <div className="h-[390px] relative shrink-0 w-[515px]">
+              <div className="h-[390px] relative shrink-0 w-[515px] max-[1439px]:w-[47%] max-[1439px]:h-auto max-[1439px]:aspect-[515/390] max-lg:w-full">
                 <div className="absolute bg-[#ededed] inset-[0_31.72%_0_0] overflow-clip rounded-[15px]">
                   {images[0] ? (
                     <img
@@ -218,7 +218,7 @@ export default function ProductDetail() {
               </div>
 
               {/* Product info */}
-              <div className="flex flex-col gap-[24px] items-start w-[514px]">
+              <div className="flex flex-col gap-[24px] items-start w-[514px] max-[1439px]:w-auto max-[1439px]:flex-1 max-[1439px]:min-w-0 max-lg:w-full">
                 <div className="bg-[#aee74a] flex items-center justify-center overflow-clip px-[12px] py-[6px] rounded-[999px]">
                   <p className="text-[#101604] text-[12px] leading-[20px] whitespace-nowrap" style={jakarta(600)}>
                     {category}
@@ -320,7 +320,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Bottom two cards */}
-            <div className="flex gap-[16px] w-full">
+            <div className="flex gap-[16px] w-full max-lg:flex-col">
               <div className="bg-white flex flex-col gap-[16px] p-[20px] rounded-[20px] flex-1 overflow-hidden">
                 <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
                   Inventory &amp; Visibility
@@ -351,7 +351,7 @@ export default function ProductDetail() {
                     </DetailRow>
                   </div>
 
-                  <div className="flex gap-[12px] items-center py-[16px] rounded-[16px] w-full">
+                  <div className="flex gap-[12px] items-center py-[16px] rounded-[16px] w-full max-sm:flex-col max-sm:items-start">
                     <div className="flex flex-1 gap-[12px] items-center min-w-0">
                       <div className="bg-[#f2f8f6] flex items-center justify-center rounded-full shrink-0 size-[40px]">
                         <div className="relative shrink-0 size-[16px]">
@@ -368,7 +368,7 @@ export default function ProductDetail() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-[2px] items-end shrink-0 whitespace-nowrap">
+                    <div className="flex flex-col gap-[2px] items-end shrink-0 whitespace-nowrap max-sm:items-start">
                       <p className="text-[#807e7e] text-[11px] leading-[20px]" style={jakarta(400)}>
                         Last updated
                       </p>
