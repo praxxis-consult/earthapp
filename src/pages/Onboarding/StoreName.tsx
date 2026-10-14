@@ -1,22 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OnboardingLayout from '../../components/layout/OnboardingLayout'
 import OnboardingHeader from '../../components/layout/OnboardingHeader'
 import FormMultiDropdown from '../../components/ui/FormMultiDropdown'
 import GradientButton from '../../components/ui/GradientButton'
+import { describeError, stores, type Category } from '../../services/earthApi'
+import { saveDraft, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
-
-const SELL_OPTIONS = ['Agriculture', 'Forestry', 'Minerals', 'Energy', 'Metals', 'Raw materials']
 
 export default function StoreName() {
   const navigate = useNavigate()
-  const [storeName, setStoreName] = useState('')
-  const [categories, setCategories] = useState<string[]>([])
+  const [draft, update] = useDraft()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  function toggleCategory(cat: string) {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    )
+  // The selling categories come from the API (ids behind the names the person picks).
+  useEffect(() => {
+    let live = true
+    stores
+      .categories()
+      .then((list) => live && setCategories(list))
+      .catch(() => live && setError('We could not load the selling categories. Check your connection and reload.'))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const names = categories.filter((c) => draft.categoryIds.includes(c.id)).map((c) => c.name)
+
+  function toggleCategory(name: string) {
+    const cat = categories.find((c) => c.name === name)
+    if (!cat) return
+    const ids = draft.categoryIds.includes(cat.id)
+      ? draft.categoryIds.filter((id) => id !== cat.id)
+      : [...draft.categoryIds, cat.id]
+    update({ categoryIds: ids })
+  }
+
+  async function proceed() {
+    if (!draft.storeName.trim()) return setError('Enter your store name.')
+    if (!draft.categoryIds.length) return setError('Pick at least one thing you sell.')
+    setBusy(true)
+    setError('')
+    try {
+      await saveDraft()
+      navigate('/onboarding/location')
+    } catch (err) {
+      setError(describeError(err))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -44,8 +78,9 @@ export default function StoreName() {
           <input
             id="store-name"
             type="text"
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
+            value={draft.storeName}
+            maxLength={160}
+            onChange={(e) => update({ storeName: e.target.value })}
             placeholder="e.g. Akpolo Agro & Mine"
             className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]"
             style={{ ...jakarta(400), color: '#101604' }}
@@ -54,18 +89,24 @@ export default function StoreName() {
 
         <FormMultiDropdown
           label="What do you sell?"
-          values={categories}
-          placeholder="Select more than one option"
-          options={SELL_OPTIONS}
+          values={names}
+          placeholder={categories.length ? 'Select more than one option' : 'Loading categories…'}
+          options={categories.map((c) => c.name)}
           onToggle={toggleCategory}
         />
+
+        {error && (
+          <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+            {error}
+          </p>
+        )}
       </div>
 
       <GradientButton
-        onClick={() => navigate('/onboarding/location')}
-        style={{ position: 'absolute', left: '120px', top: '568px', width: '580px' }}
+        onClick={proceed}
+        style={{ position: 'absolute', left: '120px', top: '568px', width: '580px', opacity: busy ? 0.7 : 1 }}
       >
-        Proceed
+        {busy ? 'Saving…' : 'Proceed'}
       </GradientButton>
     </OnboardingLayout>
   )

@@ -5,18 +5,42 @@ import OnboardingHeader from '../../components/layout/OnboardingHeader'
 import FormDropdown from '../../components/ui/FormDropdown'
 import GradientButton from '../../components/ui/GradientButton'
 import gpsIcon from '../../assets/icons/onboarding-gps.svg'
+import { describeError } from '../../services/earthApi'
+import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
 
-const COUNTRIES = [
-  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Ethiopia',
-  'Tanzania', 'Cameroon', "Côte d'Ivoire", 'Senegal', 'Uganda',
-]
+const inputClass =
+  'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
+const labelClass = 'text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full'
 
+/**
+ * The design has one Address line with "Select from map"; the API (and the review step) want
+ * region, area and street apart, so the address is three fields here until a map picker exists.
+ */
 export default function Location() {
   const navigate = useNavigate()
-  const [country, setCountry] = useState('')
-  const [address, setAddress] = useState('')
-  const [landmark, setLandmark] = useState('')
+  const [draft, update] = useDraft()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const a = draft.address
+  const set = (patch: Partial<typeof a>) => update({ address: { ...a, ...patch } })
+
+  async function proceed() {
+    if (!a.country) return setError('Select your country.')
+    if (!a.region.trim()) return setError('Enter your region or state.')
+    if (!a.area.trim()) return setError('Enter your area or town.')
+    if (!a.street.trim()) return setError('Enter your street address.')
+    setBusy(true)
+    setError('')
+    try {
+      await saveDraft()
+      navigate('/onboarding/verify-id')
+    } catch (err) {
+      setError(describeError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <OnboardingLayout>
@@ -33,32 +57,63 @@ export default function Location() {
       >
         <FormDropdown
           label="Country"
-          value={country}
+          value={countryName(a.country)}
           placeholder="Select country"
-          options={COUNTRIES}
-          onSelect={setCountry}
+          options={COUNTRY_NAMES}
+          onSelect={(name) => set({ country: countryCode(name) })}
         />
+
+        <div className="flex gap-[16px] items-start w-full">
+          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0">
+            <label htmlFor="region" className={labelClass} style={jakarta(500)}>
+              Region/State
+            </label>
+            <input
+              id="region"
+              type="text"
+              value={a.region}
+              maxLength={120}
+              onChange={(e) => set({ region: e.target.value })}
+              placeholder="e.g. Ondo"
+              className={inputClass}
+              style={{ ...jakarta(400), color: '#101604' }}
+            />
+          </div>
+          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0">
+            <label htmlFor="area" className={labelClass} style={jakarta(500)}>
+              Area
+            </label>
+            <input
+              id="area"
+              type="text"
+              value={a.area}
+              maxLength={120}
+              onChange={(e) => set({ area: e.target.value })}
+              placeholder="e.g. Okitipupa"
+              className={inputClass}
+              style={{ ...jakarta(400), color: '#101604' }}
+            />
+          </div>
+        </div>
 
         {/* Address with GPS */}
         <div className="flex flex-col gap-[8px] items-start w-full">
-          <label
-            htmlFor="address"
-            className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full"
-            style={jakarta(500)}
-          >
+          <label htmlFor="address" className={labelClass} style={jakarta(500)}>
             Address
           </label>
           <div className="bg-[#f7f7f7] flex h-[48px] items-center justify-between px-[16px] py-[8px] rounded-[30px] w-full">
             <input
               id="address"
               type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              value={a.street}
+              maxLength={240}
+              onChange={(e) => set({ street: e.target.value })}
               placeholder="Enter address"
               className="bg-transparent flex-1 text-[14px] leading-[24px] tracking-[-0.28px] outline-none placeholder:text-[#807e7e]"
               style={{ ...jakarta(400), color: '#101604' }}
             />
-            <div className="flex gap-[8px] items-center justify-center shrink-0">
+            {/* "Select from map" needs a maps key; shown as designed, inert until one exists. */}
+            <div className="flex gap-[8px] items-center justify-center shrink-0" title="Map picking is coming soon">
               <div className="relative shrink-0 size-[20px]">
                 <img src={gpsIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
               </div>
@@ -72,20 +127,17 @@ export default function Location() {
         {/* Landmark + hint */}
         <div className="flex flex-col gap-[16px] items-start w-full">
           <div className="flex flex-col gap-[8px] items-start w-full">
-            <label
-              htmlFor="landmark"
-              className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full"
-              style={jakarta(500)}
-            >
+            <label htmlFor="landmark" className={labelClass} style={jakarta(500)}>
               Landmark
             </label>
             <input
               id="landmark"
               type="text"
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
+              value={a.landmark}
+              maxLength={240}
+              onChange={(e) => set({ landmark: e.target.value })}
               placeholder="e.g. Opp. Mobil filling station"
-              className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] tracking-[-0.28px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]"
+              className={inputClass}
               style={{ ...jakarta(400), color: '#101604' }}
             />
           </div>
@@ -93,13 +145,19 @@ export default function Location() {
             Something a delivery agent can ask a passer-by.
           </p>
         </div>
+
+        {error && (
+          <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+            {error}
+          </p>
+        )}
       </div>
 
       <GradientButton
-        onClick={() => navigate('/onboarding/verify-id')}
-        style={{ position: 'absolute', left: '120px', top: '698px', width: '580px' }}
+        onClick={proceed}
+        style={{ position: 'absolute', left: '120px', top: '778px', width: '580px', opacity: busy ? 0.7 : 1 }}
       >
-        Proceed
+        {busy ? 'Saving…' : 'Proceed'}
       </GradientButton>
     </OnboardingLayout>
   )

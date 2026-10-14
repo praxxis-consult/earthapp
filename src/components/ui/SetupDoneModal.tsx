@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import badge from '../../assets/icons/onboarding-badge.svg'
 import copyIcon from '../../assets/icons/db-copy.svg'
 import authCancel from '../../assets/icons/auth-cancel.svg'
@@ -5,13 +6,22 @@ import GradientButton from './GradientButton'
 import { jakarta } from '../../utils/styles'
 
 interface SetupDoneModalProps {
+  /** The live store's id from the API; the link opens the marketplace on that store. */
+  storeId: string
   onDashboard: () => void
   onClose: () => void
 }
 
-export default function SetupDoneModal({ onDashboard, onClose }: SetupDoneModalProps) {
-  function handleCopyLink() {
-    navigator.clipboard.writeText(window.location.origin + '/store/akpolo-agro-mine')
+export default function SetupDoneModal({ storeId, onDashboard, onClose }: SetupDoneModalProps) {
+  const [copied, setCopied] = useState(false)
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/marketplace?store=${storeId}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked: nothing to recover */
+    }
   }
 
   return (
@@ -63,7 +73,7 @@ export default function SetupDoneModal({ onDashboard, onClose }: SetupDoneModalP
                 <img src={copyIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
               </div>
               <p className="text-[#101604] text-[14px] text-center whitespace-nowrap" style={jakarta(500)}>
-                Copy link
+                {copied ? 'Copied' : 'Copy link'}
               </p>
             </button>
           </div>
