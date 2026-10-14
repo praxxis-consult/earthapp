@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
-import Toast from '../../components/ui/Toast'
+import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
 import coverPhoto from '../../assets/images/store-cover.jpg'
 import editIcon from '../../assets/icons/st-edit.svg'
@@ -12,7 +12,8 @@ import trashIcon from '../../assets/icons/st-trash.svg'
 import checkIcon from '../../assets/icons/od-truck-fast.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
 import { useAuth } from '../../auth/useAuth'
-import { describeError, stores, uploads, type Category, type Onboarding } from '../../services/earthApi'
+import { describeError, stores, uploads, type Category } from '../../services/earthApi'
+import { useStore } from '../../auth/useStore'
 import { countryName } from '../../onboarding/draft'
 import { initials } from '../../data/orders'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -32,6 +33,8 @@ interface Local {
   opens: string
   closes: string
   cover: string
+  /** When the payout account last changed; a second change inside 48 hours is held (689:8948). */
+  bankChangedAt?: number
   personal?: { firstName: string; lastName: string; email: string; phoneNumber: string }
   notifications: Record<string, { email: boolean; whatsapp: boolean }>
 }
@@ -109,17 +112,16 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
 export default function Settings() {
   const { account } = useAuth()
   const [tab, setTab] = useState<Tab>('store')
-  const [store, setStore] = useState<Onboarding | null>(null)
+  const { store, setStore } = useStore()
   const [categories, setCategories] = useState<Category[]>([])
   const [local, setLocal] = useState<Local>(readLocal)
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | null>(null)
-  const [toast, setToast] = useState<{ title: string; body?: string } | null>(null)
+  const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'warning' | null>(null)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     let live = true
-    stores.onboarding().then((s) => live && setStore(s)).catch((e) => live && setError(describeError(e)))
     stores.categories().then((c) => live && setCategories(c)).catch(() => {})
     return () => {
       live = false
@@ -164,7 +166,6 @@ export default function Settings() {
   return (
     <DashboardLayout>
       <div className="relative px-[24px] pt-[42px] pb-[40px] flex flex-col">
-        {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-[8px] max-w-[380px]">
             <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
@@ -366,7 +367,15 @@ export default function Settings() {
                   </p>
                 </div>
               </div>
-              <PrimaryButton label="Change account" onClick={() => store && setDialog('bank')} />
+              <PrimaryButton
+                label="Change account"
+                onClick={() => {
+                  if (!store) return
+                  const pending = local.bankChangedAt && Date.now() - local.bankChangedAt < 48 * 3600 * 1000
+                  if (pending) setDone('warning')
+                  else setDialog('bank')
+                }}
+              />
             </div>
             {store?.bank && (
               <div className="flex items-center gap-[4px]">
@@ -446,7 +455,7 @@ export default function Settings() {
             setStore(s)
             saveLocal(extras)
             setDialog(null)
-            setToast({ title: 'Changes saved', body: 'Your store details have been updated across the platform.' })
+            setDone('store')
           }}
         />
       )}
@@ -457,7 +466,7 @@ export default function Settings() {
           onSaved={(v) => {
             saveLocal({ personal: v })
             setDialog(null)
-            setToast({ title: 'Changes saved', body: 'Your profile details have been saved on this device.' })
+            setDone('personal')
           }}
         />
       )}
@@ -468,8 +477,54 @@ export default function Settings() {
           onSaved={(s) => {
             setStore(s)
             setDialog(null)
-            setToast({ title: 'Request Submitted', body: 'Your payout account change request has been submitted.' })
+            saveLocal({ bankChangedAt: Date.now() })
+            setDone('bank')
           }}
+        />
+      )}
+      {done === 'store' && (
+        <SuccessModal
+          title="Changes saved"
+          body={
+            <>
+              Your store details have been saved and updated across
+              <br />
+              the platform.
+            </>
+          }
+          primary={{ label: 'Proceed', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
+        />
+      )}
+      {done === 'personal' && (
+        <SuccessModal
+          title="Changes saved"
+          body={
+            <>
+              Your profile details have been saved on this device
+              <br />
+              until profile editing reaches the platform.
+            </>
+          }
+          primary={{ label: 'Proceed', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
+        />
+      )}
+      {done === 'bank' && (
+        <SuccessModal
+          title="Request Submitted"
+          body="Your payout account change request has been submitted. Your new account will start receiving payments within 48 hours from now after verification."
+          primary={{ label: 'Proceed', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
+        />
+      )}
+      {done === 'warning' && (
+        <SuccessModal
+          icon="warning"
+          title="Verification pending"
+          body="You already have a payout account update pending verification. Please wait until your current request is processed before submitting another change."
+          primary={{ label: 'Okay, got it', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
         />
       )}
     </DashboardLayout>

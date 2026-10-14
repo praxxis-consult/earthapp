@@ -1,4 +1,6 @@
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { useAuth } from '../../auth/useAuth'
 import salesEmptyGraph from '../../assets/images/db-graph-sales-empty.svg'
 import viewsEmptyGraph from '../../assets/images/db-graph-views-empty.svg'
 import salesGraph from '../../assets/images/db-graph-sales.svg'
@@ -229,6 +231,8 @@ function OrdersTable() {
 }
 
 export default function DashboardOverview() {
+  const navigate = useNavigate()
+  const { account } = useAuth()
   const earned = HAS_ORDERS ? '₦16,178.75' : '₦0.00'
   const completed = HAS_ORDERS ? '3' : '0'
   const rating = HAS_ORDERS ? '4.8' : '0'
@@ -245,10 +249,12 @@ export default function DashboardOverview() {
         {/* Header row: greeting + Add product CTA */}
         <div className="flex items-center justify-between">
           <p className="text-[#101604] text-[32px] leading-none" style={jakarta(700)}>
-            Welcome, Akpolo
+            Welcome, {account?.firstName ?? ''}
           </p>
 
           <button
+            type="button"
+            onClick={() => navigate('/dashboard/products/add')}
             className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0"
             style={{ backgroundImage: CTA_BG }}
           >
@@ -304,7 +310,7 @@ export default function DashboardOverview() {
               </p>
             </div>
             {HAS_ORDERS && (
-              <div className="flex gap-[8px] items-center">
+              <button type="button" onClick={() => navigate('/dashboard/orders')} className="flex gap-[8px] items-center">
                 <p className="text-[#007c53] text-[14px] leading-[24px]" style={jakarta(500)}>
                   View all
                 </p>
@@ -316,7 +322,7 @@ export default function DashboardOverview() {
                     style={{ transform: 'rotate(90deg)' }}
                   />
                 </div>
-              </div>
+              </button>
             )}
           </div>
 

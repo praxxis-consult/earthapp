@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import unionLogo from '../../assets/icons/db-union.svg'
 import overviewIcon from '../../assets/icons/db-overview.svg'
 import productsIcon from '../../assets/icons/db-products.svg'
@@ -12,6 +13,8 @@ import logoutIcon from '../../assets/icons/db-logout.svg'
 import avatarImg from '../../assets/images/db-avatar.png'
 import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
+import { useAuth } from '../../auth/useAuth'
+import { useStore } from '../../auth/useStore'
 
 const NAV_ITEMS = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
@@ -24,6 +27,41 @@ const NAV_ITEMS = [
 ]
 
 export default function DashboardSidebar() {
+  const navigate = useNavigate()
+  const { signOut } = useAuth()
+  const { store } = useStore()
+  const [copied, setCopied] = useState(false)
+  const place = store ? `${store.businessAddress.area}, ${store.businessAddress.region}` : ''
+
+  async function share() {
+    if (!store) return
+    const link = `${window.location.origin}/marketplace?store=${store.id}`
+    const text = `Shop at ${store.storeName} on Earth`
+    if (navigator.share) {
+      try {
+        await navigator.share({ text, url: link })
+        return
+      } catch {
+        /* closed the sheet */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+
+  async function logout() {
+    try {
+      await signOut()
+    } finally {
+      navigate('/', { replace: true })
+    }
+  }
+
   return (
     <aside className="w-[299px] shrink-0 bg-white flex flex-col h-screen sticky top-0 overflow-hidden">
       {/* Logo */}
@@ -43,10 +81,10 @@ export default function DashboardSidebar() {
         </div>
         <div className="flex flex-col flex-1 min-w-0">
           <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(700)}>
-            Akpolo Agro &amp; Mine
+            {store?.storeName ?? 'Your store'}
           </p>
-          <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(500)}>
-            Okitipupa, Ondo
+          <p className="text-[#807e7e] text-[12px] leading-[20px] truncate" style={jakarta(500)}>
+            {place || 'Finish your store setup'}
           </p>
         </div>
       </div>
@@ -98,23 +136,23 @@ export default function DashboardSidebar() {
             Share your store link where your customers already are.
           </p>
         </div>
-        <button className="absolute bottom-[8px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center py-[8px] rounded-[30px] w-[235px]">
+        <button type="button" onClick={share} disabled={!store} className="absolute bottom-[8px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center py-[8px] rounded-[30px] w-[235px] disabled:opacity-60">
           <div className="relative shrink-0 size-[20px]">
             <img src={shareIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
           </div>
           <p className="text-[#0c2310] text-[14px] leading-[24px] text-center whitespace-nowrap" style={jakarta(600)}>
-            Share my store
+            {copied ? 'Link copied' : 'Share my store'}
           </p>
         </button>
       </div>
 
       {/* Logout */}
-      <div className="bg-[#f2f8f6] flex items-center justify-between px-[24px] py-[12px] h-[64px] shrink-0">
+      <button type="button" onClick={logout} className="bg-[#f2f8f6] flex items-center justify-between px-[24px] py-[12px] h-[64px] shrink-0 w-full text-left">
         <p className="text-[#007c53] text-[16px] leading-[24px]" style={jakarta(600)}>Log out</p>
         <div className="relative shrink-0 size-[24px]">
           <img src={logoutIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
-      </div>
+      </button>
     </aside>
   )
 }

@@ -22,8 +22,12 @@ export type Message =
       unit: string
       price: number
       productId: string
+      /** The listing's primary photo; the bundled thumb when a seeded chat has none. */
+      image?: string
       at: string
     }
+  /** Figma "media (image, vid) message" (584:12751): a 230×232 photo or video card. */
+  | { id: string; from: 'buyer' | 'me'; kind: 'media'; url: string; video?: boolean; at: string }
   | { id: string; from: 'buyer'; kind: 'typing' }
 
 export interface Chat {

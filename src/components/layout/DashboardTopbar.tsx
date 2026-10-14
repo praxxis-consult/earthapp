@@ -3,8 +3,12 @@ import notificationIcon from '../../assets/icons/db-notification.svg'
 import verifyIcon from '../../assets/icons/db-verify.svg'
 import chevronDownIcon from '../../assets/icons/db-chevron-down.svg'
 import { jakarta } from '../../utils/styles'
+import { useAuth } from '../../auth/useAuth'
+import { initials } from '../../data/orders'
 
 export default function DashboardTopbar() {
+  const { account } = useAuth()
+  const name = account ? `${account.firstName} ${account.lastName}` : ''
   return (
     <header className="bg-white flex items-center justify-between h-[96px] px-[24px] shrink-0">
       {/* Search bar */}
@@ -26,14 +30,14 @@ export default function DashboardTopbar() {
         <div className="flex gap-[8px] items-center">
           {/* Avatar initials */}
           <div className="bg-[#f2f8f6] flex items-center justify-center rounded-full size-[40px] shrink-0">
-            <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>PA</p>
+            <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>{name ? initials(name) : ''}</p>
           </div>
 
           {/* Name + role */}
           <div className="flex flex-col gap-[2px] items-start justify-center">
             <div className="flex gap-[2px] items-center">
               <p className="text-[#101604] text-[16px] whitespace-nowrap" style={jakarta(600)}>
-                Prince Akpolo
+                {name}
               </p>
               <div className="relative shrink-0 size-[16px]">
                 <img src={verifyIcon} alt="" className="absolute block inset-0 max-w-none size-full" />

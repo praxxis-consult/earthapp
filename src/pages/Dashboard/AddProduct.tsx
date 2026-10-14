@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import SuccessModal from '../../components/ui/SuccessModal'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
 import galleryAddIcon from '../../assets/icons/prod-gallery-add.svg'
@@ -169,6 +170,7 @@ export default function AddProduct() {
   const [hoursOpen, setHoursOpen] = useState(false)
   const [busy, setBusy] = useState<'' | 'draft' | 'publish' | 'upload'>('')
   const [error, setError] = useState('')
+  const [published, setPublished] = useState<{ id: string; edited: boolean } | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const fileInput = useRef<HTMLInputElement>(null)
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }))
@@ -296,14 +298,13 @@ export default function AddProduct() {
       // "Available for sale" off keeps a published listing out of the marketplace: it is saved as a draft.
       const effective = status === 'PUBLISHED' && !form.availableForSale ? 'DRAFT' : status
       const saved = await productsApi.save(toInput(effective))
-      const toast =
-        effective === 'PUBLISHED'
-          ? {
-              title: editing ? 'Changes saved' : 'Product published',
-              body: 'Customers can now find and order this product.',
-            }
-          : { title: 'Draft saved successfully', body: 'You can complete this listing anytime from your product list.' }
-      navigate(editing ? `/dashboard/products/${saved.id}` : '/dashboard/products', { state: { toast } })
+      if (effective === 'PUBLISHED') {
+        // Figma 476:16104 / 687:7412: a modal, not a toast, once the listing is live.
+        setPublished({ id: saved.id, edited: editing })
+        return
+      }
+      const toast = { title: 'Draft saved successfully', body: 'You can complete this listing anytime from your product list.' }
+      navigate('/dashboard/products', { state: { toast } })
     } catch (e) {
       if (e instanceof ApiError && e.status === 400 && e.errors.length) {
         const fe: Record<string, string> = {}
@@ -930,6 +931,19 @@ export default function AddProduct() {
           </div>
         </div>
       </div>
+      {published && (
+        <SuccessModal
+          title={published.edited ? 'Changes saved' : 'Product published! 🎉'}
+          body={
+            published.edited
+              ? 'Your product details have been updated successfully and are now live on the marketplace.'
+              : 'Your product is now live on the marketplace and visible to buyers.'
+          }
+          primary={{ label: 'View listing', onClick: () => navigate(`/dashboard/products/${published.id}`) }}
+          secondary={{ label: 'Back to products', onClick: () => navigate('/dashboard/products') }}
+          onClose={() => navigate(`/dashboard/products/${published.id}`)}
+        />
+      )}
     </DashboardLayout>
   )
 }

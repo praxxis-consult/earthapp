@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
 import OrderStatusDialog from '../../components/ui/OrderStatusDialog'
+import TrackDeliveryModal, { type TrackingStep } from '../../components/ui/TrackDeliveryModal'
+import routingIcon from '../../assets/icons/rc-routing.svg'
+import { useStore } from '../../auth/useStore'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import receiptIcon from '../../assets/icons/od-receipt.svg'
 import smsIcon from '../../assets/icons/od-sms.svg'
@@ -55,6 +58,22 @@ function stepTimes(o: Order): string[] {
   const base = new Date(o.placedAt).getTime()
   const offsets = [0, 0, 4.6, 6.2, 7.2, 30, 31].map((h) => h * 3_600_000)
   return offsets.map((ms) => fmt(new Date(base + ms)))
+}
+
+/** The rider on the frames (639:22896); the logistics API will supply the real one per order. */
+const RIDER = { name: 'Samuel Boniface', vehicle: 'Car · APP 905 GH' }
+
+/** Figma 639:22820's five rows; which have happened follows the order status. */
+function trackingSteps(status: OrderStatus, storeName: string): TrackingStep[] {
+  const first = RIDER.name.split(' ')[0]
+  const times = status === 'completed' ? ['08:13 AM', '08:48 AM', '09:01 AM', '09:40 AM', '09:52 AM'] : ['08:13 AM', '08:48 AM', '09:01 AM', null, null]
+  return [
+    { title: 'Rider assigned', detail: `${RIDER.name} accepted the delivery`, at: times[0] },
+    { title: 'Rider at the store', detail: `${first} reached ${storeName}`, at: times[1] },
+    { title: 'Order picked up', detail: `${first} picked up the package`, at: times[2] },
+    { title: 'Rider arrived', detail: `${first} arrived at buyer’s location`, at: times[3] },
+    { title: 'Order delivered', detail: 'Buyer has gotten the package', at: times[4] },
+  ]
 }
 
 const firstName = (name: string) => name.split(' ')[0]
@@ -117,12 +136,15 @@ function Detail({
   )
 }
 
-function Card({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({ title, action, children, className = '' }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <section className={`bg-white rounded-[20px] p-[20px] flex flex-col gap-[16px] ${className}`}>
-      <h2 className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
-        {title}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
+          {title}
+        </h2>
+        {action}
+      </div>
       <div className="h-px w-full bg-[#f7f7f7]" />
       {children}
     </section>
@@ -130,10 +152,11 @@ function Card({ title, children, className = '' }: { title: string; children: Re
 }
 
 function MessageButton({ name, className = '' }: { name: string; className?: string }) {
+  const navigate = useNavigate()
   return (
     <button
       type="button"
-      onClick={() => alert('Messages open in the next release.')}
+      onClick={() => navigate('/dashboard/messages')}
       className={`flex h-[48px] items-center justify-center gap-[8px] rounded-[30px] px-[24px] ${className}`}
       style={{ backgroundImage: CTA_BG }}
     >
@@ -164,6 +187,8 @@ export default function OrderDetail() {
   const status: OrderStatus = override?.id === id ? override.status : (base?.status ?? 'new')
   const setStatus = (next: OrderStatus) => setOverride({ id: id ?? '', status: next })
   const [dialog, setDialog] = useState<'evidence' | 'ready' | 'dispatched' | 'decline' | null>(null)
+  const [tracking, setTracking] = useState(false)
+  const { store } = useStore()
 
   if (!base) {
     return (
@@ -466,7 +491,18 @@ export default function OrderDetail() {
               <MessageButton name={buyer} className="w-full" />
             </Card>
 
-            <Card title="Delivery">
+            <Card
+              title="Delivery"
+              action={
+                /* Figma 687:7623: the "Track delivery" link once the package is on its way */
+                (status === 'dispatched' || status === 'completed') && o.delivery.method !== 'Pickup' ? (
+                  <button type="button" onClick={() => setTracking(true)} className="flex items-center gap-[8px] text-[#007c53] text-[12px] leading-[24px]" style={jakarta(500)}>
+                    <img src={routingIcon} alt="" className="size-[16px]" />
+                    Track delivery
+                  </button>
+                ) : null
+              }
+            >
               <Detail
                 icon={truckFastIcon}
                 label={o.delivery.courier}
@@ -485,6 +521,17 @@ export default function OrderDetail() {
         </div>
       </div>
 
+      {tracking && (
+        <TrackDeliveryModal
+          orderId={o.id}
+          rider={RIDER}
+          pickup={store?.businessAddress.area ?? 'Store'}
+          dropoff={o.delivery.address.split(',').pop()?.trim() ?? o.delivery.address}
+          progress={status === 'completed' ? 1 : 0.37}
+          steps={trackingSteps(status, store?.storeName ?? 'the store')}
+          onClose={() => setTracking(false)}
+        />
+      )}
       {dialog === 'evidence' && (
         <OrderStatusDialog
           kind="evidence"
