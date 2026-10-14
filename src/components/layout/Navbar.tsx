@@ -33,7 +33,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="bg-white w-full">
-        <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px]">
+        <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px] gap-[141px]">
           {/* ── Logo — pinned left ── */}
           <div className="flex gap-[8px] items-center shrink-0">
             <div className="h-[48px] w-[46.629px] relative shrink-0">
@@ -51,7 +51,7 @@ export default function Navbar() {
           </div>
 
           {/* ── Nav links — truly centered ── */}
-          <div className="flex-1 flex items-center justify-center gap-[32px]">
+          <div className="flex items-center gap-[32px]">
             <NavLink to="/" style={jakartaMedium} className={navLinkClass}>
               HOME
             </NavLink>
