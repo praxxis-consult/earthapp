@@ -62,7 +62,7 @@ export default function ReceiptModal({ receipt: r, onViewOrder, onTrack, onClose
         role="dialog"
         aria-modal="true"
         aria-labelledby="receipt-title"
-        className="my-auto flex w-[544px] max-w-full flex-col gap-[18px] rounded-[24px] border border-[#e4dede] bg-white p-[24px]"
+        className="my-auto flex w-[544px] max-w-full flex-col gap-[18px] rounded-[24px] border border-[#e4dede] bg-white p-[24px] max-md:p-[16px]"
         style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}
         onClick={(e) => e.stopPropagation()}
       >

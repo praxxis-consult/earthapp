@@ -262,9 +262,9 @@ export default function OrderDetail() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px]">
+      <div className="px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {/* Header (561:6370 / 561:6375) */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between max-lg:flex-col max-lg:gap-[16px]">
           <div className="flex flex-col gap-[24px] max-w-[490px]">
             <button
               type="button"
@@ -277,7 +277,7 @@ export default function OrderDetail() {
               </span>
             </button>
             <div className="flex flex-col gap-[8px]">
-              <div className="flex items-center gap-[8px]">
+              <div className="flex items-center gap-[8px] max-md:flex-wrap">
                 <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
                   Order {o.id}
                 </h1>
@@ -289,12 +289,12 @@ export default function OrderDetail() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-[16px] pt-[56px]">
+          <div className="flex items-center gap-[16px] pt-[56px] max-lg:pt-0 max-md:w-full max-md:gap-[12px]">
             {!closed && (
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex h-[48px] w-[168px] items-center justify-center gap-[8px] rounded-[30px] bg-white"
+                className="flex h-[48px] w-[168px] items-center justify-center gap-[8px] rounded-[30px] bg-white max-md:w-auto max-md:flex-1"
               >
                 <img src={receiptIcon} alt="" className="size-[20px]" />
                 <span className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(500)}>
@@ -302,15 +302,16 @@ export default function OrderDetail() {
                 </span>
               </button>
             )}
-            <MessageButton name={buyer} className="w-[168px]" />
+            <MessageButton name={buyer} className="w-[168px] max-md:w-auto max-md:flex-1" />
           </div>
         </div>
 
         {/* Banner (561:6611): gradient #aee74a → #007c53, radius 20, copy at 24/24, art or buttons at the right */}
         <div
-          className="relative mt-[16px] overflow-hidden rounded-[20px] px-[24px] py-[24px] flex items-center justify-between"
+          className="relative mt-[16px] overflow-hidden rounded-[20px] px-[24px] py-[24px] flex items-center justify-between lg:h-(--banner-h) max-lg:min-h-(--banner-h) max-md:flex-col max-md:items-stretch max-md:gap-[16px] max-md:px-[16px]"
           style={{
-            height: banner.height ?? 126,
+            // BUILDER: the frame fixes the banner height; below lg it is a minimum so the copy and buttons can stack.
+            ['--banner-h' as string]: `${banner.height ?? 126}px`,
             backgroundImage: 'linear-gradient(100deg, #aee74a -20%, #007c53 72%)',
           }}
         >
@@ -323,11 +324,11 @@ export default function OrderDetail() {
             </p>
           </div>
           {banner.actions && (
-            <div className="flex items-center gap-[16px] shrink-0">
+            <div className="flex items-center gap-[16px] shrink-0 max-md:gap-[12px]">
               <button
                 type="button"
                 onClick={banner.actions.onClick}
-                className="flex h-[48px] items-center justify-center gap-[8px] rounded-[30px] bg-[#aee74a] px-[24px] whitespace-nowrap"
+                className="flex h-[48px] items-center justify-center gap-[8px] rounded-[30px] bg-[#aee74a] px-[24px] whitespace-nowrap max-md:flex-1 max-md:px-[16px]"
                 style={{ minWidth: 168 }}
               >
                 <img src={banner.actions.icon} alt="" className="size-[20px]" />
@@ -339,7 +340,7 @@ export default function OrderDetail() {
                 <button
                   type="button"
                   onClick={banner.actions.secondary.onClick}
-                  className="flex h-[48px] items-center justify-center rounded-[30px] px-[32px] border"
+                  className="flex h-[48px] items-center justify-center rounded-[30px] px-[32px] border max-md:flex-1 max-md:px-[16px]"
                   style={{ background: 'rgba(64,68,56,0.5)', borderColor: 'rgba(248,246,241,0.4)' }}
                 >
                   <span className="text-white text-[14px] leading-[18px]" style={jakarta(500)}>
@@ -355,13 +356,13 @@ export default function OrderDetail() {
               <img
                 src={banner.art[0]}
                 alt=""
-                className="absolute pointer-events-none"
+                className="absolute pointer-events-none max-md:hidden"
                 style={{ right: -20, top: -27, width: 181, height: 181 }}
               />
               <img
                 src={banner.art[1]}
                 alt=""
-                className="absolute pointer-events-none"
+                className="absolute pointer-events-none max-md:hidden"
                 style={{ right: 61, top: -5, width: 136, height: 136 }}
               />
             </>
@@ -370,23 +371,20 @@ export default function OrderDetail() {
 
         {/* Timeline (567:6652): 155 tall, seven 87px columns, 2px rule behind the 32px badges */}
         {!closed && (
-          <div className="relative bg-white rounded-[20px] h-[155px] px-[24px] pt-[24px]">
-            <div
-              className="absolute left-[73px] right-[74px] top-[40px] h-[2px] rounded-full"
-              style={{ background: 'rgba(0,124,83,0.1)' }}
-            />
-            <ol className="relative flex items-start justify-between">
+          <div className="relative bg-white rounded-[20px] h-[155px] px-[24px] pt-[24px] max-md:h-auto max-md:px-[16px] max-md:py-[16px]">
+            {/* The rule behind the badges: 49px in from the list's edges, through the 32px badges' centres; below md the list is a column and the rule goes. */}
+            <ol className="relative flex items-start justify-between before:absolute before:left-[49px] before:right-[50px] before:top-[16px] before:h-[2px] before:rounded-full before:bg-[rgba(0,124,83,0.1)] before:content-[''] max-md:flex-col max-md:gap-[16px] max-md:before:hidden">
               {STEPS.map((label, i) => {
                 const done = i < reached
                 const next = i === reached
                 return (
-                  <li key={label} className="flex w-[87px] flex-col items-center gap-[16px]">
+                  <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img
                       src={done ? stepDoneIcon : stepTodoIcon}
                       alt={done ? 'Done' : next ? 'Next' : 'Not yet'}
-                      className="size-[32px]"
+                      className="size-[32px] shrink-0"
                     />
-                    <div className="flex flex-col items-center gap-[4px] text-center">
+                    <div className="flex flex-col items-center gap-[4px] text-center max-md:flex-1 max-md:flex-row max-md:items-center max-md:justify-between max-md:text-left">
                       <p className="text-[#101604] text-[13px] leading-[20px]" style={jakarta(600)}>
                         {label}
                       </p>
@@ -402,14 +400,14 @@ export default function OrderDetail() {
         )}
 
         {/* Two columns: 677 + 16 + 400 */}
-        <div className="flex items-start gap-[16px]">
+        <div className="flex items-start gap-[16px] max-lg:flex-col max-lg:items-stretch">
           <div className="flex flex-col gap-[24px] flex-1 min-w-0">
             <Card title="Items in this order">
               <div className="flex flex-col gap-[24px]">
                 <div className="flex items-center gap-[14px]">
                   <img src={o.item.image} alt="" className="size-[76px] rounded-[12px] object-cover shrink-0" />
                   <div className="flex flex-col gap-[4px] flex-1 min-w-0">
-                    <p className="text-[#101604] text-[16px] leading-[24px] capitalize truncate" style={jakarta(600)}>
+                    <p className="text-[#101604] text-[16px] leading-[24px] capitalize truncate max-md:whitespace-normal max-md:line-clamp-2" style={jakarta(600)}>
                       {o.item.title}
                     </p>
                     <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
@@ -484,7 +482,7 @@ export default function OrderDetail() {
             </Card>
           </div>
 
-          <div className="flex flex-col gap-[24px] w-[400px] shrink-0">
+          <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Buyer">
               <Detail text={initials(o.buyer.name)} label={o.buyer.since} value={o.buyer.name} swap />
               <Detail icon={locationIcon} label="Address" value={o.buyer.address} />

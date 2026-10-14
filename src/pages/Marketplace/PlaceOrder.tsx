@@ -52,10 +52,10 @@ export default function PlaceOrder() {
 
   return (
     <div className="bg-white w-full pb-[72px]">
-      <div className="max-w-[1200px] mx-auto pt-[32px]">
+      <div className="max-w-[1200px] mx-auto pt-[32px] max-xl:px-[24px] max-md:px-[16px]">
 
         {/* ── Breadcrumb ── */}
-        <div className="flex gap-[10px] items-center mb-[28px]">
+        <div className="flex gap-[10px] items-center mb-[28px] min-w-0">
           <button onClick={() => navigate(-1)} className="flex items-center justify-center size-[18px] shrink-0">
             <img src={arrowLeft} alt="" className="size-[18px]" />
           </button>
@@ -67,22 +67,22 @@ export default function PlaceOrder() {
             Marketplace
           </button>
           <span className="text-[#807e7e] text-[14px]" style={jakarta(400)}>/</span>
-          <span className="text-[#0c2310] text-[14px] whitespace-nowrap" style={jakarta(500)}>
+          <span className="text-[#0c2310] text-[14px] whitespace-nowrap truncate min-w-0" style={jakarta(500)}>
             {product.title}
           </span>
         </div>
 
         {/* ── Product purchase layout ── */}
-        <div className="flex gap-[48px] items-start">
+        <div className="flex gap-[48px] items-start max-lg:flex-col max-lg:gap-[24px]">
 
           {/* ── Left: Product gallery (652px) ── */}
-          <div className="flex flex-col gap-[20px] items-start shrink-0 w-[652px]">
+          <div className="flex flex-col gap-[20px] items-start shrink-0 w-[652px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none">
 
             {/* Media row: thumbnails + main image */}
-            <div className="flex gap-[16px] h-[548px] items-start w-full">
+            <div className="flex gap-[16px] h-[548px] items-start w-full max-lg:h-auto max-md:flex-col-reverse">
 
               {/* Thumbnails column */}
-              <div className="flex flex-col gap-[14px] shrink-0 w-[96px]">
+              <div className="flex flex-col gap-[14px] shrink-0 w-[96px] max-md:w-full max-md:flex-row max-md:gap-[12px] max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden">
                 {THUMBNAILS.slice(0, 4).map((src, i) => (
                   <button
                     key={i}
@@ -103,7 +103,7 @@ export default function PlaceOrder() {
               </div>
 
               {/* Main image */}
-              <div className="relative h-[548px] rounded-[30px] overflow-hidden shrink-0 w-[540px]">
+              <div className="relative h-[548px] rounded-[30px] overflow-hidden shrink-0 w-[540px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-md:flex-none max-md:w-full max-md:h-auto max-md:aspect-[4/3] max-md:rounded-[20px]">
                 {/* Origin verified badge */}
                 <div className="absolute bg-white flex gap-[7px] items-center left-[20px] px-[14px] py-[8px] rounded-[999px] top-[20px] z-10">
                   <img src={badgeCheck} alt="" className="size-[16px] shrink-0" />
@@ -120,7 +120,7 @@ export default function PlaceOrder() {
             </div>
 
             {/* Gallery note bar */}
-            <div className="bg-[#f2f9f7] flex items-center justify-between px-[20px] py-[16px] rounded-[16px] w-full">
+            <div className="bg-[#f2f9f7] flex items-center justify-between px-[20px] py-[16px] rounded-[16px] w-full max-md:flex-col max-md:items-start max-md:gap-[8px]">
               <div className="flex gap-[10px] items-center">
                 <img src={cameraIcon} alt="" className="size-[20px] shrink-0" />
                 <span className="text-[#34473a] text-[14px]" style={jakarta(400)}>
@@ -135,11 +135,10 @@ export default function PlaceOrder() {
 
           {/* ── Right: Order panel (500px) ── */}
           <div
-            className="bg-white border border-[#e4dede] flex flex-col gap-[22px] items-start p-[28px] rounded-[30px] shrink-0"
-            style={{ width: '500px' }}
+            className="bg-white border border-[#e4dede] flex flex-col gap-[22px] items-start p-[28px] rounded-[30px] shrink-0 w-[500px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none max-md:p-[20px]"
           >
             {/* Product badges + rating */}
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full max-md:flex-wrap max-md:gap-[8px]">
               <div className="flex gap-[8px] items-center">
                 <div className="bg-[#f2f9f7] flex items-center px-[14px] py-[7px] rounded-[999px]">
                   <span className="text-[#007c53] text-[12px]" style={jakarta(500)}>
@@ -163,7 +162,7 @@ export default function PlaceOrder() {
             {/* Product title + description */}
             <div className="flex flex-col gap-[10px] w-full">
               <p
-                className="text-[#0c2310] text-[40px] tracking-[-1.2px] leading-[1.15] w-full"
+                className="text-[#0c2310] text-[40px] tracking-[-1.2px] leading-[1.15] w-full max-md:text-[28px] max-md:tracking-[-0.84px]"
                 style={jakarta(700)}
               >
                 {product.title}
@@ -174,7 +173,7 @@ export default function PlaceOrder() {
             </div>
 
             {/* Price summary */}
-            <div className="flex items-end justify-between w-full">
+            <div className="flex items-end justify-between w-full max-sm:flex-wrap max-sm:gap-[8px]">
               <div className="flex flex-col gap-[4px]">
                 <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
                   Current unit price

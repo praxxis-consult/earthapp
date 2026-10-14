@@ -57,8 +57,8 @@ const cards: TrustCard[] = [
   },
 ]
 
-// Card width + gap = one scroll step
-const CARD_STEP = 588 + 24
+// One scroll step = the first card's width (588 on the frame, 320 on phones) + the 24px gap
+const CARD_GAP = 24
 
 // How far the vector container extends above the section
 const BLEED = 380
@@ -68,11 +68,13 @@ export default function TrustSection() {
 
   function scrollCards(dir: 'left' | 'right') {
     if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir === 'right' ? CARD_STEP : -CARD_STEP, behavior: 'smooth' })
+    const card = scrollRef.current.firstElementChild?.firstElementChild as HTMLElement | null
+    const step = (card?.offsetWidth ?? 588) + CARD_GAP
+    scrollRef.current.scrollBy({ left: dir === 'right' ? step : -step, behavior: 'smooth' })
   }
 
   return (
-    <section className="relative w-full h-[696px]">
+    <section className="relative w-full h-[696px] max-lg:h-auto max-lg:pb-[48px]">
 
       {/* ── Gradient fill — clipped within section ── */}
       <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
@@ -90,10 +92,8 @@ export default function TrustSection() {
         exactly at the section top — no bleed into the white area above.
       */}
       <div
-        className="absolute left-0 right-0 pointer-events-none overflow-hidden"
+        className="absolute left-0 right-0 top-[-380px] h-[1076px] pointer-events-none overflow-hidden max-lg:h-auto max-lg:bottom-0"
         style={{
-          top: `-${BLEED}px`,
-          height: `${696 + BLEED}px`,
           zIndex: 1,
           maskImage: `linear-gradient(to bottom, transparent ${BLEED - 1}px, black ${BLEED + 1}px)`,
           WebkitMaskImage: `linear-gradient(to bottom, transparent ${BLEED - 1}px, black ${BLEED + 1}px)`,
@@ -154,12 +154,12 @@ export default function TrustSection() {
       </div>
 
       {/* ── Text + arrows — max-w-[1200px] centered ── */}
-      <div className="relative max-w-[1200px] mx-auto h-full" style={{ zIndex: 2 }}>
+      <div className="relative max-w-[1200px] mx-auto h-full max-xl:px-[24px] max-lg:h-auto max-lg:pt-[48px] max-lg:flex max-lg:flex-col max-lg:gap-[24px] max-md:px-[16px]" style={{ zIndex: 2 }}>
 
         {/* Header text */}
-        <div className="absolute top-[64px] left-0 w-[588px] flex flex-col gap-[8px]">
+        <div className="absolute top-[64px] left-0 w-[588px] flex flex-col gap-[8px] max-xl:left-[24px] max-lg:static max-lg:w-full max-lg:max-w-[588px]">
           <h2
-            className="text-white text-[48px] tracking-[-0.96px] leading-[64px]"
+            className="text-white text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]"
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}
           >
             Trade Built on Honesty and Physical Proof
@@ -173,7 +173,7 @@ export default function TrustSection() {
         </div>
 
         {/* Scroll arrows — functional */}
-        <div className="absolute top-[156px] right-0 flex gap-[16px] items-center">
+        <div className="absolute top-[156px] right-0 flex gap-[16px] items-center max-xl:right-[24px] max-lg:static">
           <button
             onClick={() => scrollCards('left')}
             className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center cursor-pointer hover:bg-[rgba(255,255,255,0.3)] transition-colors"
@@ -199,32 +199,28 @@ export default function TrustSection() {
       ── */}
       <div
         ref={scrollRef}
-        className="absolute left-0 right-0 overflow-x-auto"
+        className="absolute left-0 right-0 top-[328px] overflow-x-auto max-lg:static max-lg:mt-[32px]"
         style={{
-          top: '328px',
           zIndex: 2,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
         }}
       >
-        <div
-          className="flex gap-[24px] pb-[4px]"
-          style={{ paddingLeft: 'max(calc((100vw - 1200px) / 2), 24px)' }}
-        >
+        <div className="flex gap-[24px] pb-[4px] pl-[max(calc((100vw-1200px)/2),24px)] max-lg:pr-[24px] max-md:pl-[16px] max-md:pr-[16px]">
           {cards.map((card) => (
             <div
               key={card.title}
-              className="bg-white border border-[#e4dede] border-solid rounded-[30px] h-[304px] w-[588px] shrink-0 relative overflow-hidden"
+              className="bg-white border border-[#e4dede] border-solid rounded-[30px] h-[304px] w-[588px] shrink-0 relative overflow-hidden max-md:h-auto max-md:w-[320px] max-md:flex max-md:flex-col max-md:gap-[16px] max-md:p-[24px]"
             >
               {/* Icon box */}
-              <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-[#f2f9f7] rounded-[20px] overflow-hidden flex items-center justify-center">
+              <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-[#f2f9f7] rounded-[20px] overflow-hidden flex items-center justify-center max-md:static max-md:size-[64px]">
                 <img src={card.icon} alt="" className="size-[32px]" />
               </div>
 
               {/* Badge pill */}
-              <div className="absolute top-[46.5px] right-[23.5px] bg-[#f2f9f7] rounded-[30px] px-[16px] py-[5px]">
+              <div className="absolute top-[46.5px] right-[23.5px] bg-[#f2f9f7] rounded-[30px] px-[16px] py-[5px] max-md:static max-md:self-start">
                 <span
-                  className="text-[#0c2310] text-[12px] leading-[24px] whitespace-nowrap"
+                  className="text-[#0c2310] text-[12px] leading-[24px] whitespace-nowrap max-md:whitespace-normal"
                   style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
                 >
                   {card.badge}
@@ -232,7 +228,7 @@ export default function TrustSection() {
               </div>
 
               {/* Text block */}
-              <div className="absolute left-[23.5px] top-[143.5px] w-[540px] flex flex-col gap-[8px]">
+              <div className="absolute left-[23.5px] top-[143.5px] w-[540px] flex flex-col gap-[8px] max-md:static max-md:w-full">
                 <p
                   className="text-[#101604] text-[24px] tracking-[-1px] leading-[32px]"
                   style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}

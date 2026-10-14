@@ -72,13 +72,13 @@ export default function Marketplace() {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   return (
-    <div className="bg-white w-full pb-[120px]">
-      <div className="max-w-[1200px] mx-auto">
+    <div className="bg-white w-full pb-[120px] max-md:pb-[64px]">
+      <div className="max-w-[1200px] mx-auto max-xl:px-[24px] max-md:px-[16px]">
 
         {/* ── Page header ── */}
-        <div className="flex flex-col gap-[8px] pt-[64px] w-[892px]">
+        <div className="flex flex-col gap-[8px] pt-[64px] w-[892px] max-lg:w-full max-md:pt-[32px]">
           <h1
-            className="text-[#0c2310] text-[48px] tracking-[-0.96px] leading-[64px]"
+            className="text-[#0c2310] text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px] max-md:tracking-[-0.64px]"
             style={jakarta(700)}
           >
             Products & Natural Resources
@@ -94,10 +94,10 @@ export default function Marketplace() {
         <div className="flex flex-col gap-[24px] mt-[40px]">
 
           {/* Row 1: search + dropdowns */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between max-lg:flex-col max-lg:items-stretch max-lg:gap-[12px]">
 
             {/* Search */}
-            <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-[588px]">
+            <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-[588px] max-lg:w-full">
               <img src={searchIcon} alt="" className="size-[20px] shrink-0" />
               <input
                 type="text"
@@ -109,13 +109,13 @@ export default function Marketplace() {
               />
             </div>
 
-            <div className="flex gap-[16px] items-center">
+            <div className="flex gap-[16px] items-center max-md:flex-col max-md:items-stretch max-md:gap-[12px]">
 
               {/* Location dropdown */}
-              <div className="relative" ref={locationRef}>
+              <div className="relative max-md:w-full" ref={locationRef}>
                 <button
                   onClick={() => { setLocationOpen((o) => !o); setSortOpen(false) }}
-                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer"
+                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer max-md:w-full"
                 >
                   <img src={locationIcon} alt="" className="size-[20px] shrink-0" />
                   <span className="text-[13px]" style={jakarta(500)}>
@@ -125,7 +125,7 @@ export default function Marketplace() {
                   <img src={arrowDown} alt="" className={`size-[16px] shrink-0 transition-transform ${locationOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {locationOpen && (
-                  <div className="absolute top-[52px] left-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[180px] overflow-hidden">
+                  <div className="absolute top-[52px] left-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[180px] overflow-hidden max-md:w-full max-md:max-h-[320px] max-md:overflow-y-auto">
                     {REGIONS.map((c) => (
                       <button
                         key={c}
@@ -143,10 +143,10 @@ export default function Marketplace() {
               </div>
 
               {/* Sort dropdown */}
-              <div className="relative" ref={sortRef}>
+              <div className="relative max-md:w-full" ref={sortRef}>
                 <button
                   onClick={() => { setSortOpen((o) => !o); setLocationOpen(false) }}
-                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer"
+                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer max-md:w-full"
                 >
                   <img src={settingsIcon} alt="" className="size-[20px] shrink-0" />
                   <span className="text-[13px]" style={jakarta(500)}>
@@ -177,8 +177,8 @@ export default function Marketplace() {
           </div>
 
           {/* Row 2: category tabs + count */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-[12px] items-center">
+          <div className="flex items-center justify-between max-xl:flex-col max-xl:items-start max-xl:gap-[12px]">
+            <div className="flex gap-[12px] items-center max-xl:w-full max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -201,9 +201,9 @@ export default function Marketplace() {
         </div>
 
         {/* ── Product grid ── */}
-        <div className="grid grid-cols-3 gap-[24px] mt-[24px]">
+        <div className="grid grid-cols-3 gap-[24px] mt-[24px] max-lg:grid-cols-2 max-md:grid-cols-1">
           {paginated.length === 0 ? (
-            <div className="col-span-3 text-center py-[64px] text-[#807e7e] text-[16px]" style={jakarta(400)}>
+            <div className="col-span-full text-center py-[64px] text-[#807e7e] text-[16px]" style={jakarta(400)}>
               {loading ? 'Loading listings…' : loadError || `No listings in ${location} match your filters yet.`}
             </div>
           ) : (
@@ -220,7 +220,7 @@ export default function Marketplace() {
                 <div className="flex flex-col gap-[24px] p-[16px] flex-1">
                   <div className="flex flex-col gap-[8px]">
                     <div className="flex items-start justify-between text-[18px]">
-                      <p className="text-[#101604] tracking-[-1px] leading-[24px] w-[282px]" style={jakarta(600)}>
+                      <p className="text-[#101604] tracking-[-1px] leading-[24px] w-[282px] max-lg:w-auto max-lg:flex-1 max-lg:min-w-0" style={jakarta(600)}>
                         {p.title}
                       </p>
                       <p className="text-[#007c53] tracking-[-0.36px] leading-[24px] whitespace-nowrap" style={jakarta(700)}>
@@ -246,17 +246,17 @@ export default function Marketplace() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center justify-between mt-auto max-lg:gap-[12px]">
                     <button
                       onClick={() => navigate(`/marketplace/${p.id}`)}
-                      className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center"
+                      className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center max-lg:w-auto max-lg:flex-1"
                       style={jakarta(500)}
                     >
                       View details
                     </button>
                     <button
                       onClick={() => navigate(`/marketplace/${p.id}/order`)}
-                      className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px]"
+                      className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px] max-lg:w-auto max-lg:flex-1"
                       style={{ background: 'rgb(0, 124, 83)' }}
                     >
                       <span

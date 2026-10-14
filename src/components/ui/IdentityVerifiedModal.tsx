@@ -16,8 +16,7 @@ export default function IdentityVerifiedModal({ onProceed, onClose }: IdentityVe
       body={
         <>
           We’ve saved your identity details and selfie. Buyers
-          <br />
-          will see your verified badge once the check completes.
+          <br className="max-md:hidden" /> will see your verified badge once the check completes.
         </>
       }
       primary={{ label: 'Proceed', onClick: onProceed }}

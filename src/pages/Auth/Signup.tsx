@@ -195,7 +195,7 @@ export default function Signup() {
             <FieldError id="account-type-error" message={errors.accountType} />
           </div>
 
-          <div className="flex gap-[16px] items-start w-full">
+          <div className="flex gap-[16px] items-start w-full max-sm:flex-col">
             <TextField id="first-name" label="First name" value={firstName} onChange={setFirstName} placeholder="Enter your first name" autoComplete="given-name" error={errors.firstName} />
             <TextField id="last-name" label="Last name" value={lastName} onChange={setLastName} placeholder="Enter your last name" autoComplete="family-name" error={errors.lastName} />
           </div>

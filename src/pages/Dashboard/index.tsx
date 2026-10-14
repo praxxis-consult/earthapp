@@ -64,7 +64,7 @@ function ChartCard({
   pinValueSuffix?: string
 }) {
   return (
-    <div className="bg-white rounded-[20px] h-[322px] flex-1 overflow-hidden relative">
+    <div className="bg-white rounded-[20px] h-[322px] flex-1 overflow-hidden relative max-lg:flex-none max-lg:w-full">
       {/* Title */}
       <p
         className="absolute top-[24px] left-[24px] text-[#101604] text-[16px] leading-[24px] z-10"
@@ -245,17 +245,17 @@ export default function DashboardOverview() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[36px] pb-[24px]">
+      <div className="px-[24px] pt-[36px] pb-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {/* Header row: greeting + Add product CTA */}
-        <div className="flex items-center justify-between">
-          <p className="text-[#101604] text-[32px] leading-[40px]" style={jakarta(700)}>
+        <div className="flex items-center justify-between max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
+          <p className="text-[#101604] text-[32px] leading-[40px] max-md:text-[24px] max-md:leading-[32px]" style={jakarta(700)}>
             Welcome, {account?.firstName ?? ''}
           </p>
 
           <button
             type="button"
             onClick={() => navigate('/dashboard/products/add')}
-            className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0"
+            className="flex gap-[8px] h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] shrink-0 max-md:w-full"
             style={{ backgroundImage: CTA_BG }}
           >
             <div className="relative shrink-0 size-[24px]">
@@ -271,7 +271,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Stat cards */}
-        <div className="mt-[20px] grid grid-cols-4 gap-[16px]">
+        <div className="mt-[20px] grid grid-cols-4 gap-[16px] max-xl:grid-cols-2 max-md:grid-cols-1">
           <StatCard label="Earned this week" value={earned} gradient />
           <StatCard label="Awaiting orders" value="0" />
           <StatCard label="Completed orders" value={completed} />
@@ -279,7 +279,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Charts row */}
-        <div className="mt-[24px] flex gap-[16px]">
+        <div className="mt-[24px] flex gap-[16px] max-lg:flex-col">
           <ChartCard
             title="Sales Activities"
             graphSrc={salesSrc}
@@ -300,7 +300,7 @@ export default function DashboardOverview() {
         {/* New orders panel */}
         <div className="mt-[24px] bg-white rounded-[20px] overflow-hidden">
           {/* Panel header */}
-          <div className="flex items-start justify-between px-[24px] pt-[24px]">
+          <div className="flex items-start justify-between px-[24px] pt-[24px] max-md:flex-col max-md:gap-[12px] max-md:px-[16px]">
             <div className="flex flex-col gap-[8px]">
               <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
                 New orders
@@ -330,7 +330,7 @@ export default function DashboardOverview() {
           {HAS_ORDERS ? (
             <OrdersTable />
           ) : (
-            <div className="flex flex-col items-center pt-[40px] pb-[64px]">
+            <div className="flex flex-col items-center pt-[40px] pb-[64px] max-md:px-[16px] max-md:pb-[40px]">
               {/* Empty state illustration */}
               <div className="relative size-[200px]">
                 <div

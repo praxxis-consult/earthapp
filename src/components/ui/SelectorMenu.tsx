@@ -15,18 +15,21 @@ export function MenuList({
   children,
   hint,
   className = '',
-  width = 375,
+  width,
 }: {
   children: ReactNode
   hint?: string
   className?: string
-  /** The component is 375 wide; a narrower anchor (the dial-code picker) passes its own. */
+  /**
+   * The component is 375 wide on desktop and as wide as its anchor below lg (a phone's field);
+   * a narrower anchor (the dial-code picker) passes its own width, capped to the viewport.
+   */
   width?: number
 }) {
   return (
     <div
       role="listbox"
-      className={`rounded-[24px] bg-white py-[8px] overflow-hidden ${className}`}
+      className={`rounded-[24px] bg-white py-[8px] overflow-hidden max-w-[calc(100vw-32px)] ${width ? '' : 'w-[375px] max-lg:w-full'} ${className}`}
       style={{ boxShadow: MENU_SHADOW, width }}
     >
       {hint && (

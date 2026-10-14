@@ -18,7 +18,7 @@ import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { countryName } from '../../onboarding/draft'
 import { initials } from '../../data/orders'
-import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
+import { jakarta, CTA_BG, CTA_TEXT_BG, SCROLL_ROW } from '../../utils/styles'
 
 type Tab = 'store' | 'personal' | 'payout' | 'notifications'
 const TABS: { key: Tab; label: string }[] = [
@@ -71,7 +71,7 @@ function Field({ label, value, children }: { label: string; value?: string; chil
 }
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <section className={`bg-white rounded-[25px] p-[24px] ${className}`}>{children}</section>
+  return <section className={`bg-white rounded-[25px] p-[24px] max-md:p-[16px] ${className}`}>{children}</section>
 }
 
 function PrimaryButton({ label, onClick, icon = editIcon }: { label: string; onClick: () => void; icon?: string }) {
@@ -160,8 +160,8 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[42px] pb-[40px] flex flex-col">
-        <div className="flex items-start justify-between">
+      <div className="relative px-[24px] pt-[42px] pb-[40px] flex flex-col max-md:px-[16px] max-md:pt-[24px]">
+        <div className="flex items-start justify-between max-md:flex-col max-md:gap-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[380px]">
             <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
               Account settings
@@ -170,11 +170,11 @@ export default function Settings() {
               How buyers see your store, and who can work on it.
             </p>
           </div>
-          <div className="pt-[8px]">{headerAction}</div>
+          <div className="pt-[8px] max-md:pt-0">{headerAction}</div>
         </div>
 
         {/* Tabs (604:20487): pad 12/16, 12px Medium, the open one outlined #007c53 */}
-        <div className="mt-[38px] flex items-center gap-[12px]" role="tablist">
+        <div className={`mt-[38px] flex items-center gap-[12px] max-md:mt-[24px] ${SCROLL_ROW}`} role="tablist">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -182,7 +182,7 @@ export default function Settings() {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className="h-[39px] px-[16px] rounded-[30px] text-[12px] leading-[15px] border"
+              className="h-[39px] px-[16px] rounded-[30px] text-[12px] leading-[15px] border whitespace-nowrap max-md:shrink-0"
               style={{ ...jakarta(500), color: tab === t.key ? '#007c53' : '#807e7e', borderColor: tab === t.key ? '#007c53' : 'transparent' }}
             >
               {t.label}
@@ -200,11 +200,11 @@ export default function Settings() {
           <div className="mt-[24px] flex flex-col gap-[24px]">
             {/* Cover (639:24760): 409 tall, radius 20, photo under a dark wash, Upload image bottom right */}
             <Card>
-              <div className="relative h-[409px] rounded-[20px] overflow-hidden bg-[#ededed]">
+              <div className="relative h-[409px] rounded-[20px] overflow-hidden bg-[#ededed] max-md:h-[220px]">
                 <img src={local.cover || coverPhoto} alt="" className="absolute inset-0 size-full object-cover" />
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,20,20,0) 0%, rgba(20,20,20,0.6) 100%)' }} />
                 <label
-                  className="absolute right-[24px] bottom-[24px] flex h-[48px] items-center gap-[8px] rounded-[30px] px-[16px] cursor-pointer"
+                  className="absolute right-[24px] bottom-[24px] flex h-[48px] items-center gap-[8px] rounded-[30px] px-[16px] cursor-pointer max-md:right-[16px] max-md:bottom-[16px]"
                   style={{ background: 'rgba(64,68,56,0.75)' }}
                 >
                   <img src={uploadIcon} alt="" className="size-[20px]" />
@@ -218,7 +218,7 @@ export default function Settings() {
             {/* Figma 604:20255's details card is a fixed 354 with a two-line description; it never gets shorter */}
             <Card className="min-h-[354px]">
               <div className="flex flex-col gap-[24px]">
-                <div className="flex gap-[16px]">
+                <div className="flex gap-[16px] max-md:flex-col">
                   <Field label="Store name" value={store?.storeName} />
                   <Field label="What do you sell?">
                     <div className="flex flex-wrap items-center gap-[8px]">
@@ -237,11 +237,11 @@ export default function Settings() {
                   </Field>
                 </div>
                 <Field label="Description" value={local.description || 'Add a description so buyers know what you sell.'} />
-                <div className="flex gap-[16px]">
+                <div className="flex gap-[16px] max-md:flex-col">
                   <Field label="Country" value={addr ? countryName(addr.country) : ''} />
                   <Field label="Address" value={addr ? `${addr.street}, ${addr.area}, ${addr.region}` : ''} />
                 </div>
-                <div className="flex gap-[16px]">
+                <div className="flex gap-[16px] max-md:flex-col">
                   <Field label="Landmark" value={addr?.landmark} />
                   <Field label="Opening hours" value={`${local.opens} to ${local.closes}`} />
                 </div>
@@ -271,11 +271,11 @@ export default function Settings() {
               </div>
             </div>
             <div className="flex flex-col gap-[24px]">
-              <div className="flex gap-[16px]">
+              <div className="flex gap-[16px] max-md:flex-col">
                 <Field label="First name" value={person.firstName} />
                 <Field label="Last name" value={person.lastName} />
               </div>
-              <div className="flex gap-[16px]">
+              <div className="flex gap-[16px] max-md:flex-col">
                 <Field label="Email address" value={person.email} />
                 <Field label="Phone number" value={person.phoneNumber} />
               </div>
@@ -293,7 +293,7 @@ export default function Settings() {
                 ].map(([title, sub, state], i) => (
                   <div key={title}>
                     {i > 0 && <div className="h-px w-full bg-[#f7f7f7] mb-[16px]" />}
-                    <div className="flex items-center justify-between py-[8px]">
+                    <div className="flex items-center justify-between py-[8px] max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
                       <div className="flex items-center gap-[12px]">
                         <span className="flex size-[48px] items-center justify-center rounded-full bg-[#f2f8f6]">
                           <img src={checkIcon} alt="" className="size-[16px]" />
@@ -325,7 +325,7 @@ export default function Settings() {
               </div>
             </div>
             <div className="h-px w-full bg-[#f7f7f7]" />
-            <div className="flex items-center justify-between py-[16px]">
+            <div className="flex items-center justify-between py-[16px] max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
               <div className="flex items-center gap-[12px]">
                 <span className="flex size-[48px] items-center justify-center rounded-full bg-[#fdf2f4]">
                   <img src={trashIcon} alt="" className="size-[16px]" />
@@ -348,7 +348,7 @@ export default function Settings() {
 
         {tab === 'payout' && (
           <Card className="mt-[24px] flex flex-col gap-[24px]">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between max-md:flex-col max-md:gap-[16px]">
               <div className="flex items-center gap-[12px]">
                 <span className="flex size-[48px] items-center justify-center rounded-full bg-[#f2f8f6]">
                   <img src={bankIcon} alt="" className="size-[20px]" />
@@ -391,13 +391,14 @@ export default function Settings() {
               <table className="w-full table-fixed border-separate border-spacing-0">
                 <colgroup>
                   <col />
-                  <col style={{ width: 244 }} />
-                  <col style={{ width: 245 }} />
+                  {/* BUILDER: the frame's 244/245 columns; on a phone the two toggle columns narrow so the labels keep the room. */}
+                  <col className="w-[244px] max-md:w-[80px]" />
+                  <col className="w-[245px] max-md:w-[80px]" />
                 </colgroup>
                 <thead>
                   <tr>
                     {['Action', 'Email', 'Whatsapp'].map((h, i) => (
-                      <th key={h} className={`h-[45px] px-[24px] border-b border-[#f7f7f7] text-[#807e7e] text-[12px] leading-[15px] ${i ? 'text-center' : 'text-left'}`} style={jakarta(600)}>
+                      <th key={h} className={`h-[45px] px-[24px] border-b border-[#f7f7f7] text-[#807e7e] text-[12px] leading-[15px] max-md:px-[8px] ${i ? 'text-center' : 'text-left'}`} style={jakarta(600)}>
                         {h}
                       </th>
                     ))}
@@ -411,7 +412,7 @@ export default function Settings() {
                   ].map(([key, title, sub]) => (
                     <tr key={key}>
                       <td className="p-0 border-b border-[#f7f7f7]">
-                        <div className="h-[72px] px-[24px] flex flex-col justify-center">
+                        <div className="h-[72px] px-[24px] flex flex-col justify-center max-md:h-auto max-md:min-h-[72px] max-md:px-[8px] max-md:py-[8px]">
                           <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
                             {title}
                           </p>

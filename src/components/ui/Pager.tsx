@@ -23,7 +23,7 @@ export default function Pager({ page, pageCount, onChange }: PagerProps) {
   return (
     <nav
       aria-label="Pages"
-      className="flex items-center justify-center gap-[16px] h-[74px] px-[64px] rounded-[20px] border border-[#f7f7f7] bg-white"
+      className="flex items-center justify-center gap-[16px] h-[74px] px-[64px] rounded-[20px] border border-[#f7f7f7] bg-white max-md:h-auto max-md:flex-wrap max-md:gap-[8px] max-md:px-[16px] max-md:py-[16px]"
     >
       <button
         type="button"

@@ -49,10 +49,10 @@ export default function TrackDeliveryModal({ orderId, rider, pickup, dropoff, pr
         role="dialog"
         aria-modal="true"
         aria-labelledby="track-title"
-        className="relative w-[648px] max-w-full rounded-[20px] bg-white p-[24px]"
+        className="relative w-[648px] max-w-full max-h-full overflow-y-auto rounded-[20px] bg-white p-[24px] max-md:p-[16px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-[24px] top-[24px] size-[24px]">
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-[24px] top-[24px] size-[24px] max-md:right-[16px] max-md:top-[16px]">
           <img src={closeIcon} alt="" className="size-[24px]" />
         </button>
         <div className="flex flex-col gap-[3px] max-w-[310px]">
@@ -91,8 +91,8 @@ export default function TrackDeliveryModal({ orderId, rider, pickup, dropoff, pr
           </div>
           <div className="h-px w-full bg-[#f7f7f7]" />
           <div className="flex items-center gap-[16px]">
-            <div className="flex flex-col gap-[4px] shrink-0">
-              <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+            <div className="flex flex-col gap-[4px] shrink-0 max-md:max-w-[30%]">
+              <p className="text-[#101604] text-[14px] leading-[24px] truncate" style={jakarta(600)}>
                 {pickup}
               </p>
               <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
@@ -110,8 +110,8 @@ export default function TrackDeliveryModal({ orderId, rider, pickup, dropoff, pr
                 <img src={truckIcon} alt="" className="size-[14px]" />
               </span>
             </div>
-            <div className="flex flex-col items-end gap-[4px] shrink-0 text-right">
-              <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+            <div className="flex flex-col items-end gap-[4px] shrink-0 text-right max-md:max-w-[30%]">
+              <p className="text-[#101604] text-[14px] leading-[24px] truncate max-w-full" style={jakarta(600)}>
                 {dropoff}
               </p>
               <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>

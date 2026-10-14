@@ -303,9 +303,9 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[48px]">
+      <div className="px-[24px] pt-[40px] pb-[48px] max-md:px-[16px] max-md:pt-[24px]">
         {/* Header */}
-        <div className="flex items-start justify-between w-full mb-[24px]">
+        <div className="flex items-start justify-between w-full mb-[24px] max-md:flex-col max-md:gap-[16px]">
           <div className="flex flex-col gap-[24px] max-w-[539px]">
             <button type="button" onClick={() => navigate(-1)} className="flex gap-[8px] items-center">
               <div className="flex items-center justify-center size-[16px]" style={{ transform: 'rotate(90deg)' }}>
@@ -326,14 +326,14 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
           </div>
 
           {/* Save draft + Publish, or Discard + Save changes */}
-          <div className="flex items-center gap-[16px] pt-[8px]">
+          <div className="flex items-center gap-[16px] pt-[8px] max-md:w-full max-md:pt-0 max-md:gap-[12px]">
             {editing ? (
               <button
                 type="button"
                 onClick={() => original && setForm(fromProduct(original))}
-                className="bg-white flex h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px]"
+                className="bg-white flex h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] max-md:w-auto max-md:flex-1 max-md:px-[16px]"
               >
-                <p className="text-[#101604] text-[14px] tracking-[-0.14px]" style={jakarta(500)}>
+                <p className="text-[#101604] text-[14px] tracking-[-0.14px] whitespace-nowrap" style={jakarta(500)}>
                   Discard changes
                 </p>
               </button>
@@ -342,9 +342,9 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
                 type="button"
                 onClick={() => save('DRAFT')}
                 disabled={busy !== ''}
-                className="bg-white flex h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] disabled:opacity-60"
+                className="bg-white flex h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] disabled:opacity-60 max-md:w-auto max-md:flex-1 max-md:px-[16px]"
               >
-                <p className="text-[#101604] text-[14px] tracking-[-0.14px]" style={jakarta(500)}>
+                <p className="text-[#101604] text-[14px] tracking-[-0.14px] whitespace-nowrap" style={jakarta(500)}>
                   {busy === 'draft' ? 'Saving…' : 'Save draft'}
                 </p>
               </button>
@@ -353,11 +353,11 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
               type="button"
               onClick={() => save(editing ? (original?.status ?? 'DRAFT') : 'PUBLISHED')}
               disabled={busy !== ''}
-              className="flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] disabled:opacity-60"
+              className="flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] disabled:opacity-60 max-md:w-auto max-md:flex-1 max-md:px-[16px]"
               style={{ backgroundImage: CTA_BG }}
             >
               <p
-                className="text-[14px] tracking-[-0.14px] bg-clip-text text-transparent"
+                className="text-[14px] tracking-[-0.14px] bg-clip-text text-transparent whitespace-nowrap"
                 style={{ ...jakarta(500), backgroundImage: CTA_TEXT_BG }}
               >
                 {busy === 'publish' ? 'Saving…' : editing ? 'Save changes' : 'Publish'}
@@ -372,13 +372,13 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
           </p>
         )}
 
-        {/* Two-column layout */}
-        <div className="flex gap-[16px] items-start">
+        {/* Two-column layout; one column below lg, the checklist and inventory cards after the form */}
+        <div className="flex gap-[16px] items-start max-xl:flex-col">
           {/* Left column: photos + product details + price */}
-          <div className="flex flex-col gap-[16px] flex-1 min-w-0">
+          <div className="flex flex-col gap-[16px] flex-1 min-w-0 max-xl:flex-none max-xl:w-full">
             {/* Product photos */}
-            <div className="bg-white flex flex-col gap-[18px] p-[24px] rounded-[20px]">
-              <div className="flex gap-[12px] items-center w-full">
+            <div className="bg-white flex flex-col gap-[18px] p-[24px] rounded-[20px] max-md:p-[16px]">
+              <div className="flex gap-[12px] items-center w-full max-sm:flex-wrap">
                 <div className="flex flex-col gap-[3px] flex-1 min-w-0">
                   <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
                     Product photos
@@ -559,7 +559,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
 
             {/* Price & selling unit */}
             <SectionCard title="Price & selling unit" subtitle="Only you and your team can see this.">
-              <div className="flex gap-[16px] w-full">
+              <div className="flex gap-[16px] w-full max-sm:flex-col">
                 <div className="flex flex-col gap-[8px] flex-1 min-w-0">
                   <FieldLabel htmlFor="price">Price</FieldLabel>
                   <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-full">
@@ -601,7 +601,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
                 </div>
               </div>
 
-              <div className="flex gap-[16px] w-full">
+              <div className="flex gap-[16px] w-full max-sm:flex-col">
                 <div className="flex flex-col gap-[8px] flex-1 min-w-0">
                   <FieldLabel htmlFor="weight">Approx. weight per unit</FieldLabel>
                   <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-full">
@@ -651,7 +651,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
           </div>
 
           {/* Right column: checklist + inventory + pickup + seller info + actions */}
-          <div className="flex flex-col gap-[16px] w-[400px] shrink-0">
+          <div className="flex flex-col gap-[16px] w-[400px] shrink-0 max-xl:w-full">
             {/* Listing checklist */}
             <div className="bg-[#0c2310] flex flex-col gap-[24px] h-[196px] p-[20px] rounded-[20px] w-full">
               <div className="flex flex-col gap-[4px]">

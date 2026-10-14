@@ -94,12 +94,12 @@ export default function Newsletter() {
   }
 
   return (
-    <section className="w-full h-[679px] relative overflow-hidden">
+    <section className="w-full h-[679px] relative overflow-hidden max-lg:h-auto max-lg:py-[64px] max-md:py-[48px]">
       <img src={newsletterBg} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom" />
 
-      <div className="absolute inset-0 flex flex-col items-center pt-[64px]">
-        <div className="w-[588px] flex flex-col gap-[8px] text-center mb-[131px]">
-          <h2 className="text-[#101604] text-[48px] tracking-[-0.96px] leading-[64px]" style={jakarta(700)}>
+      <div className="absolute inset-0 flex flex-col items-center pt-[64px] max-lg:relative max-lg:inset-auto max-lg:pt-0 max-lg:px-[24px] max-md:px-[16px]">
+        <div className="w-[588px] flex flex-col gap-[8px] text-center mb-[131px] max-lg:w-full max-lg:max-w-[588px] max-lg:mb-[48px]">
+          <h2 className="text-[#101604] text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]" style={jakarta(700)}>
             Stay in the Loop
           </h2>
           <p className="text-[#807e7e] text-[16px] leading-[29.25px]" style={jakarta(400)}>
@@ -108,21 +108,21 @@ export default function Newsletter() {
         </div>
 
         {step === 'done' && place ? (
-          <div className="flex w-[695px] flex-col items-center gap-[8px] text-center">
+          <div className="flex w-[695px] flex-col items-center gap-[8px] text-center max-lg:w-full max-lg:max-w-[695px]">
             <p className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
               You’re #{place.position} in {place.city}
             </p>
             <p className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
               We’ll email you the moment Earth opens there. Share your link{' '}
-              <span className="text-[#007c53]" style={jakarta(500)}>
+              <span className="text-[#007c53] break-all" style={jakarta(500)}>
                 {window.location.origin}/?ref={place.referralCode}
               </span>{' '}
               and every friend who confirms moves you five places up.
             </p>
           </div>
         ) : (
-          <form onSubmit={submit} noValidate className="flex w-[695px] flex-col items-center gap-[16px]">
-            <div className="flex w-full gap-[16px] items-center">
+          <form onSubmit={submit} noValidate className="flex w-[695px] flex-col items-center gap-[16px] max-lg:w-full max-lg:max-w-[695px]">
+            <div className="flex w-full gap-[16px] items-center max-md:flex-col max-md:items-stretch">
               {step === 'code' ? (
                 <input
                   type="text"
@@ -132,7 +132,7 @@ export default function Newsletter() {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter the six-digit code"
                   aria-label="Six-digit code"
-                  className={`${field} w-[564px]`}
+                  className={`${field} w-[564px] max-lg:w-auto max-lg:flex-1 max-md:w-full max-md:flex-none`}
                   style={jakarta(400)}
                 />
               ) : (
@@ -143,14 +143,14 @@ export default function Newsletter() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
                   aria-label="Email address"
-                  className={`${field} w-[564px]`}
+                  className={`${field} w-[564px] max-lg:w-auto max-lg:flex-1 max-md:w-full max-md:flex-none`}
                   style={jakarta(400)}
                 />
               )}
               <button
                 type="submit"
                 disabled={busy}
-                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 disabled:opacity-70"
+                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 disabled:opacity-70 max-md:w-full"
                 style={{ backgroundImage: 'linear-gradient(90deg, rgb(0, 124, 83) 0%, rgb(0, 124, 83) 100%)' }}
               >
                 <span
@@ -163,7 +163,7 @@ export default function Newsletter() {
             </div>
 
             {step === 'details' && (
-              <div className="flex w-full gap-[16px] items-center">
+              <div className="flex w-full gap-[16px] items-center max-md:flex-col max-md:items-stretch">
                 <input
                   type="text"
                   autoComplete="address-level2"
@@ -174,7 +174,7 @@ export default function Newsletter() {
                   className={`${field} flex-1`}
                   style={jakarta(400)}
                 />
-                <div className="flex h-[48px] items-center gap-[4px] rounded-[30px] bg-[#f7f7f7] p-[4px]" role="radiogroup" aria-label="What are you here for?">
+                <div className="flex h-[48px] items-center gap-[4px] rounded-[30px] bg-[#f7f7f7] p-[4px] max-md:w-full" role="radiogroup" aria-label="What are you here for?">
                   {INTENTS.map((o) => (
                     <button
                       key={o.value}
@@ -182,7 +182,7 @@ export default function Newsletter() {
                       role="radio"
                       aria-checked={intent === o.value}
                       onClick={() => setIntent(o.value)}
-                      className="h-[40px] rounded-[30px] px-[16px] text-[14px] leading-[18px]"
+                      className="h-[40px] rounded-[30px] px-[16px] text-[14px] leading-[18px] max-md:flex-1"
                       style={{ ...jakarta(500), background: intent === o.value ? '#007c53' : 'transparent', color: intent === o.value ? '#ffffff' : '#807e7e' }}
                     >
                       {o.label}

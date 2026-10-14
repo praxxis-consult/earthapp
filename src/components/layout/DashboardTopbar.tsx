@@ -8,13 +8,30 @@ import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { initials } from '../../data/orders'
 
-export default function DashboardTopbar() {
+interface DashboardTopbarProps {
+  /** Opens the navigation drawer; the button only shows below `lg`, where the sidebar is hidden. */
+  onMenu?: () => void
+}
+
+export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
   const { account } = useAuth()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const name = account ? `${account.firstName} ${account.lastName}` : ''
   return (
-    <header className="bg-white flex items-center justify-between h-[96px] px-[24px] shrink-0">
+    <header className="bg-white flex items-center justify-between h-[96px] px-[24px] shrink-0 max-lg:h-[64px] max-lg:px-[16px] max-lg:gap-[12px]">
+      {/* Menu — phone and tablet only */}
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label="Open menu"
+        className="lg:hidden flex size-[44px] -ml-[8px] shrink-0 items-center justify-center rounded-full text-[#101604] hover:bg-[#f7f7f7]"
+      >
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+        </svg>
+      </button>
+
       {/* Search bar */}
       <form
         role="search"
@@ -23,7 +40,7 @@ export default function DashboardTopbar() {
           const q = query.trim()
           navigate(q ? `/dashboard/products?q=${encodeURIComponent(q)}` : '/dashboard/products')
         }}
-        className="bg-[#f7f7f7] flex gap-[8px] items-center h-[48px] px-[16px] rounded-[30px] w-[400px]"
+        className="bg-[#f7f7f7] flex gap-[8px] items-center h-[48px] px-[16px] rounded-[30px] w-[400px] max-lg:w-auto max-lg:flex-1 max-lg:min-w-0 max-lg:h-[44px]"
       >
         <div className="relative shrink-0 size-[20px]">
           <img src={searchIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
@@ -40,7 +57,7 @@ export default function DashboardTopbar() {
       </form>
 
       {/* Right: notification + user */}
-      <div className="flex gap-[24px] items-center">
+      <div className="flex gap-[24px] items-center shrink-0 max-lg:gap-[12px]">
         <div className="relative shrink-0 size-[24px]">
           <img src={notificationIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
@@ -51,8 +68,8 @@ export default function DashboardTopbar() {
             <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>{name ? initials(name) : ''}</p>
           </div>
 
-          {/* Name + role */}
-          <div className="flex flex-col gap-[2px] items-start justify-center">
+          {/* Name + role — the initials stand in for them on a phone */}
+          <div className="flex flex-col gap-[2px] items-start justify-center max-md:hidden">
             <div className="flex gap-[2px] items-center">
               <p className="text-[#101604] text-[16px] whitespace-nowrap" style={jakarta(600)}>
                 {name}
@@ -67,7 +84,7 @@ export default function DashboardTopbar() {
           </div>
 
           {/* Chevron */}
-          <div className="relative shrink-0 size-[16px]">
+          <div className="relative shrink-0 size-[16px] max-md:hidden">
             <img src={chevronDownIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
           </div>
         </div>

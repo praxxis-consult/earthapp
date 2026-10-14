@@ -22,17 +22,30 @@ const rawBaseQuery = fetchBaseQuery({
 
 let refreshing: Promise<boolean> | null = null
 
-/** Rotates the access token once, however many calls hit a 401 at the same time. */
-function refreshOnce(api: BaseQueryApi): Promise<boolean> {
+/**
+ * Rotates the access token once, however many callers ask at the same time: the session
+ * bootstrap on load, a query that hit a 401, and (in development) React's doubled effects all
+ * share one request. The API rotates the refresh cookie on every call, so two parallel refreshes
+ * would present the same cookie twice and the second one ends the session.
+ */
+export function refreshOnce(dispatch: Pick<BaseQueryApi, 'dispatch'>['dispatch']): Promise<boolean> {
   if (!refreshing) {
     refreshing = (async () => {
-      const res = await rawBaseQuery({ url: '/auth/refresh', method: 'POST', body: {} }, api, {})
-      if (res.data) {
-        api.dispatch(setCredentials(res.data as Credentials))
-        return true
+      try {
+        const res = await fetch('/v1/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: '{}',
+        })
+        if (res.ok) {
+          dispatch(setCredentials((await res.json()) as Credentials))
+          return true
+        }
+        if (res.status === 401 || res.status === 403) dispatch(logOut())
+      } catch {
+        /* offline: the caller's own request reports it */
       }
-      const status = (res.error as { status?: unknown } | undefined)?.status
-      if (status === 401 || status === 403) api.dispatch(logOut())
       return false
     })().finally(() => {
       refreshing = null
@@ -55,11 +68,11 @@ function toProblem(error: { status: unknown; data?: unknown }, meta: { response?
 /** The bearer header, a refresh just before expiry, one retry after a 401, and problem+json errors. */
 export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, ApiProblem> = async (args, api, extraOptions) => {
   const auth = (api.getState() as RootState).auth
-  if (auth.accessToken && expiringSoon(auth.expiresAt)) await refreshOnce(api)
+  if (auth.accessToken && expiringSoon(auth.expiresAt)) await refreshOnce(api.dispatch)
 
   let result = await rawBaseQuery(args, api, extraOptions)
   if (result.error?.status === 401 && (api.getState() as RootState).auth.accessToken) {
-    if (await refreshOnce(api)) result = await rawBaseQuery(args, api, extraOptions)
+    if (await refreshOnce(api.dispatch)) result = await rawBaseQuery(args, api, extraOptions)
   }
   if (result.error) return { error: toProblem(result.error, result.meta as { response?: Response } | undefined) }
   return { data: result.data }

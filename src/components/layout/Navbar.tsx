@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import logoMark from '../../assets/icons/logo-mark.svg'
 import arrowDown from '../../assets/icons/arrow-down.svg'
 import arrowRight from '../../assets/icons/arrow-right.svg'
+import closeIcon from '../../assets/icons/auth-cancel.svg'
+import Drawer from '../ui/Drawer'
 import LoginModal from '../ui/LoginModal'
 import OtpModal from '../ui/OtpModal'
 import { useAuth } from '../../feature/authentication/useAuth'
@@ -23,6 +25,8 @@ export default function Navbar() {
   // A guarded page sent an anonymous visitor here: open sign-in and remember where they were going.
   const [loginOpen, setLoginOpen] = useState(() => Boolean(redirect?.login))
   const [otpEmail, setOtpEmail] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const closeMenu = () => setMenuOpen(false)
 
   useEffect(() => {
     if (redirect?.login) navigate(location.pathname, { replace: true, state: { from: redirect.from } })
@@ -33,7 +37,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="bg-white w-full">
-        <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px] gap-[141px]">
+        <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px] gap-[141px] max-xl:px-[24px] max-xl:justify-between max-xl:gap-[24px] max-lg:gap-0 max-md:px-[16px]">
           {/* ── Logo — pinned left ── */}
           <div className="flex gap-[8px] items-center shrink-0">
             <div className="h-[48px] w-[46.629px] relative shrink-0">
@@ -50,8 +54,8 @@ export default function Navbar() {
             </p>
           </div>
 
-          {/* ── Nav links — truly centered ── */}
-          <div className="flex items-center gap-[32px]">
+          {/* ── Nav links — truly centered (inside the drawer below lg) ── */}
+          <div className="flex items-center gap-[32px] max-lg:hidden">
             <NavLink to="/" style={jakartaMedium} className={navLinkClass}>
               HOME
             </NavLink>
@@ -72,8 +76,8 @@ export default function Navbar() {
             </NavLink>
           </div>
 
-          {/* ── CTA — pinned right ── */}
-          <div className="flex gap-[16px] items-center shrink-0">
+          {/* ── CTA — pinned right (inside the drawer below lg) ── */}
+          <div className="flex gap-[16px] items-center shrink-0 max-lg:hidden">
             {/* Sign in — ghost (a signed-in person gets their dashboard instead) */}
             {signedIn ? (
               <NavLink
@@ -114,8 +118,99 @@ export default function Navbar() {
               </div>
             </NavLink>
           </div>
+
+          {/* ── Menu button — phones and tablets only ── */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            className="hidden max-lg:flex size-[48px] items-center justify-center rounded-full hover:bg-gray-50 transition-colors -mr-[12px]"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 5h18M3 12h18M3 19h18" stroke="#0c2310" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
       </nav>
+
+      <Drawer open={menuOpen} onClose={closeMenu} side="right" label="Menu">
+        <div className="flex items-center justify-between px-[16px] py-[24px]">
+          <div className="flex gap-[8px] items-center">
+            <img alt="" className="h-[32px] w-[31px]" src={logoMark} />
+            <p className="text-[#0c2310] text-[27px] leading-[0] lowercase" style={{ fontFamily: 'Goldman, serif' }}>
+              <span className="uppercase" style={{ lineHeight: '0.38' }}>
+                E
+              </span>
+              <span style={{ lineHeight: '0.38' }}>arth</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={closeMenu}
+            aria-label="Close menu"
+            className="size-[44px] flex items-center justify-center rounded-full hover:bg-gray-50 -mr-[10px]"
+          >
+            <img src={closeIcon} alt="" className="size-[24px]" />
+          </button>
+        </div>
+        <div className="flex flex-col px-[16px]">
+          {[
+            { to: '/', label: 'HOME' },
+            { to: '/marketplace', label: 'MARKETPLACE' },
+            { to: '/how-it-works', label: 'HOW IT WORKS' },
+            { to: '/about', label: 'ABOUT' },
+          ].map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              onClick={closeMenu}
+              style={jakartaMedium}
+              className={({ isActive }) =>
+                `${navLinkClass} flex h-[52px] items-center border-b border-[#f7f7f7] ${isActive ? 'text-[#0c2310]' : ''}`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+        <div className="mt-auto flex flex-col gap-[12px] p-[16px]">
+          {signedIn ? (
+            <NavLink
+              to="/dashboard"
+              onClick={closeMenu}
+              className="flex h-[48px] items-center justify-center rounded-[30px] border border-[#e4dede] text-[#0c2310] text-[14px] tracking-[-0.28px]"
+              style={jakartaMedium}
+            >
+              Dashboard
+            </NavLink>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false)
+                setLoginOpen(true)
+              }}
+              className="flex h-[48px] items-center justify-center rounded-[30px] border border-[#e4dede] text-[#0c2310] text-[14px] tracking-[-0.28px]"
+              style={jakartaMedium}
+            >
+              Sign in
+            </button>
+          )}
+          <NavLink
+            to={signedIn ? '/marketplace' : '/signup'}
+            onClick={closeMenu}
+            className="flex gap-[4px] h-[48px] items-center justify-center rounded-[30px]"
+            style={{ backgroundImage: 'linear-gradient(90deg, rgb(0, 124, 83) 0%, rgb(0, 124, 83) 100%)' }}
+          >
+            <span className="text-white text-[14px] tracking-[-0.28px]" style={jakartaMedium}>
+              Start Trading
+            </span>
+            <img alt="" className="size-[24px]" src={arrowRight} />
+          </NavLink>
+        </div>
+      </Drawer>
 
       {loginOpen && (
         <LoginModal

@@ -60,7 +60,7 @@ export default function SuccessModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className="flex w-[580px] max-w-full flex-col gap-[40px] rounded-[24px] bg-white p-[24px]"
+        className="flex w-[580px] max-w-full max-h-[calc(100vh-32px)] overflow-y-auto flex-col gap-[40px] rounded-[24px] bg-white p-[24px] max-md:gap-[32px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col items-center gap-[24px]">

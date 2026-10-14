@@ -102,13 +102,12 @@ export default function SelfieCaptureModal({ onUploaded, onClose }: SelfieCaptur
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-[16px]"
       style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white relative flex flex-col gap-[10px] items-start overflow-clip p-[24px] rounded-[24px]"
-        style={{ width: '480px' }}
+        className="bg-white relative flex w-[480px] max-w-full max-h-[calc(100vh-32px)] flex-col gap-[10px] items-start overflow-y-auto p-[24px] rounded-[24px]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="selfie-title"
