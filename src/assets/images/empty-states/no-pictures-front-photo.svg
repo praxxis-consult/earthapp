@@ -1,0 +1,26 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="218.934" height="235.453" viewBox="0 0 218.934 235.453" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="front photo">
+<rect id="Rectangle 2" x="2" y="2" width="214.934" height="231.453" rx="12.1655" fill="white" stroke="#8ECEA3" stroke-width="4"/>
+<path id="Rectangle 1" d="M190.791 14.7069L191.105 14.7108C197.679 14.8776 202.957 20.2585 202.957 26.872V166.648C202.957 173.367 197.509 178.813 190.791 178.813H26.8719C20.1534 178.813 14.707 173.367 14.7068 166.648V26.872C14.7071 20.1535 20.1534 14.7072 26.8719 14.7069H190.791Z" fill="url(#paint0_linear_0_54)" stroke="#8ECEA3" stroke-width="4"/>
+<g id="landscape">
+<circle id="sun" cx="132.994" cy="53.9765" r="14.8578" fill="white"/>
+<path id="mountain 2" d="M151.824 84.3077C152.804 82.7642 155.057 82.7642 156.037 84.3077L188.343 135.177C189.398 136.838 188.205 139.01 186.236 139.01H121.624C119.656 139.01 118.462 136.838 119.518 135.177L151.824 84.3077Z" fill="#8ECEA3"/>
+<g id="mountain 1">
+<path id="Polygon 3" d="M78.7947 51.7649C78.9812 51.4484 79.437 51.4421 79.6326 51.7532L132.999 136.618C133.204 136.945 132.969 137.37 132.584 137.37H29.2918C28.9125 137.37 28.6766 136.958 28.8689 136.631L78.7947 51.7649Z" fill="#BDE4CB" stroke="#BDE4CB" stroke-width="4"/>
+<path id="Polygon 2" d="M78.1836 47.4079C78.5808 46.7159 79.5738 46.7014 79.991 47.3814L94.2907 70.6887C94.8869 71.6605 93.7261 72.7532 92.7921 72.0994L88.4574 69.0651C88.0851 68.8045 87.5875 68.8127 87.224 69.0853L81.045 73.7196C80.7402 73.9481 80.3356 73.9939 79.9875 73.8392L72.7909 70.6407C72.5163 70.5186 72.2026 70.52 71.929 70.6443L65.3176 73.6495C64.3882 74.072 63.4629 73.0549 63.9711 72.1694L78.1836 47.4079Z" fill="white"/>
+<path id="Polygon 1" d="M155.012 80.7794C154.717 80.266 153.98 80.2552 153.671 80.7598L143.061 98.0526C142.619 98.7736 143.48 99.5843 144.173 99.0992L147.351 96.8744C147.645 96.6685 148.042 96.69 148.312 96.9264L152.842 100.89C153.09 101.107 153.447 101.145 153.734 100.985L158.99 98.0655C159.206 97.9454 159.466 97.9349 159.691 98.0372L164.558 100.249C165.247 100.563 165.934 99.8082 165.557 99.1512L155.012 80.7794Z" fill="white"/>
+</g>
+<path id="Vector 5" d="M45.198 148.526H94.499" stroke="#BDE4CB" stroke-width="4" stroke-linecap="round"/>
+<path id="Vector 4" d="M18.3875 139H201.387" stroke="#8ECEA3" stroke-width="4" stroke-linecap="square"/>
+<path id="Vector 3" d="M80.9882 156.293H112.737" stroke="#BDE4CB" stroke-width="4" stroke-linecap="round"/>
+<path id="Vector 2" d="M57.3544 156.63H76.2643" stroke="#BDE4CB" stroke-width="4" stroke-linecap="round"/>
+<path id="Vector 1" d="M143.8 149.202H159.333" stroke="#BDE4CB" stroke-width="4" stroke-linecap="round"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_54" x1="-6.61255" y1="1.49991" x2="186.387" y2="171" gradientUnits="userSpaceOnUse">
+<stop stop-color="#BDE4CB"/>
+<stop offset="1" stop-color="#ECF6EF"/>
+</linearGradient>
+</defs>
+</svg>

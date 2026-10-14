@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import cocoaImg from '../../assets/images/catalog-cocoa.png'
 import saffronImg from '../../assets/images/catalog-saffron.png'
@@ -74,12 +75,12 @@ const products: ProductCard[] = [
 export default function MarketplaceCatalog() {
   return (
     <section className="w-full bg-white py-[64px]">
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-[1200px] mx-auto max-xl:px-[24px] max-md:px-[16px]">
         {/* Header */}
-        <div className="flex items-start justify-between mb-[32px]">
-          <div className="w-[588px] flex flex-col gap-[8px]">
+        <div className="flex items-start justify-between mb-[24px] max-lg:flex-col max-lg:gap-[16px]">
+          <div className="w-[588px] flex flex-col gap-[8px] max-lg:w-full max-lg:max-w-[588px]">
             <h2
-              className="text-[#101604] text-[48px] tracking-[-0.96px]"
+              className="text-[#101604] text-[48px] leading-[64px] tracking-[-0.96px] max-md:text-[32px] max-md:leading-[40px]"
               style={jakartaSemiBold}
             >
               From the Ground<br />to Your Daily Life
@@ -91,14 +92,22 @@ export default function MarketplaceCatalog() {
               Browse our live catalog of ethically sourced raw materials with transparent origins and lab-tested quality.
             </p>
           </div>
+          {/* Link (670:30758): 192×48, 74px below the header top */}
+          <Link
+            to="/marketplace"
+            className="mt-[74px] flex h-[48px] w-[192px] items-center justify-center rounded-[30px] text-[#007c53] text-[14px] leading-[18px] whitespace-nowrap max-lg:mt-0 max-lg:w-auto max-lg:justify-start"
+            style={jakartaMedium}
+          >
+            Explore all Resources
+          </Link>
         </div>
 
         {/* Category filter tabs */}
-        <div className="flex gap-[12px] items-center mb-[32px]">
+        <div className="flex gap-[12px] items-center mb-[32px] max-lg:overflow-x-auto max-lg:-mx-[24px] max-lg:px-[24px] max-md:-mx-[16px] max-md:px-[16px]" style={{ scrollbarWidth: 'none' }}>
           {categories.map((cat, i) => (
             <button
               key={cat}
-              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] whitespace-nowrap ${
+              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap ${
                 i === 0
                   ? 'bg-[#007c53] text-white'
                   : 'bg-[#f7f7f7] text-[#807e7e]'
@@ -111,11 +120,11 @@ export default function MarketplaceCatalog() {
         </div>
 
         {/* Product grid — 3×2 */}
-        <div className="grid grid-cols-3 gap-[24px]">
+        <div className="grid grid-cols-3 gap-[24px] max-lg:grid-cols-2 max-md:grid-cols-1">
           {products.map((p) => (
             <div
               key={p.title}
-              className="border border-[#e4dede] rounded-[30px] overflow-hidden flex flex-col"
+              className="rounded-[30px] overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_#e4dede]"
             >
               {/* Image */}
               <div className="h-[200px] bg-[#eee] overflow-hidden shrink-0">
@@ -127,7 +136,7 @@ export default function MarketplaceCatalog() {
               </div>
 
               {/* Content */}
-              <div className="flex flex-col gap-[24px] p-[16px] flex-1">
+              <div className="flex flex-col gap-[24px] p-[16px] pt-[24px] flex-1">
                 {/* Title + description */}
                 <div className="flex flex-col gap-[8px]">
                   <p
@@ -151,7 +160,7 @@ export default function MarketplaceCatalog() {
                     { label: 'Quantity', value: p.quantity },
                     { label: 'Listed', value: p.listed },
                   ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between">
+                    <div key={label} className="flex items-center justify-between leading-[18px]">
                       <span
                         className="text-[#101604] text-[14px]"
                         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}
@@ -169,15 +178,15 @@ export default function MarketplaceCatalog() {
                 </div>
 
                 {/* CTA buttons */}
-                <div className="flex items-center justify-between mt-auto">
+                <div className="flex items-center justify-between mt-auto max-lg:gap-[12px]">
                   <button
-                    className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center"
+                    className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center max-lg:w-auto max-lg:flex-1"
                     style={jakartaMedium}
                   >
                     View details
                   </button>
                   <button
-                    className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px]"
+                    className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px] max-lg:w-auto max-lg:flex-1"
                     style={{ backgroundImage: 'linear-gradient(90deg, rgb(0, 124, 83) 0%, rgb(0, 124, 83) 100%)' }}
                   >
                     <span

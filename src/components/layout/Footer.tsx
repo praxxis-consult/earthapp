@@ -70,12 +70,12 @@ const navColumns = [
 export default function Footer() {
   return (
     <footer className="w-full" style={footerBg}>
-      <div className="max-w-[1200px] mx-auto flex flex-col justify-between pt-[80px] pb-[80px]">
+      <div className="max-w-[1200px] mx-auto flex flex-col justify-between pt-[80px] pb-[80px] max-xl:px-[24px] max-lg:pt-[56px] max-lg:pb-[32px] max-md:px-[16px]">
       {/* ── Top row ── */}
-      <div className="flex items-start gap-[24px]">
+      <div className="flex items-start gap-[24px] max-lg:flex-col max-lg:gap-[40px]">
 
         {/* Brand column */}
-        <div className="w-[384px] shrink-0 flex flex-col gap-[40px]">
+        <div className="w-[384px] shrink-0 flex flex-col gap-[40px] max-lg:w-full max-lg:max-w-[480px] max-lg:gap-[24px]">
 
           {/* Brand copy section: logo row + tagline grouped with gap-[16px] */}
           <div className="flex flex-col gap-[16px]">
@@ -140,7 +140,7 @@ export default function Footer() {
         </div>
 
         {/* Nav columns */}
-        <div className="flex flex-[1_0_0] gap-[24px]">
+        <div className="flex flex-[1_0_0] gap-[24px] max-lg:grid max-lg:w-full max-lg:grid-cols-4 max-lg:gap-y-[32px] max-md:grid-cols-2">
           {navColumns.map((col) => (
             <div key={col.heading} className="flex-[1_0_0] flex flex-col gap-[24px] items-start">
 
@@ -175,16 +175,16 @@ export default function Footer() {
       {/* ── Legal bar ── */}
       {/* BUILDER: mt-[80px] added to push the bar down from the top row,
           matching the overall 80px top/bottom padding rhythm of the footer */}
-      <div className="flex items-center justify-between py-[24px] border-t border-[rgba(156,156,156,0.5)] mt-[80px]">
+      <div className="flex items-center justify-between py-[24px] border-t border-[rgba(156,156,156,0.5)] mt-[142px] max-lg:mt-[56px] max-md:flex-col max-md:items-start max-md:gap-[8px]">
         <span
-          className="text-[14px] text-white font-normal leading-[20px] whitespace-nowrap"
+          className="text-[14px] text-white font-normal leading-[20px] whitespace-nowrap max-md:whitespace-normal"
           style={jakartaRegular}
         >
           © Copyright 2026 Earth Trading Group, All Rights Reserved.
         </span>
         {/* BUILDER: right side uses Inter per spec — different font family from rest of footer */}
         <span
-          className="text-[14px] text-white font-normal leading-[20px] whitespace-nowrap"
+          className="text-[14px] text-white font-normal leading-[20px] whitespace-nowrap max-md:whitespace-normal"
           style={interRegular}
         >
           Earth is the marketplace, never the escrow.

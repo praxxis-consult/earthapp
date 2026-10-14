@@ -17,8 +17,9 @@ Tailwind v4 project.
 | Brand palette | `#007C53` primary green · `#0C2310` dark green · `#AEE74A` accent lime · `#404438` dark muted · `#807E7E` nav text |
 | Component folders | `src/components/ui/` — atoms (Button, Card, Badge, Logo) · `src/components/layout/` — page-level shells (Navbar, Footer, MainLayout) · `src/components/common/` — shared composites |
 | SVG icons | Imported as `import icon from '../../assets/icons/icon.svg'` and rendered via `<img>` |
-| State | Redux Toolkit (`src/store/`) |
+| State | Redux Toolkit + RTK Query: `src/app/store.ts`, `src/app/api/apiSlice.ts` (base query with bearer + refresh), per-feature `src/feature/<name>/<name>Slice.ts` and `<name>ApiSlice.ts` (`injectEndpoints`); components use the generated hooks |
 | Routing | React Router v7 (`src/routes/`) |
+| Responsive | Desktop (≥1024, measured against the 1440 frames) is the source of truth and its classes stay as they are; phone and tablet are added with `max-lg:` / `max-md:` / `max-sm:` overrides or `lg:hidden` swaps, never by changing desktop values. Collapsed navigation uses `src/components/ui/Drawer.tsx`; dashboard tables use `src/components/ui/DataTable.tsx` (table from `md`, one card per row below); sideways chip rows use `SCROLL_ROW` from `src/utils/styles.ts` |
 | Linting | oxlint — run `npm run lint` before declaring a component done |
 
 ### Existing design tokens (index.css)
