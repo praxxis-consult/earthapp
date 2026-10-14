@@ -37,17 +37,6 @@ export const authApiSlice = apiSlice.injectEndpoints({
         }
       },
     }),
-    refresh: builder.mutation<Credentials, void>({
-      query: () => ({ url: '/auth/refresh', method: 'POST', body: {} }),
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled
-          dispatch(setCredentials({ accessToken: data.accessToken, expiresAt: data.expiresAt }))
-        } catch {
-          /* the caller reports the failure */
-        }
-      },
-    }),
     getMe: builder.query<Account, void>({
       query: () => '/accounts/me',
       providesTags: ['Account'],
