@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Pager from '../../components/ui/Pager'
 import Toast from '../../components/ui/Toast'
 import emptyBg from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import addIcon from '../../assets/icons/db-add.svg'
-import pagePrevIcon from '../../assets/icons/db-page-prev.svg'
-import pageNextIcon from '../../assets/icons/db-page-next.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
 import { describeError, products as productsApi, type Product } from '../../services/earthApi'
 import { LISTING_STYLE, listingStatus, naira, soldAsLabel } from '../../lib/productView'
@@ -109,11 +108,6 @@ export default function Products() {
   const pageCount = Math.max(1, Math.ceil((items?.length ?? 0) / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = useMemo(() => (items ?? []).slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE), [items, current])
-  const pages: (number | '…')[] = []
-  for (let p = 1; p <= pageCount; p++) {
-    if (p <= 3 || p === pageCount || Math.abs(p - current) <= 1) pages.push(p)
-    else if (pages[pages.length - 1] !== '…') pages.push('…')
-  }
 
   const toggle = (id: string) =>
     setSelected((s) => {
@@ -256,55 +250,7 @@ export default function Products() {
             </div>
 
             {/* Pager, as on the orders page */}
-            <nav
-              aria-label="Pages"
-              className="flex items-center justify-center gap-[16px] h-[74px] px-[64px] rounded-[20px] border border-[#f7f7f7] bg-white"
-            >
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={current === 1}
-                aria-label="Previous page"
-                className="size-[20px] disabled:opacity-50"
-              >
-                <img src={pagePrevIcon} alt="" className="size-[20px]" />
-              </button>
-              {pages.map((p, i) =>
-                p === '…' ? (
-                  <span
-                    key={`gap-${i}`}
-                    className="flex items-center justify-center size-[40px] rounded-[30px] bg-[#f7f7f7] text-[#807e7e] text-[14px] leading-[18px]"
-                    style={jakarta(600)}
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setPage(p)}
-                    aria-current={p === current ? 'page' : undefined}
-                    className="flex items-center justify-center size-[40px] rounded-[30px] text-[14px] leading-[18px]"
-                    style={{
-                      ...jakarta(600),
-                      background: p === current ? '#f2f9f7' : '#f7f7f7',
-                      color: p === current ? '#007c53' : '#807e7e',
-                    }}
-                  >
-                    {p}
-                  </button>
-                ),
-              )}
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                disabled={current === pageCount}
-                aria-label="Next page"
-                className="size-[20px] disabled:opacity-50"
-              >
-                <img src={pageNextIcon} alt="" className="size-[20px]" />
-              </button>
-            </nav>
+            <Pager page={current} pageCount={pageCount} onChange={setPage} />
           </div>
         )}
       </div>

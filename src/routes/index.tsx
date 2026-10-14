@@ -19,6 +19,8 @@ import AddProduct from '../pages/Dashboard/AddProduct'
 import Orders from '../pages/Dashboard/Orders'
 import OrderDetail from '../pages/Dashboard/OrderDetail'
 import Messages from '../pages/Dashboard/Messages'
+import Payout from '../pages/Dashboard/Payout'
+import Referral from '../pages/Dashboard/Referral'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
 import RequireAuth from '../auth/RequireAuth'
@@ -48,6 +50,8 @@ export default function AppRoutes() {
         <Route path="/dashboard/orders" element={<Orders />} />
         <Route path="/dashboard/orders/:id" element={<OrderDetail />} />
         <Route path="/dashboard/messages" element={<Messages />} />
+        <Route path="/dashboard/payout" element={<Payout />} />
+        <Route path="/dashboard/referrals" element={<Referral />} />
       </Route>
 
       <Route element={<MainLayout />}>

@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Pager from '../../components/ui/Pager'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
-import pagePrevIcon from '../../assets/icons/db-page-prev.svg'
-import pageNextIcon from '../../assets/icons/db-page-next.svg'
 import emptyBg from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import { orders, naira, type Order, type OrderStatus } from '../../data/orders'
@@ -130,13 +129,6 @@ export default function Orders() {
   const inProgress = orders.filter(
     (o) => o.status === 'processing' || o.status === 'ready' || o.status === 'dispatched',
   ).length
-
-  // Page numbers as the design shows them: 1 2 3 … last, collapsing the middle.
-  const pages: (number | '…')[] = []
-  for (let p = 1; p <= pageCount; p++) {
-    if (p <= 3 || p === pageCount || Math.abs(p - current) <= 1) pages.push(p)
-    else if (pages[pages.length - 1] !== '…') pages.push('…')
-  }
 
   return (
     <DashboardLayout>
@@ -417,55 +409,7 @@ export default function Orders() {
               </div>
 
               {/* Pagination (561:5295): 74 tall, padding 16/64, gap 16, 1px #f7f7f7 frame, radius 20 */}
-              <nav
-                aria-label="Pages"
-                className="mt-[16px] flex items-center justify-center gap-[16px] h-[74px] px-[64px] rounded-[20px] border border-[#f7f7f7] bg-white"
-              >
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={current === 1}
-                  aria-label="Previous page"
-                  className="size-[20px] disabled:opacity-50"
-                >
-                  <img src={pagePrevIcon} alt="" className="size-[20px]" />
-                </button>
-                {pages.map((p, i) =>
-                  p === '…' ? (
-                    <span
-                      key={`gap-${i}`}
-                      className="flex items-center justify-center size-[40px] rounded-[30px] bg-[#f7f7f7] text-[#807e7e] text-[14px] leading-[18px]"
-                      style={jakarta(600)}
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setPage(p)}
-                      aria-current={p === current ? 'page' : undefined}
-                      className="flex items-center justify-center size-[40px] rounded-[30px] text-[14px] leading-[18px]"
-                      style={{
-                        ...jakarta(600),
-                        background: p === current ? '#f2f9f7' : '#f7f7f7',
-                        color: p === current ? '#007c53' : '#807e7e',
-                      }}
-                    >
-                      {p}
-                    </button>
-                  ),
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                  disabled={current === pageCount}
-                  aria-label="Next page"
-                  className="size-[20px] disabled:opacity-50"
-                >
-                  <img src={pageNextIcon} alt="" className="size-[20px]" />
-                </button>
-              </nav>
+              <Pager page={current} pageCount={pageCount} onChange={setPage} />
             </>
           )}
         </div>
