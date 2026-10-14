@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import cocoaImg from '../../assets/images/catalog-cocoa.png'
 import saffronImg from '../../assets/images/catalog-saffron.png'
@@ -76,10 +77,10 @@ export default function MarketplaceCatalog() {
     <section className="w-full bg-white py-[64px]">
       <div className="max-w-[1200px] mx-auto">
         {/* Header */}
-        <div className="flex items-start justify-between mb-[32px]">
+        <div className="flex items-start justify-between mb-[24px]">
           <div className="w-[588px] flex flex-col gap-[8px]">
             <h2
-              className="text-[#101604] text-[48px] tracking-[-0.96px]"
+              className="text-[#101604] text-[48px] leading-[64px] tracking-[-0.96px]"
               style={jakartaSemiBold}
             >
               From the Ground<br />to Your Daily Life
@@ -91,6 +92,14 @@ export default function MarketplaceCatalog() {
               Browse our live catalog of ethically sourced raw materials with transparent origins and lab-tested quality.
             </p>
           </div>
+          {/* Link (670:30758): 192×48, 74px below the header top */}
+          <Link
+            to="/marketplace"
+            className="mt-[74px] flex h-[48px] w-[192px] items-center justify-center rounded-[30px] text-[#007c53] text-[14px] leading-[18px] whitespace-nowrap"
+            style={jakartaMedium}
+          >
+            Explore all Resources
+          </Link>
         </div>
 
         {/* Category filter tabs */}
@@ -98,7 +107,7 @@ export default function MarketplaceCatalog() {
           {categories.map((cat, i) => (
             <button
               key={cat}
-              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] whitespace-nowrap ${
+              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap ${
                 i === 0
                   ? 'bg-[#007c53] text-white'
                   : 'bg-[#f7f7f7] text-[#807e7e]'
@@ -115,7 +124,7 @@ export default function MarketplaceCatalog() {
           {products.map((p) => (
             <div
               key={p.title}
-              className="border border-[#e4dede] rounded-[30px] overflow-hidden flex flex-col"
+              className="rounded-[30px] overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_#e4dede]"
             >
               {/* Image */}
               <div className="h-[200px] bg-[#eee] overflow-hidden shrink-0">
@@ -127,7 +136,7 @@ export default function MarketplaceCatalog() {
               </div>
 
               {/* Content */}
-              <div className="flex flex-col gap-[24px] p-[16px] flex-1">
+              <div className="flex flex-col gap-[24px] p-[16px] pt-[24px] flex-1">
                 {/* Title + description */}
                 <div className="flex flex-col gap-[8px]">
                   <p
@@ -151,7 +160,7 @@ export default function MarketplaceCatalog() {
                     { label: 'Quantity', value: p.quantity },
                     { label: 'Listed', value: p.listed },
                   ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between">
+                    <div key={label} className="flex items-center justify-between leading-[18px]">
                       <span
                         className="text-[#101604] text-[14px]"
                         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}

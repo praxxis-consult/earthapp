@@ -64,12 +64,11 @@ export default function Navbar() {
                 <img alt="" className="absolute inset-0 block size-full max-w-none" src={arrowDown} />
               </div>
             </div>
-
-            <NavLink to="/lending" style={jakartaMedium} className={navLinkClass}>
-              LENDING
-            </NavLink>
             <NavLink to="/how-it-works" style={jakartaMedium} className={navLinkClass}>
               HOW IT WORKS
+            </NavLink>
+            <NavLink to="/about" style={jakartaMedium} className={navLinkClass}>
+              ABOUT
             </NavLink>
           </div>
 
