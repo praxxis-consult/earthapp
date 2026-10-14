@@ -7,7 +7,8 @@ import emptyBg from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import addIcon from '../../assets/icons/db-add.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
-import { describeError, products as productsApi, type Product } from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { LISTING_STYLE, listingStatus, naira, soldAsLabel } from '../../lib/productView'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
@@ -81,8 +82,9 @@ const HEAD =
 export default function Products() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [items, setItems] = useState<Product[] | null>(null)
-  const [error, setError] = useState('')
+  const { data, error: loadError } = useGetMyProductsQuery()
+  const items = useMemo(() => (data ? [...data].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) : null), [data])
+  const error = loadError ? describeError(loadError) : ''
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<ProductsToast | null>(
@@ -93,17 +95,6 @@ export default function Products() {
     if ((location.state as { toast?: ProductsToast } | null)?.toast)
       navigate(location.pathname, { replace: true, state: null })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    let live = true
-    productsApi
-      .mine()
-      .then((list) => live && setItems(list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))))
-      .catch((e) => live && setError(describeError(e)))
-    return () => {
-      live = false
-    }
-  }, [])
 
   const pageCount = Math.max(1, Math.ceil((items?.length ?? 0) / PAGE_SIZE))
   const current = Math.min(page, pageCount)

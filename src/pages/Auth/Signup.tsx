@@ -13,7 +13,8 @@ import chevronDown16 from '../../assets/icons/signup-chevron-down-16.svg'
 import flagUs from '../../assets/icons/signup-flag-us.svg'
 import checkboxOn from '../../assets/icons/checkbox-on.svg'
 import checkboxOff from '../../assets/icons/checkbox-off.svg'
-import { accounts, ApiError, describeError, type AccountType } from '../../services/earthApi'
+import { describeError, toApiError, type AccountType } from '../../services/earthApi'
+import { useCreateAccountMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
 const ACCOUNT_TYPES = ['Buyer', 'Seller', 'Both']
@@ -120,6 +121,7 @@ export default function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState('')
   const { open: dialOpen, setOpen: setDialOpen, ref: dialRef } = useMenu()
+  const [submitAccount] = useCreateAccountMutation()
 
   async function createAccount(e: FormEvent) {
     e.preventDefault()
@@ -138,22 +140,23 @@ export default function Signup() {
 
     setBusy(true)
     try {
-      await accounts.create({
+      await submitAccount({
         accountType: ACCOUNT_TYPE_API[accountType],
         firstName: firstName.trim().slice(0, 100),
         lastName: lastName.trim().slice(0, 100),
         email: email.trim().toLowerCase(),
         phoneNumber: `${dial.code}${digits.replace(/^0+/, '')}`,
         termsConsent: true,
-      })
+      }).unwrap()
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase() } })
     } catch (err) {
-      if (err instanceof ApiError && err.status === 400 && err.errors.length) {
+      const e = toApiError(err)
+      if (e.status === 400 && e.errors.length) {
         const mapped: Record<string, string> = {}
-        for (const [path] of Object.entries(err.fieldErrors)) mapped[path] = FIELD_MESSAGES[path] ?? 'Check this field.'
+        for (const [path] of Object.entries(e.fieldErrors)) mapped[path] = FIELD_MESSAGES[path] ?? 'Check this field.'
         setErrors(mapped)
         setFormError(Object.keys(mapped).length ? '' : describeError(err))
-      } else if (err instanceof ApiError && err.status === 409) {
+      } else if (e.status === 409) {
         setFormError('An account already exists for this email.')
       } else {
         setFormError(describeError(err))

@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import closeIcon from '../../assets/icons/od-close-circle.svg'
 import chevronDown from '../../assets/icons/signup-chevron-down-24.svg'
 import gpsIcon from '../../assets/icons/onboarding-gps.svg'
-import { ApiError, describeError, stores, type Category, type Onboarding } from '../../services/earthApi'
+import { describeError, toApiError, type Category, type Onboarding } from '../../services/earthApi'
+import { useSaveOnboardingMutation, type SaveOnboardingBody } from '../../feature/stores/storesApiSlice'
 import { COUNTRY_NAMES, countryCode, countryName } from '../../onboarding/draft'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
@@ -147,6 +148,7 @@ export function EditStoreDialog({
   const [catOpen, setCatOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [saveOnboarding] = useSaveOnboardingMutation()
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -161,10 +163,10 @@ export function EditStoreDialog({
         categoryIds: ids,
         businessAddress: { ...store.businessAddress, country, street: street.trim(), landmark: landmark.trim() || 'Not provided' },
       }
-      const saved = store.status === 'LIVE' ? await stores.goLive(body, store.version) : await stores.saveDraft(body, store.version)
+      const saved = await saveOnboarding({ ...body, status: store.status === 'LIVE' ? 'LIVE' : 'DRAFT', expectedVersion: store.version } as SaveOnboardingBody).unwrap()
       onSaved(saved, { description: description.trim(), opens, closes })
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 409 ? 'Someone saved newer details. Reload and try again.' : describeError(err))
+      setError(toApiError(err).status === 409 ? 'Someone saved newer details. Reload and try again.' : describeError(err))
     } finally {
       setBusy(false)
     }
@@ -312,6 +314,7 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
   const [accountName, setAccountName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [saveOnboarding] = useSaveOnboardingMutation()
   const banks = BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
 
   async function submit(e: FormEvent) {
@@ -323,7 +326,7 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
     setError('')
     try {
       const body = { ...liveBody(store), bank: { country, bankName, accountNumber, accountName: accountName.trim() } }
-      const saved = store.status === 'LIVE' ? await stores.goLive(body, store.version) : await stores.saveDraft(body, store.version)
+      const saved = await saveOnboarding({ ...body, status: store.status === 'LIVE' ? 'LIVE' : 'DRAFT', expectedVersion: store.version } as SaveOnboardingBody).unwrap()
       onSaved(saved)
     } catch (err) {
       setError(describeError(err))

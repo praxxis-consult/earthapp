@@ -8,7 +8,8 @@ import OtpField from '../../components/ui/OtpField'
 import { useCountdown } from '../../components/ui/useCountdown'
 import OtpModal from '../../components/ui/OtpModal'
 import otpBg from '../../assets/images/signup-otp-bg.png'
-import { accounts, describeError } from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useConfirmAccountMutation, useRequestOtpMutation, useResendOtpMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
 /**
@@ -29,6 +30,9 @@ export default function SignupOtp() {
   const [loginOtpOpen, setLoginOtpOpen] = useState(false)
   const { seconds, label, restart } = useCountdown()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [resendOtp] = useResendOtpMutation()
+  const [confirmAccount] = useConfirmAccountMutation()
+  const [requestOtp] = useRequestOtpMutation()
   const canResend = seconds === 0 && !busy
 
   if (!email) return <Navigate to="/signup" replace />
@@ -38,7 +42,7 @@ export default function SignupOtp() {
     setBusy(true)
     setError('')
     try {
-      await accounts.resendOtp(email, 'ACCOUNT_CONFIRMATION')
+      await resendOtp({ email, intent: 'ACCOUNT_CONFIRMATION' }).unwrap()
       setNotice(`We sent a new code to ${email}.`)
       restart()
     } catch (err) {
@@ -58,7 +62,7 @@ export default function SignupOtp() {
     setBusy(true)
     setError('')
     try {
-      await accounts.confirm(email, otp)
+      await confirmAccount({ email, code: otp }).unwrap()
       setShowAccountCreated(true)
     } catch (err) {
       setError(describeError(err))
@@ -72,7 +76,7 @@ export default function SignupOtp() {
     setShowAccountCreated(false)
     setBusy(true)
     try {
-      await accounts.requestOtp(email, 'LOGIN')
+      await requestOtp({ email, intent: 'LOGIN' }).unwrap()
     } catch (err) {
       // A code may already be on its way (rate limit); the sign-in step can resend.
       setNotice(describeError(err))

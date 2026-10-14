@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import SuccessModal from '../../components/ui/SuccessModal'
@@ -7,16 +7,11 @@ import exportIcon from '../../assets/icons/prod-export.svg'
 import galleryAddIcon from '../../assets/icons/prod-gallery-add.svg'
 import verifyIcon from '../../assets/icons/db-verify.svg'
 import chevronDownIcon from '../../assets/icons/db-chevron-down.svg'
-import {
-  ApiError,
-  describeError,
-  products as productsApi,
-  stores,
-  uploads,
-  type Category,
-  type Product,
-  type ProductInput,
-} from '../../services/earthApi'
+import { describeError, type Category, type Product, type ProductInput, toApiError } from '../../services/earthApi'
+import { useGetMyProductsQuery, useSaveProductMutation } from '../../feature/products/productsApiSlice'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { useStore } from '../../feature/stores/useStore'
+import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { PICKUP_PRESETS, pickupPresetLabel } from '../../lib/productView'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
@@ -158,14 +153,13 @@ function Stepper({ value, onChange, min = 0 }: { value: number; onChange: (n: nu
  * the listing private; Publish asks the API to list it. In edit mode the buttons become Discard
  * changes / Save changes and the listing keeps its status.
  */
-export default function AddProduct() {
+function ProductForm({ original, categories, storeCountry }: { original: Product | null; categories: Category[]; storeCountry: string }) {
   const navigate = useNavigate()
   const { id } = useParams()
   const editing = Boolean(id)
-  const [form, setForm] = useState<Form>(EMPTY)
-  const [original, setOriginal] = useState<Product | null>(null)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [storeCountry, setStoreCountry] = useState('NG')
+  const [form, setForm] = useState<Form>(() => (original ? fromProduct(original) : EMPTY))
+  const [saveProduct] = useSaveProductMutation()
+  const [uploadImage] = useUploadImageMutation()
   const [catOpen, setCatOpen] = useState(false)
   const [hoursOpen, setHoursOpen] = useState(false)
   const [busy, setBusy] = useState<'' | 'draft' | 'publish' | 'upload'>('')
@@ -174,34 +168,6 @@ export default function AddProduct() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const fileInput = useRef<HTMLInputElement>(null)
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }))
-
-  useEffect(() => {
-    let live = true
-    // A product can only sit in a category the store sells, so the list is the store's own.
-    Promise.all([stores.categories(), stores.onboarding().catch(() => null)])
-      .then(([all, o]) => {
-        if (!live) return
-        if (o?.businessAddress?.country) setStoreCountry(o.businessAddress.country)
-        const mine = o?.categoryIds?.length ? all.filter((c) => o.categoryIds.includes(c.id)) : all
-        setCategories(mine)
-      })
-      .catch(() => {})
-    if (id) {
-      productsApi
-        .mine()
-        .then((list) => {
-          const p = list.find((x) => x.id === id)
-          if (!live) return
-          if (!p) return setError('We could not find that product.')
-          setOriginal(p)
-          setForm(fromProduct(p))
-        })
-        .catch((e) => live && setError(describeError(e)))
-    }
-    return () => {
-      live = false
-    }
-  }, [id])
 
   const category = categories.find((c) => c.id === form.categoryId)
   const checklist = useMemo(
@@ -225,11 +191,11 @@ export default function AddProduct() {
       for (const file of chosen) {
         if (!/^image\/(jpeg|png)$/.test(file.type)) throw new Error('Use JPG or PNG photos.')
         if (file.size > MAX_PHOTO_BYTES) throw new Error('Each photo must be under 5 MB.')
-        const { url } = await uploads.image(file, 'PRODUCT_IMAGE')
+        const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
         setForm((f) => ({ ...f, images: [...f.images, { url, isPrimary: f.images.length === 0 }] }))
       }
     } catch (e) {
-      setError(e instanceof Error && !(e instanceof ApiError) ? e.message : describeError(e))
+      setError(describeError(e))
     } finally {
       setBusy('')
       if (fileInput.current) fileInput.current.value = ''
@@ -297,7 +263,7 @@ export default function AddProduct() {
     try {
       // "Available for sale" off keeps a published listing out of the marketplace: it is saved as a draft.
       const effective = status === 'PUBLISHED' && !form.availableForSale ? 'DRAFT' : status
-      const saved = await productsApi.save(toInput(effective))
+      const saved = await saveProduct(toInput(effective)).unwrap()
       if (effective === 'PUBLISHED') {
         // Figma 476:16104 / 687:7412: a modal, not a toast, once the listing is live.
         setPublished({ id: saved.id, edited: editing })
@@ -305,8 +271,9 @@ export default function AddProduct() {
       }
       const toast = { title: 'Draft saved successfully', body: 'You can complete this listing anytime from your product list.' }
       navigate('/dashboard/products', { state: { toast } })
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 400 && e.errors.length) {
+    } catch (err) {
+      const e = toApiError(err)
+      if (e.status === 400 && e.errors.length) {
         const fe: Record<string, string> = {}
         for (const err of e.errors) {
           const key = (err.path ?? '').split('.')[0]
@@ -314,7 +281,7 @@ export default function AddProduct() {
         }
         setFieldErrors(fe)
         setError('The API could not accept some of these details. Check the highlighted fields.')
-      } else if (e instanceof ApiError && e.status === 403) {
+      } else if (e.status === 403) {
         setError('Publishing needs a live store. Finish your store setup first.')
       } else setError(describeError(e))
     } finally {
@@ -946,4 +913,26 @@ export default function AddProduct() {
       )}
     </DashboardLayout>
   )
+}
+
+/** Loads the store, its categories and (when editing) the listing, then mounts the form fresh per listing. */
+export default function AddProduct() {
+  const { id } = useParams()
+  const { data: allCategories = [] } = useGetCategoriesQuery()
+  const { store } = useStore()
+  const myProducts = useGetMyProductsQuery(undefined, { skip: !id })
+  const original = id ? (myProducts.data?.find((x) => x.id === id) ?? null) : null
+  // A product can only sit in a category the store sells, so the list is the store's own.
+  const categories = store?.categoryIds?.length ? allCategories.filter((c) => store.categoryIds.includes(c.id)) : allCategories
+  const pending = Boolean(id) && !myProducts.data && !myProducts.error
+  const missing = Boolean(id) && Boolean(myProducts.data) && !original
+  if (pending || missing || myProducts.error)
+    return (
+      <DashboardLayout>
+        <p className="px-[24px] pt-[40px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
+          {pending ? 'Loading…' : myProducts.error ? describeError(myProducts.error) : 'We could not find that product.'}
+        </p>
+      </DashboardLayout>
+    )
+  return <ProductForm key={original?.id ?? 'new'} original={original} categories={categories} storeCountry={store?.businessAddress?.country ?? 'NG'} />
 }

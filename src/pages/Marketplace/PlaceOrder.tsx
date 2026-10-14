@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getListing, type Listing } from '../../lib/catalog'
+import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { naira } from '../../lib/productView'
 import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
 import arrowLeft from '../../assets/icons/po-arrow-left.svg'
@@ -22,8 +22,8 @@ const STEP = 1
 export default function PlaceOrder() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [loaded, setLoaded] = useState<{ id: string; product: Listing | null } | null>(null)
-  const product = loaded && loaded.id === id ? loaded.product : undefined
+  // undefined while loading, null when the API has no such public listing
+  const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const [activeThumb, setActiveThumb] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   // The quantity starts at the listing's minimum order once it loads.
@@ -31,13 +31,6 @@ export default function PlaceOrder() {
   const qty = qtyState && qtyState.id === id ? qtyState.qty : (product?.moq ?? 1)
   const setQty = (update: (q: number) => number) => setQtyState({ id: id ?? '', qty: update(qty) })
 
-  useEffect(() => {
-    let live = true
-    if (id) getListing(id).then((p) => live && setLoaded({ id, product: p }))
-    return () => {
-      live = false
-    }
-  }, [id])
 
   if (!product) {
     return (

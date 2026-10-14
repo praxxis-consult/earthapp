@@ -24,7 +24,7 @@ import Referral from '../pages/Dashboard/Referral'
 import Settings from '../pages/Dashboard/Settings'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
-import RequireAuth from '../auth/RequireAuth'
+import RequireAuth from '../feature/authentication/RequireAuth'
 
 export default function AppRoutes() {
   return (

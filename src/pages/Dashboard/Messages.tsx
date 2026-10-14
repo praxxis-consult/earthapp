@@ -4,7 +4,8 @@ import { MenuItem, MenuList } from '../../components/ui/SelectorMenu'
 import { useMenu } from '../../components/ui/useMenu'
 import tagIcon from '../../assets/icons/msg-tag.svg'
 import galleryIcon from '../../assets/icons/msg-gallery.svg'
-import { products as productsApi, type Product } from '../../services/earthApi'
+import type { Product } from '../../services/earthApi'
+import { useLazyGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { naira as nairaFmt } from '../../lib/productView'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -66,6 +67,7 @@ export default function Messages() {
   const history = useRef<HTMLDivElement>(null)
   const { open: attachOpen, setOpen: setAttachOpen, ref: attachRef } = useMenu()
   const [picker, setPicker] = useState<Product[] | null>(null)
+  const [loadMine] = useLazyGetMyProductsQuery()
   const [receipt, setReceipt] = useState<Extract<Message, { kind: 'invoice' }> | null>(null)
 
   const active = chats.find((c) => c.id === activeId) ?? chats[0]
@@ -101,7 +103,7 @@ export default function Messages() {
   async function openPicker() {
     setAttachOpen(false)
     setPicker([])
-    setPicker(await productsApi.mine('PUBLISHED').catch(() => []))
+    setPicker(await loadMine('PUBLISHED').unwrap().catch(() => []))
   }
 
   function sendProduct(p: Product) {

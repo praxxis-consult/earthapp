@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import authCancel from '../../assets/icons/auth-cancel.svg'
 import GradientButton from './GradientButton'
-import { describeError, uploads } from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { jakarta } from '../../utils/styles'
 
 interface SelfieCaptureModalProps {
@@ -21,6 +22,7 @@ export default function SelfieCaptureModal({ onUploaded, onClose }: SelfieCaptur
   const [shot, setShot] = useState<Blob | null>(null)
   const [preview, setPreview] = useState('')
   const [busy, setBusy] = useState(false)
+  const [uploadImage] = useUploadImageMutation()
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function SelfieCaptureModal({ onUploaded, onClose }: SelfieCaptur
     setError('')
     try {
       const file = shot instanceof File ? shot : new File([shot], 'selfie.jpg', { type: 'image/jpeg' })
-      const { url } = await uploads.image(file, 'SELFIE')
+      const { url } = await uploadImage({ file, purpose: 'SELFIE' }).unwrap()
       onUploaded(url)
     } catch (err) {
       setError(describeError(err))

@@ -7,10 +7,10 @@ import GradientButton from '../../components/ui/GradientButton'
 import SetupDoneModal from '../../components/ui/SetupDoneModal'
 import editIcon from '../../assets/icons/onboarding-edit.svg'
 import verifyIcon from '../../assets/icons/onboarding-verify.svg'
-import { ApiError, describeError, stores, type Category } from '../../services/earthApi'
+import { describeError, toApiError } from '../../services/earthApi'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { countryName, goLive, idTypeLabel, missingForLive, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
-import { useEffect } from 'react'
 
 function SectionHeading({ title, onEdit }: { title: string; onEdit: () => void }) {
   return (
@@ -57,16 +57,9 @@ export default function ReviewDetails() {
   const navigate = useNavigate()
   const [draft] = useDraft()
   const [showSetupDone, setShowSetupDone] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
+  const { data: categories = [] } = useGetCategoriesQuery()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    stores
-      .categories()
-      .then(setCategories)
-      .catch(() => {})
-  }, [])
 
   const or = (v: string) => v || 'Not provided'
   const categoryNames = draft.categoryIds.map((id) => categories.find((c) => c.id === id)?.name ?? id).join(', ')
@@ -84,8 +77,9 @@ export default function ReviewDetails() {
       await goLive()
       setShowSetupDone(true)
     } catch (err) {
-      if (err instanceof ApiError && err.status === 400 && err.errors.length) {
-        const first = err.errors[0]?.path?.split('.')[0] ?? ''
+      const e = toApiError(err)
+      if (e.status === 400 && e.errors.length) {
+        const first = e.errors[0]?.path?.split('.')[0] ?? ''
         setError(`The API could not accept ${first || 'these details'}. Check that section and try again.`)
       } else setError(describeError(err))
     } finally {

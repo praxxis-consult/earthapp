@@ -3,7 +3,7 @@ import notificationIcon from '../../assets/icons/db-notification.svg'
 import verifyIcon from '../../assets/icons/db-verify.svg'
 import chevronDownIcon from '../../assets/icons/db-chevron-down.svg'
 import { jakarta } from '../../utils/styles'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { initials } from '../../data/orders'
 
 export default function DashboardTopbar() {

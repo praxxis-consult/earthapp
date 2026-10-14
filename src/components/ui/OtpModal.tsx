@@ -4,8 +4,10 @@ import AuthModal from './AuthModal'
 import GradientButton from './GradientButton'
 import OtpField from './OtpField'
 import { useCountdown } from './useCountdown'
-import { accounts, describeError, stores } from '../../services/earthApi'
-import { useAuth } from '../../auth/useAuth'
+import { describeError } from '../../services/earthApi'
+import { useResendOtpMutation } from '../../feature/authentication/authApiSlice'
+import { useLazyGetOnboardingQuery } from '../../feature/stores/storesApiSlice'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { jakarta } from '../../utils/styles'
 
 interface OtpModalProps {
@@ -26,6 +28,8 @@ export default function OtpModal({ email, onClose, redirectTo }: OtpModalProps) 
   const [notice, setNotice] = useState('')
   const { seconds, label, restart } = useCountdown()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [resendOtp] = useResendOtpMutation()
+  const [loadOnboarding] = useLazyGetOnboardingQuery()
   const canResend = seconds === 0 && !busy
 
   async function resend() {
@@ -33,7 +37,7 @@ export default function OtpModal({ email, onClose, redirectTo }: OtpModalProps) 
     setBusy(true)
     setError('')
     try {
-      await accounts.resendOtp(email, 'LOGIN')
+      await resendOtp({ email, intent: 'LOGIN' }).unwrap()
       setNotice(`We sent a new code to ${email}.`)
       restart()
     } catch (err) {
@@ -57,7 +61,7 @@ export default function OtpModal({ email, onClose, redirectTo }: OtpModalProps) 
       // A seller whose store is not live yet picks up where onboarding stopped.
       let to = redirectTo ?? '/dashboard'
       if (!redirectTo) {
-        const onboarding = await stores.onboarding().catch(() => null)
+        const onboarding = await loadOnboarding().unwrap().catch(() => null)
         if (!onboarding || onboarding.status === 'DRAFT') to = '/onboarding/store'
       }
       onClose()

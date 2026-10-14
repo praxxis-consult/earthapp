@@ -1,4 +1,4 @@
-import { request, stores, type Category, type Product as ApiProduct } from '../services/earthApi'
+import type { Category, Product as ApiProduct } from '../services/earthApi'
 import { naira } from './productView'
 
 /** A LIVE store as the public endpoints return it. */
@@ -28,16 +28,13 @@ export interface Listing {
   available: number
   moq: number
   listed: string
+  listedAt: string
   categoryId: string
   category: string
   store: PublicStore
 }
 
-/**
- * The public catalogue endpoint lists LIVE stores per country and region, so the marketplace
- * browses one region at a time. The region list is Nigeria's states; the API has no
- * country-wide listing yet.
- */
+/** The API lists stores per country and region; the region list is Nigeria's states until a country-wide listing exists. */
 export const COUNTRY = 'NG'
 export const REGIONS = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
@@ -66,53 +63,9 @@ export function toListing(p: ApiProduct, store: PublicStore, categories: Categor
     available,
     moq: p.moq ?? 1,
     listed: monthYear(p.createdAt),
+    listedAt: p.createdAt,
     categoryId: p.categoryId ?? '',
     category: categories.find((c) => c.id === p.categoryId)?.name ?? p.categoryId ?? '',
     store,
-  }
-}
-
-async function page<T>(path: string): Promise<T[]> {
-  const items: T[] = []
-  let cursor: string | null = null
-  do {
-    const sep = path.includes('?') ? '&' : '?'
-    const res: { items: T[]; nextCursor: string | null } = await request(`${path}${sep}limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
-    items.push(...res.items)
-    cursor = res.nextCursor
-  } while (cursor)
-  return items
-}
-
-const cache = new Map<string, Promise<Listing[]>>()
-
-/** Every published listing from the LIVE stores in a region. */
-export function listRegion(region: string, country = COUNTRY): Promise<Listing[]> {
-  const key = `${country}/${region}`
-  if (!cache.has(key)) {
-    const run = (async () => {
-      const [categories, storeList] = await Promise.all([
-        stores.categories(),
-        page<PublicStore>(`/v1/stores?country=${country}&region=${encodeURIComponent(region)}`),
-      ])
-      const perStore = await Promise.all(
-        storeList.map(async (s) => (await page<ApiProduct>(`/v1/stores/${s.id}/products`)).map((p) => toListing(p, s, categories))),
-      )
-      return perStore.flat().sort((a, b) => b.listed.localeCompare(a.listed))
-    })()
-    cache.set(key, run)
-    run.catch(() => cache.delete(key))
-  }
-  return cache.get(key)!
-}
-
-/** One published listing with its store; null when it is not public (404). */
-export async function getListing(id: string): Promise<Listing | null> {
-  try {
-    const p = await request<ApiProduct>(`/v1/products/${id}`)
-    const [store, categories] = await Promise.all([request<PublicStore>(`/v1/stores/${p.storeId}`), stores.categories()])
-    return toListing(p, store, categories)
-  } catch {
-    return null
   }
 }

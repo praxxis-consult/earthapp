@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import searchIcon from '../../assets/icons/mp-search.svg'
@@ -6,8 +6,9 @@ import locationIcon from '../../assets/icons/mp-location.svg'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
 import arrowLeft from '../../assets/icons/mp-arrow-left.svg'
-import { DEFAULT_REGION, REGIONS, listRegion, type Listing } from '../../lib/catalog'
-import { stores } from '../../services/earthApi'
+import { DEFAULT_REGION, REGIONS } from '../../lib/catalog'
+import { useListRegionQuery } from '../../feature/marketplace/catalogApiSlice'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 
 const jakarta = (weight: number) => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -24,34 +25,18 @@ export default function Marketplace() {
   const [search, setSearch] = useState('')
   // The catalogue API lists stores per region, so the location picker is the region (Nigeria's states).
   const [location, setLocation] = useState(DEFAULT_REGION)
-  const [loaded, setLoaded] = useState<{ region: string; list: Listing[]; error: string } | null>(null)
-  const [categoryNames, setCategoryNames] = useState<string[]>([])
-  const loading = loaded?.region !== location
-  const products = loading ? [] : loaded.list
-  const loadError = loading ? '' : loaded.error
+  const listing = useListRegionQuery({ region: location })
+  const { data: categoryList = [] } = useGetCategoriesQuery()
+  const loading = listing.isFetching || listing.currentData === undefined
+  const products = useMemo(() => (loading ? [] : (listing.currentData ?? [])), [loading, listing.currentData])
+  const loadError = listing.error ? 'We could not load the marketplace. Check your connection and try again.' : ''
+  const categoryNames = useMemo(() => categoryList.map((c) => c.name), [categoryList])
   const [sort, setSort] = useState('Most recent')
   const [page, setPage] = useState(1)
   const [locationOpen, setLocationOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const locationRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let live = true
-    listRegion(location)
-      .then((list) => live && setLoaded({ region: location, list, error: '' }))
-      .catch(() => live && setLoaded({ region: location, list: [], error: 'We could not load the marketplace. Check your connection and try again.' }))
-    return () => {
-      live = false
-    }
-  }, [location])
-
-  useEffect(() => {
-    stores
-      .categories()
-      .then((list) => setCategoryNames(list.map((c) => c.name)))
-      .catch(() => {})
-  }, [])
 
   const categories = ['All Resources', ...categoryNames]
 

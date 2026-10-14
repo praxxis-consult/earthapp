@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
@@ -11,9 +11,11 @@ import bankIcon from '../../assets/icons/st-bank.svg'
 import trashIcon from '../../assets/icons/st-trash.svg'
 import checkIcon from '../../assets/icons/od-truck-fast.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
-import { useAuth } from '../../auth/useAuth'
-import { describeError, stores, uploads, type Category } from '../../services/earthApi'
-import { useStore } from '../../auth/useStore'
+import { useAuth } from '../../feature/authentication/useAuth'
+import { describeError } from '../../services/earthApi'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
+import { useStore } from '../../feature/stores/useStore'
 import { countryName } from '../../onboarding/draft'
 import { initials } from '../../data/orders'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -113,20 +115,13 @@ export default function Settings() {
   const { account } = useAuth()
   const [tab, setTab] = useState<Tab>('store')
   const { store, setStore } = useStore()
-  const [categories, setCategories] = useState<Category[]>([])
+  const { data: categories = [] } = useGetCategoriesQuery()
+  const [uploadImage] = useUploadImageMutation()
   const [local, setLocal] = useState<Local>(readLocal)
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'warning' | null>(null)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
-
-  useEffect(() => {
-    let live = true
-    stores.categories().then((c) => live && setCategories(c)).catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [])
 
   const saveLocal = (patch: Partial<Local>) =>
     setLocal((l) => {
@@ -147,7 +142,7 @@ export default function Settings() {
     if (!file) return
     setUploading(true)
     try {
-      const { url } = await uploads.image(file, 'PRODUCT_IMAGE')
+      const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
       saveLocal({ cover: url })
     } catch (e) {
       setError(describeError(e))

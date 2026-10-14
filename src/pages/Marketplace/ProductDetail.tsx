@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getListing, type Listing } from '../../lib/catalog'
+import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import dollarCircle from '../../assets/icons/pd-dollar-circle.svg'
@@ -16,16 +15,8 @@ const jakarta = (weight: number, italic = false) => ({
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [loaded, setLoaded] = useState<{ id: string; product: Listing | null } | null>(null)
-  const product = loaded && loaded.id === id ? loaded.product : undefined
-
-  useEffect(() => {
-    let live = true
-    if (id) getListing(id).then((p) => live && setLoaded({ id, product: p }))
-    return () => {
-      live = false
-    }
-  }, [id])
+  // undefined while loading, null when the API has no such public listing
+  const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
 
   if (!product) {
     return (

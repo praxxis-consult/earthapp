@@ -5,7 +5,7 @@ import arrowDown from '../../assets/icons/arrow-down.svg'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import LoginModal from '../ui/LoginModal'
 import OtpModal from '../ui/OtpModal'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../feature/authentication/useAuth'
 
 const jakartaMedium: React.CSSProperties = {
   fontFamily: 'Plus Jakarta Sans, sans-serif',

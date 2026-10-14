@@ -1,31 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OnboardingLayout from '../../components/layout/OnboardingLayout'
 import OnboardingHeader from '../../components/layout/OnboardingHeader'
 import FormMultiDropdown from '../../components/ui/FormMultiDropdown'
 import GradientButton from '../../components/ui/GradientButton'
-import { describeError, stores, type Category } from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { saveDraft, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
 
 export default function StoreName() {
   const navigate = useNavigate()
   const [draft, update] = useDraft()
-  const [categories, setCategories] = useState<Category[]>([])
+  // The selling categories come from the API (ids behind the names the person picks).
+  const { data: categories = [], error: categoriesError } = useGetCategoriesQuery()
+  const loadError = categoriesError ? 'We could not load the selling categories. Check your connection and reload.' : ''
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  // The selling categories come from the API (ids behind the names the person picks).
-  useEffect(() => {
-    let live = true
-    stores
-      .categories()
-      .then((list) => live && setCategories(list))
-      .catch(() => live && setError('We could not load the selling categories. Check your connection and reload.'))
-    return () => {
-      live = false
-    }
-  }, [])
 
   const names = categories.filter((c) => draft.categoryIds.includes(c.id)).map((c) => c.name)
 
@@ -92,9 +83,9 @@ export default function StoreName() {
           onToggle={toggleCategory}
         />
 
-        {error && (
+        {(error || loadError) && (
           <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
-            {error}
+            {error || loadError}
           </p>
         )}
       </div>

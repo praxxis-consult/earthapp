@@ -14,14 +14,10 @@ import eyeIcon from '../../assets/icons/prod-eye.svg'
 import locationIcon from '../../assets/icons/prod-location.svg'
 import clockIcon from '../../assets/icons/prod-clock.svg'
 import calendarIcon from '../../assets/icons/prod-calendar.svg'
-import {
-  describeError,
-  products as productsApi,
-  stores,
-  type Category,
-  type Onboarding,
-  type Product,
-} from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
+import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { useStore } from '../../feature/stores/useStore'
 import { listingStatus, naira, pickupHoursLabel, soldAsLabel, unitPlural, weightLabel } from '../../lib/productView'
 import type { ProductsToast } from './Products'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -91,10 +87,11 @@ export default function ProductDetail() {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [store, setStore] = useState<Onboarding | null>(null)
-  const [error, setError] = useState('')
+  const myProducts = useGetMyProductsQuery()
+  const { data: categories = [] } = useGetCategoriesQuery()
+  const { store } = useStore()
+  const product = myProducts.data?.find((x) => x.id === id) ?? null
+  const error = myProducts.error ? describeError(myProducts.error) : myProducts.data && !product ? 'We could not find that product.' : ''
   const [expanded, setExpanded] = useState(false)
   const [toast, setToast] = useState<ProductsToast | null>(
     () => (location.state as { toast?: ProductsToast } | null)?.toast ?? null,
@@ -104,30 +101,6 @@ export default function ProductDetail() {
     if ((location.state as { toast?: ProductsToast } | null)?.toast)
       navigate(location.pathname, { replace: true, state: null })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    let live = true
-    productsApi
-      .mine()
-      .then((list) => {
-        if (!live) return
-        const p = list.find((x) => x.id === id)
-        if (!p) setError('We could not find that product.')
-        else setProduct(p)
-      })
-      .catch((e) => live && setError(describeError(e)))
-    stores
-      .categories()
-      .then((c) => live && setCategories(c))
-      .catch(() => {})
-    stores
-      .onboarding()
-      .then((s) => live && setStore(s))
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [id])
 
   const category = categories.find((c) => c.id === product?.categoryId)?.name ?? product?.categoryId ?? '—'
   const status = product ? listingStatus(product) : 'Draft'

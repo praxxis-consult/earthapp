@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../feature/authentication/useAuth'
 import salesEmptyGraph from '../../assets/images/db-graph-sales-empty.svg'
 import viewsEmptyGraph from '../../assets/images/db-graph-views-empty.svg'
 import salesGraph from '../../assets/images/db-graph-sales.svg'

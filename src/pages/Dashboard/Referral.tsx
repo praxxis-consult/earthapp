@@ -6,7 +6,7 @@ import giftIcon from '../../assets/icons/ref-gift.svg'
 import linkIcon from '../../assets/icons/ref-link.svg'
 import copyIcon from '../../assets/icons/ref-copy.svg'
 import exportIcon from '../../assets/icons/ref-export.svg'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { jakarta } from '../../utils/styles'
 
 const PAGE_SIZE = 10

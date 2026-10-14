@@ -13,8 +13,8 @@ import logoutIcon from '../../assets/icons/db-logout.svg'
 import avatarImg from '../../assets/images/db-avatar.png'
 import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
-import { useAuth } from '../../auth/useAuth'
-import { useStore } from '../../auth/useStore'
+import { useAuth } from '../../feature/authentication/useAuth'
+import { useStore } from '../../feature/stores/useStore'
 
 const NAV_ITEMS = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },

@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
 import GradientButton from './GradientButton'
-import { accounts, describeError } from '../../services/earthApi'
+import { describeError } from '../../services/earthApi'
+import { useRequestOtpMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -20,6 +21,7 @@ export default function LoginModal({ onClose, onProceed, initialEmail = '' }: Lo
   const [email, setEmail] = useState(initialEmail)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [requestOtp] = useRequestOtpMutation()
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -29,7 +31,7 @@ export default function LoginModal({ onClose, onProceed, initialEmail = '' }: Lo
     setError('')
     try {
       // The API answers "accepted" whether or not the address exists, so nobody can probe it.
-      await accounts.requestOtp(to, 'LOGIN')
+      await requestOtp({ email: to, intent: 'LOGIN' }).unwrap()
       onProceed(to)
     } catch (err) {
       setError(describeError(err))
