@@ -150,13 +150,14 @@ export default function Products() {
           <EmptyState onAdd={() => navigate('/dashboard/products/add')} />
         ) : (
           <div className="flex flex-col gap-[16px] flex-1 min-h-0">
-            {/* The frame's card (465:8653) is 777px at 1131 tall; here it takes the space above the pager and scrolls inside */}
+            {/* The frame's card (465:8653) is 777px at 1131 tall; here it takes the space above the pager and scrolls inside.
+                On phones it is only as tall as its cards (capped so the pager stays on screen) and the pager still sits at the bottom. */}
             <DataTable
               rows={rows}
               rowKey={(p) => p.id}
               onRowClick={(p) => navigate(`/dashboard/products/${p.id}`)}
               scroll
-              className="flex-1 min-h-0"
+              className="min-h-0 md:flex-1 max-md:flex-none max-md:mb-auto max-md:max-h-[calc(100%-90px)]"
               columns={[
                 {
                   key: 'product',
