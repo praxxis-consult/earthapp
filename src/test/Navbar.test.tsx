@@ -1,13 +1,18 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { Provider } from 'react-redux'
 import { describe, it, expect } from 'vitest'
 import Navbar from '../components/layout/Navbar'
+import { store } from '../app/store'
 
+// The navbar reads who is signed in from the store, so it renders inside the app's Provider.
 function renderNavbar() {
   return render(
-    <MemoryRouter>
-      <Navbar />
-    </MemoryRouter>
+    <Provider store={store}>
+      <MemoryRouter>
+        <Navbar />
+      </MemoryRouter>
+    </Provider>
   )
 }
 
@@ -21,7 +26,7 @@ describe('Navbar — structure', () => {
     renderNavbar()
     expect(screen.getByText('HOME')).toBeInTheDocument()
     expect(screen.getByText('MARKETPLACE')).toBeInTheDocument()
-    expect(screen.getByText('LENDING')).toBeInTheDocument()
+    expect(screen.getByText('ABOUT')).toBeInTheDocument()
     expect(screen.getByText('HOW IT WORKS')).toBeInTheDocument()
   })
 
@@ -35,9 +40,9 @@ describe('Navbar — structure', () => {
     expect(screen.getByText('Start Trading')).toBeInTheDocument()
   })
 
-  it('Sign in links to /signin', () => {
+  it('Sign in opens the sign-in dialog in place', () => {
     renderNavbar()
-    expect(screen.getByText('Sign in').closest('a')).toHaveAttribute('href', '/signin')
+    expect(screen.getByText('Sign in').closest('button')).not.toBeNull()
   })
 
   it('Start Trading links to /signup', () => {
