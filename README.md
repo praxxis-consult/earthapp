@@ -1,43 +1,58 @@
+<div align="center">
+
 # Earth
 
-**The marketplace for farm produce and raw commodities, built Nigeria-first.**
+**Anything that grows from, is locked under, or feeds from the earth, sold directly by the people who produce it.**
 
-Sellers list what they grow or source, buyers order it and pay them, and Earth takes a percentage. Earth is the marketplace, never the escrow and never the courier: delivery is by the logistics companies Earth plugs in, which the buyer picks from at checkout, or by pickup from the store. This repository is the Earth web app: the public site and marketplace, seller sign-up and onboarding, and the seller dashboard.
+A Nigeria-first marketplace for farm produce and raw commodities, with the same experience for a buyer in Lagos or in Houston.
 
-- Live: https://earthapp.vercel.app
-- Repository: https://github.com/praxxis-consult/earthapp
-- Built by Praxxis Consult
+[![React 19](https://img.shields.io/badge/React-19-20232a?logo=react&logoColor=61dafb)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite 8](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-RTK_Query-764abc?logo=redux&logoColor=white)](https://redux-toolkit.js.org)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://earthapp.vercel.app)
+
+[Live app](https://earthapp.vercel.app) · [Repository](https://github.com/praxxis-consult/earthapp) · [Report an issue](https://github.com/praxxis-consult/earthapp/issues)
+
+</div>
 
 ---
 
 ## Table of contents
 
 1. [About the project](#about-the-project)
-2. [Features](#features)
-3. [Built with](#built-with)
-4. [Getting started](#getting-started)
-5. [Configuration](#configuration)
-6. [Usage](#usage)
-7. [Project structure](#project-structure)
-8. [API integration](#api-integration)
-9. [Known gaps](#known-gaps)
-10. [Sample data](#sample-data)
-11. [Design and responsive rules](#design-and-responsive-rules)
-12. [Shared components](#shared-components)
-13. [Testing and verification](#testing-and-verification)
-14. [How we work](#how-we-work)
-15. [Deployment](#deployment)
-16. [Contributing](#contributing)
-17. [Team](#team)
-18. [License](#license)
+2. [Screenshots](#screenshots)
+3. [How Earth makes money](#how-earth-makes-money)
+4. [Markets](#markets)
+5. [Features](#features)
+6. [Roadmap](#roadmap)
+7. [Built with](#built-with)
+8. [Getting started](#getting-started)
+9. [Configuration](#configuration)
+10. [Usage](#usage)
+11. [Project structure](#project-structure)
+12. [API integration](#api-integration)
+13. [Known gaps](#known-gaps)
+14. [Sample data](#sample-data)
+15. [Design and responsive rules](#design-and-responsive-rules)
+16. [Shared components](#shared-components)
+17. [Testing and verification](#testing-and-verification)
+18. [How we work](#how-we-work)
+19. [Deployment](#deployment)
+20. [Contributing](#contributing)
+21. [Team](#team)
+22. [License](#license)
 
 ---
 
 ## About the project
 
-Earth connects primary producers (farms, cooperatives, fisheries, mines) with buyers who want verified produce at the source, without a chain of middlemen. A seller sets up a store, lists products with photos, prices and units, and receives orders. The buyer pays and confirms receipt; Earth takes a percentage and never holds the money. For delivery, Earth is an aggregator rather than a logistics company: it integrates logistics providers backend to backend, the buyer chooses one at checkout, and the alternative is pickup from the store. Earth's income is the commission on stores and on that logistics choice.
+Earth connects primary producers (farms, cooperatives, fisheries, mines) with the buyers who want their goods, without a chain of middlemen in between. A tomato farmer in Ondo, a cocoa cooperative in Ogun and a gold-mine owner can all open a store on Earth; a restaurant in Lagos or an importer in the United States can buy from them the same way.
 
-The app has three parts:
+**What Earth is.** A marketplace. The seller lists, the buyer orders and pays the seller, and Earth takes a percentage. Earth is the marketplace, never the escrow: it does not hold the buyer's money, and it is not a logistics company. For delivery Earth is an aggregator: it integrates logistics providers backend to backend, the buyer picks one at checkout, or collects from the store.
+
+**What this repository is.** The Earth web app, in three parts:
 
 | Part | What it holds |
 | --- | --- |
@@ -46,6 +61,44 @@ The app has three parts:
 | Seller dashboard | Overview, products, orders, messages, payouts, referrals, account settings |
 
 Every screen is built from the design file's frames and measured against them to the pixel. Where the Earth API has an endpoint, the screen runs on it; where it does not yet, the screen shows its real zero state and never an invented figure.
+
+## Screenshots
+
+| Landing page | Marketplace |
+| --- | --- |
+| ![Landing page](docs/screenshots/landing.png) | ![Marketplace](docs/screenshots/marketplace.png) |
+
+| Dashboard overview | Products |
+| --- | --- |
+| ![Dashboard overview](docs/screenshots/dashboard-overview.png) | ![Products](docs/screenshots/products.png) |
+
+| Orders | Order detail |
+| --- | --- |
+| ![Orders](docs/screenshots/orders.png) | ![Order detail](docs/screenshots/order-detail.png) |
+
+<p align="center"><img src="docs/screenshots/mobile.png" alt="Products on a phone" width="300"></p>
+
+The overview, orders and order-detail captures use the sample rows described under [Sample data](#sample-data); the products captures show a real store on the QA API.
+
+## How Earth makes money
+
+- **Commission on stores.** When a buyer pays and confirms receipt, Earth takes a percentage of the order. The buyer pays the seller; Earth never holds the money.
+- **Commission on logistics.** Delivery is by the logistics companies Earth integrates. The buyer chooses one at checkout, and Earth earns on that choice.
+
+Nothing else is charged to sellers or buyers.
+
+## Markets
+
+The marketplace is organised by what comes from the earth. The categories the API serves today:
+
+| | | |
+| --- | --- | --- |
+| Fruits | Vegetables | Tubers |
+| Grains | Livestock | Poultry |
+| Seafood | Dairy | Forestry |
+| Minerals | | |
+
+A store selects the categories it sells in during onboarding, and every listing belongs to one of them.
 
 ## Features
 
@@ -71,6 +124,15 @@ Every screen is built from the design file's frames and measured against them to
 - Session restore on reload, one-time-code sign in, automatic token refresh
 - Phone, tablet and desktop layouts, derived from the desktop designs
 - Honest zero states on every page whose endpoint does not exist yet, with a development switch to view sample rows
+
+## Roadmap
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| Waitlist | Landing page with the launch waitlist, city places and referral links | Live |
+| Stores, one city | Seller onboarding, products with photos, the marketplace, orders with pickup and same-city delivery through integrated logistics providers, payouts | Front end built; orders, messages, payouts and the overview wait on their endpoints (see [Known gaps](#known-gaps)) |
+| Verified profiles and requests | Verified seller profiles and screened buyer requests for high-value goods such as gold | Planned |
+| Bulk lane | Larger consignments between regions | Planned |
 
 ## Built with
 
