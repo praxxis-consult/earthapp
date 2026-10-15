@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
+import StatCard from '../../components/ui/StatCard'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
@@ -42,39 +43,6 @@ const inRange = (o: Order, range: Range) => {
   return true
 }
 
-// Figma 561:3444 etc.: 120 tall, radius 20, label 14/24 Medium, figure 32/48 Bold, note 12/15 Regular.
-function StatCard({ label, value, sub, gradient }: { label: string; value: number; sub?: string; gradient?: boolean }) {
-  return (
-    <div
-      className="h-[120px] rounded-[20px] overflow-hidden pl-[25px] pr-[24px] pt-[16px] pb-[16px] flex flex-col gap-[16px] max-md:h-auto max-md:min-h-[120px] max-md:pl-[16px] max-md:pr-[16px]"
-      style={
-        gradient
-          ? // BUILDER: Figma gradient handles for the 261×120 card, converted to a CSS angle + stop offsets.
-            { backgroundImage: 'linear-gradient(145.26deg, #aee74a -34.3%, #007c53 56.1%)' }
-          : { background: 'white' }
-      }
-    >
-      <p className="text-[14px] leading-[24px]" style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}>
-        {label}
-      </p>
-      <div className="flex items-baseline gap-[8px]">
-        <p className="text-[32px] leading-[48px]" style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}>
-          {value}
-        </p>
-        {sub && (
-          <p
-            className="text-[12px] leading-[15px]"
-            style={{ ...jakarta(400), color: gradient ? 'rgba(255,255,255,0.75)' : '#807e7e' }}
-          >
-            {sub}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Columns measured on the orders frame (561:3325): widths in its 1043px table.
 const ORDER_COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 } })
 
 export default function Orders() {
@@ -134,7 +102,7 @@ export default function Orders() {
   return (
     <DashboardLayout>
       {/* The page fills the dashboard viewport: the list scrolls inside its panel and the pager stays on screen */}
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] h-full max-md:px-[16px] max-md:pt-[24px]">
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
         {/* Heading (561:3641): title 24/32 SemiBold, intro 16/24 Regular, gap 8 */}
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
@@ -153,7 +121,7 @@ export default function Orders() {
         </div>
 
         {/* All orders panel (561:3651): white, radius 20, padding 24 */}
-        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col flex-1 min-h-0 max-md:p-[16px]">
+        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 md:min-h-0 max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -273,7 +241,7 @@ export default function Orders() {
             /* Empty state (orders 561:3689): illustration 200, title 20/25 SemiBold, copy 14/24. The frame centres it on the
                whole panel; on a screen tall enough for that it sits over the panel and centres there, otherwise it flows
                under the search row and centres in the space left, so it never overlaps the tabs. */
-            <div className="flex flex-col items-center justify-center flex-1 min-h-0 py-[16px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0">
+            <div className="flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-[16px] max-md:py-[48px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0">
               <div className="relative size-[200px]">
                 <div className="absolute h-[140px] left-[23.57px] top-[16.07px] w-[153.208px]">
                   <img src={emptyBg} alt="" className="absolute block inset-0 max-w-none size-full" />
@@ -310,7 +278,7 @@ export default function Orders() {
                 radius={10}
                 designWidth={1043}
                 scroll
-                className="mt-[24px] min-h-0 md:flex-1 max-md:mt-[16px] max-md:flex-none max-md:mb-auto max-md:max-h-[calc(100%-110px)]"
+                className="mt-[24px] md:min-h-0 md:flex-1 max-md:mt-[16px]"
                 columns={ORDER_COLUMNS}
               />
 

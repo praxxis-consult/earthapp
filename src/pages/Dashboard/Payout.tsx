@@ -38,7 +38,8 @@ export default function Payout() {
         <div className="flex gap-[16px] max-md:flex-col">
           <div
             className="flex-1 h-[136px] rounded-[20px] pl-[25px] pr-[24px] pt-[24px] flex flex-col gap-[16px]"
-            style={{ backgroundImage: 'linear-gradient(128.3deg, #aee74a -19.5%, #007c53 46%)' }}
+            // Solved from the frame's gradient handles (594:15599, 539×136; bands parallel to the width handle)
+            style={{ backgroundImage: 'linear-gradient(177.27deg, #aee74a -61.8%, #007c53 74.7%)' }}
           >
             <p className="text-white text-[14px] leading-[24px]" style={jakarta(500)}>
               Paid

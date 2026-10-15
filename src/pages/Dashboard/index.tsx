@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import DataTable from '../../components/ui/DataTable'
+import StatCard from '../../components/ui/StatCard'
 import { useAuth } from '../../feature/authentication/useAuth'
 import pinIcon from '../../assets/icons/db-pin.svg'
 import pin1Icon from '../../assets/icons/db-pin1.svg'
@@ -14,46 +15,12 @@ import { DAYS, DAY_X, overview, type ChartSeries } from '../../data/overview'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { orderColumns } from './orderColumns'
 
-/**
- * "Earned this week" (464:8211). The frame's gradient handles sit outside the 261×120 card
- * (start (-0.09,-0.72), end (0.39,0.81), width (-0.81,-0.58) in its normalized space), and its
- * colour bands run parallel to the width handle, which on a card this wide is only 5° off
- * horizontal. Solved into CSS that is 175.03° with the lime stop at -61.9% and the green stop
- * at 74.7% of the gradient line: the top-left corner is already half way to green and the
- * bottom edge is fully green. (Sampled against the frame's own export: within 1/255.)
- */
-const EARNED_BG = 'linear-gradient(175.03deg, #aee74a -61.9%, #007c53 74.7%)'
-
 /** Columns measured on the overview frame (464:8329): a 1041px table inside its 1px frame. */
 const RECENT_COLUMNS = orderColumns({
   widths: { order: 206, buyer: 161, quantity: 110, price: 128, delivery: 160 },
   quantityAlign: 'left',
   status: false,
 })
-
-function StatCard({ label, value, sub, gradient }: { label: string; value: string; sub?: string; gradient?: boolean }) {
-  return (
-    <div
-      className="h-[120px] rounded-[20px] overflow-hidden px-[24px] pt-[16px] pb-[16px] flex flex-col justify-between"
-      style={gradient ? { backgroundImage: EARNED_BG } : { background: 'white' }}
-    >
-      <p className="text-[14px] leading-[24px]" style={{ ...jakarta(500), color: gradient ? 'white' : '#807e7e' }}>
-        {label}
-      </p>
-      <div className="flex items-start gap-[8px]">
-        <p className="text-[32px] leading-[48px]" style={{ ...jakarta(700), color: gradient ? 'white' : '#101604' }}>
-          {value}
-        </p>
-        {sub && (
-          // The frame (464:8222) puts the caption 22px below the value's top, not on its baseline.
-          <p className="text-[#807e7e] text-[12px] leading-[15px] mt-[22px]" style={jakarta(400)}>
-            {sub}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 /**
  * The chart tooltip ("Pin", 464:8231): a 134×62.56 frame whose ringed dot (18×18.77, centred
