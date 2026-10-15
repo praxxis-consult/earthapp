@@ -6,6 +6,8 @@ interface PagerProps {
   page: number
   pageCount: number
   onChange: (page: number) => void
+  /** `card` (dashboard tables): 74 tall in a 1px #f7f7f7 frame, radius 20. `plain` (marketplace, 177:2853): 72 tall, white, no frame. */
+  variant?: 'card' | 'plain'
 }
 
 /**
@@ -13,7 +15,7 @@ interface PagerProps {
  * frame, radius 20; 40px page pills (active #f2f9f7/#007c53, others #f7f7f7/#807e7e); the first
  * three pages, the neighbours of the current one and the last, with … between.
  */
-export default function Pager({ page, pageCount, onChange }: PagerProps) {
+export default function Pager({ page, pageCount, onChange, variant = 'card' }: PagerProps) {
   const current = Math.min(Math.max(1, page), Math.max(1, pageCount))
   const pages: (number | '…')[] = []
   for (let p = 1; p <= pageCount; p++) {
@@ -23,7 +25,9 @@ export default function Pager({ page, pageCount, onChange }: PagerProps) {
   return (
     <nav
       aria-label="Pages"
-      className="flex items-center justify-center gap-[16px] h-[74px] px-[64px] rounded-[20px] border border-[#f7f7f7] bg-white max-md:h-auto max-md:flex-wrap max-md:gap-[8px] max-md:px-[16px] max-md:py-[16px]"
+      className={`flex items-center justify-center gap-[16px] px-[64px] bg-white max-md:h-auto max-md:flex-wrap max-md:gap-[8px] max-md:px-[16px] max-md:py-[16px] ${
+        variant === 'plain' ? 'h-[72px]' : 'h-[74px] rounded-[20px] border border-[#f7f7f7]'
+      }`}
     >
       <button
         type="button"

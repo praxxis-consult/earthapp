@@ -7,6 +7,7 @@ import GradientButton from '../../components/ui/GradientButton'
 import gpsIcon from '../../assets/icons/onboarding-gps.svg'
 import { describeError } from '../../services/earthApi'
 import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '../../onboarding/draft'
+import { regionsOf } from '../../data/locations'
 import { jakarta } from '../../utils/styles'
 
 const inputClass =
@@ -27,7 +28,7 @@ export default function Location() {
 
   async function proceed() {
     if (!a.country) return setError('Select your country.')
-    if (!a.region.trim()) return setError('Enter your region or state.')
+    if (!a.region.trim()) return setError('Select your region or state.')
     if (!a.area.trim()) return setError('Enter your area or town.')
     if (!a.street.trim()) return setError('Enter your street address.')
     setBusy(true)
@@ -57,23 +58,25 @@ export default function Location() {
           value={countryName(a.country)}
           placeholder="Select country"
           options={COUNTRY_NAMES}
-          onSelect={(name) => set({ country: countryCode(name) })}
+          onSelect={(name) => {
+            const country = countryCode(name)
+            // A region belongs to its country: changing the country clears a region that is not in the new list.
+            set({ country, region: regionsOf(country).includes(a.region) ? a.region : '' })
+          }}
         />
 
         <div className="flex gap-[16px] items-start w-full max-sm:flex-col">
-          <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0 max-sm:w-full">
-            <label htmlFor="region" className={labelClass} style={jakarta(500)}>
-              Region/State
-            </label>
-            <input
+          {/* The marketplace lists stores by country and region, so the region is picked from the
+              same list the location filter uses (src/data/locations.ts), not typed. */}
+          <div className="flex-1 min-w-0 max-sm:w-full">
+            <FormDropdown
               id="region"
-              type="text"
+              label="Region/State"
               value={a.region}
-              maxLength={120}
-              onChange={(e) => set({ region: e.target.value })}
-              placeholder="e.g. Ondo"
-              className={inputClass}
-              style={{ ...jakarta(400), color: '#101604' }}
+              placeholder={a.country ? 'Select region or state' : 'Select a country first'}
+              options={regionsOf(a.country)}
+              emptyHint={a.country ? 'No regions listed for this country.' : 'Select a country first.'}
+              onSelect={(region) => set({ region })}
             />
           </div>
           <div className="flex flex-col gap-[8px] items-start flex-1 min-w-0 max-sm:w-full">

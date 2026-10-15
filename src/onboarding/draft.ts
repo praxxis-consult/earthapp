@@ -176,19 +176,5 @@ export const ID_TYPES: { label: string; value: IdentityType }[] = [
 ]
 export const idTypeLabel = (v: IdentityType | '') => ID_TYPES.find((t) => t.value === v)?.label ?? ''
 
-/** The design's country list; the API stores the ISO 3166-1 alpha-2 code. */
-export const COUNTRIES: { name: string; code: string }[] = [
-  { name: 'Nigeria', code: 'NG' },
-  { name: 'Ghana', code: 'GH' },
-  { name: 'Kenya', code: 'KE' },
-  { name: 'South Africa', code: 'ZA' },
-  { name: 'Ethiopia', code: 'ET' },
-  { name: 'Tanzania', code: 'TZ' },
-  { name: 'Cameroon', code: 'CM' },
-  { name: "Côte d'Ivoire", code: 'CI' },
-  { name: 'Senegal', code: 'SN' },
-  { name: 'Uganda', code: 'UG' },
-]
-export const COUNTRY_NAMES = COUNTRIES.map((c) => c.name)
-export const countryCode = (name: string) => COUNTRIES.find((c) => c.name === name)?.code ?? ''
-export const countryName = (code: string) => COUNTRIES.find((c) => c.code === code)?.name ?? code
+/** The country list and the ISO codes the API stores live with the regions in src/data/locations.ts. */
+export { COUNTRIES, COUNTRY_NAMES, countryCode, countryName } from '../data/locations'

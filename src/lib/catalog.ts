@@ -34,13 +34,6 @@ export interface Listing {
   store: PublicStore
 }
 
-/** The API lists stores per country and region; the region list is Nigeria's states until a country-wide listing exists. */
-export const COUNTRY = 'NG'
-export const REGIONS = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-]
-export const DEFAULT_REGION = 'Ondo'
-
 const monthYear = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
 export function toListing(p: ApiProduct, store: PublicStore, categories: Category[]): Listing {

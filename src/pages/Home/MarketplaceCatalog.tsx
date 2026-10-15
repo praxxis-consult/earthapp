@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import arrowRight from '../../assets/icons/arrow-right.svg'
-import { useListCountryQuery } from '../../feature/marketplace/catalogApiSlice'
+import { useListGlobalQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import type { Listing } from '../../lib/catalog'
 
@@ -16,18 +16,20 @@ const SHOWN = 6
 /**
  * Landing catalogue (90:188): the title block, the category tabs, a 3×2 grid of 384×494 cards
  * and "Explore all Resources". The tabs are the API's categories and the cards are the newest
- * published listings across the country, so what a visitor sees is what they can order.
+ * published listings everywhere the app knows, so what a visitor sees is what they can order.
  */
 export default function MarketplaceCatalog() {
   const [active, setActive] = useState(ALL)
   const { data: categoryList = [] } = useGetCategoriesQuery()
-  const { currentData, isFetching, error } = useListCountryQuery()
+  const { currentData, isFetching, error } = useListGlobalQuery()
   const tabs = [ALL, ...categoryList.map((c) => c.name)]
   const listings = useMemo(() => {
-    const all = currentData ?? []
+    const all = currentData?.listings ?? []
     return (active === ALL ? all : all.filter((l) => l.category === active)).slice(0, SHOWN)
   }, [currentData, active])
-  const loading = isFetching && currentData === undefined
+  // The catalogue fills in country by country; the skeleton stays only until the first cards land.
+  const loading = (isFetching && currentData === undefined) || (currentData !== undefined && currentData.listings.length === 0 && currentData.pending.length > 0)
+  const failed = Boolean(error) || Boolean(currentData && currentData.error && currentData.listings.length === 0 && currentData.pending.length === 0)
 
   return (
     <section className="w-full bg-white py-[64px]">
@@ -80,7 +82,7 @@ export default function MarketplaceCatalog() {
         </div>
 
         {/* Product grid — 3×2 of 384×494 cards (113:94) */}
-        {error ? (
+        {failed ? (
           <p role="alert" className="text-[#807e7e] text-[16px] leading-[24px]" style={jakartaRegular}>
             We could not load the catalogue. Check your connection and try again.
           </p>
