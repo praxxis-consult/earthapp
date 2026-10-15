@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import Toast from '../ui/Toast'
 import { NavLink, useNavigate } from 'react-router-dom'
 import unionLogo from '../../assets/icons/db-union.svg'
 import overviewIcon from '../../assets/icons/db-overview.svg'
@@ -38,13 +40,32 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
   const { signOut } = useAuth()
   const { store } = useStore()
   const [copied, setCopied] = useState(false)
+  const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
   const place = store ? `${store.businessAddress.area}, ${store.businessAddress.region}` : ''
 
+  /**
+   * "Share my store": the store's marketplace link goes to the clipboard and the button and a
+   * toast say so; on a touch device the system share sheet opens as well. Only when the
+   * clipboard is blocked does the sheet (or the link itself) stand in, so a click always answers.
+   */
   async function share() {
     if (!store) return
     const link = `${window.location.origin}/marketplace?store=${store.id}`
     const text = `Shop at ${store.storeName} on Earth`
-    if (navigator.share) {
+    const touch = window.matchMedia('(pointer: coarse)').matches
+    let copiedNow = false
+    try {
+      await navigator.clipboard.writeText(link)
+      copiedNow = true
+    } catch {
+      /* clipboard blocked: fall through to the share sheet or the link */
+    }
+    if (copiedNow) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+      setToast({ title: 'Store link copied', body: 'Paste it anywhere your customers are: WhatsApp, Instagram, SMS.' })
+    }
+    if (navigator.share && (touch || !copiedNow)) {
       try {
         await navigator.share({ text, url: link })
         return
@@ -52,13 +73,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         /* closed the sheet */
       }
     }
-    try {
-      await navigator.clipboard.writeText(link)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* clipboard blocked */
-    }
+    if (!copiedNow) setToast({ title: 'Your store link', body: link })
   }
 
   async function logout() {
@@ -169,6 +184,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
           </p>
         </button>
       </div>
+
+      {toast && createPortal(<Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />, document.body)}
 
       {/* Logout */}
       <button type="button" onClick={logout} className="bg-[#f2f8f6] flex items-center justify-between px-[24px] py-[12px] h-[64px] shrink-0 w-full text-left">
