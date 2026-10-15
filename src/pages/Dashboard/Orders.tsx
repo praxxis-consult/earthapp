@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
-import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
 import DataTable from '../../components/ui/DataTable'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
@@ -10,7 +9,8 @@ import filterIcon from '../../assets/icons/db-filter.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import emptyBg from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
-import { orders, naira, type Order, type OrderStatus } from '../../data/orders'
+import { orders, type Order, type OrderStatus } from '../../data/orders'
+import { orderColumns } from './orderColumns'
 import { jakarta, SCROLL_ROW } from '../../utils/styles'
 
 const PAGE_SIZE = 7
@@ -74,7 +74,8 @@ function StatCard({ label, value, sub, gradient }: { label: string; value: numbe
   )
 }
 
-const CELL = 'text-[#101928] text-[14px] leading-[24px]'
+// Columns measured on the orders frame (561:3325): widths in its 1043px table.
+const ORDER_COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 } })
 
 export default function Orders() {
   const navigate = useNavigate()
@@ -306,90 +307,7 @@ export default function Orders() {
                 radius={10}
                 designWidth={1043}
                 className="mt-[24px] max-md:mt-[16px]"
-                columns={[
-                  {
-                    key: 'order',
-                    header: 'Order',
-                    width: 192,
-                    card: 'title',
-                    cell: (o) => (
-                      <div className="flex flex-col min-w-0">
-                        <p className={CELL} style={jakarta(600)}>
-                          {o.id}
-                        </p>
-                        <p className="text-[#807e7e] text-[12px] leading-[17px] truncate" style={jakarta(400)}>
-                          {o.placed}
-                        </p>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'buyer',
-                    header: 'Buyer',
-                    width: 146,
-                    cell: (o) => (
-                      <p className={CELL} style={jakarta(400)}>
-                        {o.buyer.name}
-                      </p>
-                    ),
-                  },
-                  {
-                    key: 'items',
-                    header: 'Items',
-                    cell: (o) => (
-                      <div className="flex items-center gap-[12px] min-w-0">
-                        <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white">
-                          <img src={o.item.image} alt="" className="size-full object-cover" />
-                        </span>
-                        <p className={`${CELL} capitalize truncate`} style={jakarta(400)}>
-                          {o.item.title}
-                        </p>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'quantity',
-                    header: 'Quantity',
-                    width: 105,
-                    align: 'center',
-                    cell: (o) => (
-                      <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
-                        {o.item.qty}x ({o.item.weightKg} kg)
-                      </p>
-                    ),
-                  },
-                  {
-                    key: 'price',
-                    header: 'Price',
-                    width: 119,
-                    // The frame (561:3325) starts every price at the same x, 24px in; it is not right-aligned.
-                    align: 'left',
-                    cell: (o) => (
-                      <p className={`${CELL} whitespace-nowrap`} style={jakarta(400)}>
-                        {naira(o.item.price)}
-                      </p>
-                    ),
-                  },
-                  {
-                    key: 'delivery',
-                    header: 'Delivery',
-                    width: 104,
-                    align: 'center',
-                    cell: (o) => (
-                      <p className={CELL} style={jakarta(400)}>
-                        {o.delivery.method}
-                      </p>
-                    ),
-                  },
-                  {
-                    key: 'status',
-                    header: 'Status',
-                    width: 100,
-                    align: 'center',
-                    card: 'badge',
-                    cell: (o) => <OrderStatusBadge status={o.status} maxWidth={92} />,
-                  },
-                ]}
+                columns={ORDER_COLUMNS}
               />
 
               {/* Pagination (561:5295): 74 tall, padding 16/64, gap 16, 1px #f7f7f7 frame, radius 20 */}
