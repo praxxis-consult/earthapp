@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import searchIcon from '../../assets/icons/mp-search.svg'
 import locationIcon from '../../assets/icons/mp-location.svg'
@@ -7,7 +7,7 @@ import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
 import arrowLeft from '../../assets/icons/mp-arrow-left.svg'
 import { DEFAULT_REGION, REGIONS } from '../../lib/catalog'
-import { useListRegionQuery } from '../../feature/marketplace/catalogApiSlice'
+import { useListRegionQuery, useListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 
 const jakarta = (weight: number) => ({
@@ -25,11 +25,22 @@ export default function Marketplace() {
   const [search, setSearch] = useState('')
   // The catalogue API lists stores per region, so the location picker is the region (Nigeria's states).
   const [location, setLocation] = useState(DEFAULT_REGION)
-  const listing = useListRegionQuery({ region: location })
+  // "Share my store" links land here with ?store=<id>: one store's listings, its region in the picker.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const storeId = searchParams.get('store') ?? ''
+  const regionListing = useListRegionQuery({ region: location }, { skip: Boolean(storeId) })
+  const storeListing = useListStoreQuery(storeId, { skip: !storeId })
+  const listing = storeId ? storeListing : regionListing
+  const store = storeId ? (storeListing.currentData?.store ?? null) : null
   const { data: categoryList = [] } = useGetCategoriesQuery()
-  const loading = listing.isFetching || listing.currentData === undefined
-  const products = useMemo(() => (loading ? [] : (listing.currentData ?? [])), [loading, listing.currentData])
+  const loading = listing.isFetching || (listing.currentData === undefined && !listing.error)
+  const products = useMemo(() => {
+    if (loading) return []
+    if (storeId) return storeListing.currentData?.listings ?? []
+    return regionListing.currentData ?? []
+  }, [loading, storeId, storeListing.currentData, regionListing.currentData])
   const loadError = listing.error ? 'We could not load the marketplace. Check your connection and try again.' : ''
+  const shownRegion = store?.businessAddress.region ?? location
   const categoryNames = useMemo(() => categoryList.map((c) => c.name), [categoryList])
   const [sort, setSort] = useState('Most recent')
   const [page, setPage] = useState(1)
@@ -90,8 +101,23 @@ export default function Marketplace() {
           </p>
         </div>
 
+        {storeId && !loading && (
+          <p className="mt-[24px] text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
+            {store ? (
+              <>
+                Showing listings from <span className="text-[#0c2310]" style={jakarta(600)}>{store.storeName}</span>, {store.businessAddress.area}, {store.businessAddress.region}.{' '}
+              </>
+            ) : (
+              <>That store is not on the marketplace. </>
+            )}
+            <button type="button" onClick={() => setSearchParams({})} className="text-[#007c53]" style={jakarta(500)}>
+              See every store
+            </button>
+          </p>
+        )}
+
         {/* ── Search + filter controls ── */}
-        <div className="flex flex-col gap-[24px] mt-[40px]">
+        <div className={`flex flex-col gap-[24px] ${storeId ? 'mt-[24px]' : 'mt-[40px]'}`}>
 
           {/* Row 1: search + dropdowns */}
           <div className="flex items-center justify-between max-lg:flex-col max-lg:items-stretch max-lg:gap-[12px]">
@@ -114,13 +140,14 @@ export default function Marketplace() {
               {/* Location dropdown */}
               <div className="relative max-md:w-full" ref={locationRef}>
                 <button
-                  onClick={() => { setLocationOpen((o) => !o); setSortOpen(false) }}
+                  onClick={() => { if (storeId) return; setLocationOpen((o) => !o); setSortOpen(false) }}
+                  title={storeId ? 'Showing one store; choose "See every store" to browse by state' : undefined}
                   className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer max-md:w-full"
                 >
                   <img src={locationIcon} alt="" className="size-[20px] shrink-0" />
                   <span className="text-[13px]" style={jakarta(500)}>
                     <span className="text-[#807e7e]">Location: </span>
-                    <span className="text-[#101604]" style={jakarta(600)}>{location}</span>
+                    <span className="text-[#101604]" style={jakarta(600)}>{shownRegion}</span>
                   </span>
                   <img src={arrowDown} alt="" className={`size-[16px] shrink-0 transition-transform ${locationOpen ? 'rotate-180' : ''}`} />
                 </button>

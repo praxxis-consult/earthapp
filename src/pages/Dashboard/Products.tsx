@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import DataTable from '../../components/ui/DataTable'
+import EmptyBlock from '../../components/ui/EmptyBlock'
 import Pager from '../../components/ui/Pager'
 import Toast from '../../components/ui/Toast'
-import emptyBg from '../../assets/icons/db-empty-bg.svg'
-import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import addIcon from '../../assets/icons/db-add.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
 import { describeError } from '../../services/earthApi'
@@ -42,32 +41,12 @@ function AddProductButton({ onClick }: { onClick: () => void }) {
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] flex items-center justify-center overflow-hidden max-md:h-auto max-md:py-[48px] max-md:px-[16px]">
-      <div className="flex flex-col gap-[24px] items-center w-[429px] max-w-full">
-        <div className="flex flex-col items-center relative shrink-0 w-full">
-          <div className="relative size-[200px]">
-            <div className="absolute h-[140px] left-[23.57px] top-[16.07px] w-[153.208px]">
-              <img src={emptyBg} alt="" className="absolute block inset-0 max-w-none size-full" />
-            </div>
-            <div className="absolute flex h-[162.27px] items-center justify-center left-[31.56px] top-[21.67px] w-[137.713px]">
-              <div style={{ transform: 'rotate(-20.53deg)' }}>
-                <div className="h-[137.487px] relative w-[95.564px]">
-                  <img src={emptyIllustration} alt="" className="block max-w-none size-full" />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-[8px] items-center text-center w-full">
-            <p className="text-[#101604] text-[20px]" style={jakarta(600)}>
-              No product listed yet
-            </p>
-            <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-              New products will appear here as soon as you start listing.
-            </p>
-          </div>
-        </div>
-        <AddProductButton onClick={onAdd} />
-      </div>
+    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full flex-1 min-h-0 flex items-center justify-center overflow-y-auto max-md:py-[48px] max-md:px-[16px]">
+      <EmptyBlock
+        title="No product listed yet"
+        copy="New products will appear here as soon as you start listing."
+        action={<AddProductButton onClick={onAdd} />}
+      />
     </div>
   )
 }
@@ -115,7 +94,8 @@ export default function Products() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[40px] pb-[32px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
+      {/* The page fills the dashboard viewport at every width: the list scrolls inside its card and the pager stays on screen */}
+      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] h-full max-md:px-[16px] max-md:pt-[24px] max-md:pb-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
         {q && (
           <p className="mt-[16px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -126,8 +106,8 @@ export default function Products() {
           </p>
         )}
 
-        {/* Page heading */}
-        <div className="flex items-start justify-between w-full max-md:flex-col max-md:gap-[16px]">
+        {/* Page heading (465:8648 + 467:12472): the button is centred on the 64px title block */}
+        <div className="flex items-center justify-between w-full max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[490px]">
             <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
               Products
@@ -144,15 +124,19 @@ export default function Products() {
             {error}
           </p>
         ) : items === null ? (
-          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] max-md:h-[320px]" aria-busy="true" />
+          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full flex-1 min-h-0" aria-busy="true" />
         ) : items.length === 0 ? (
           <EmptyState onAdd={() => navigate('/dashboard/products/add')} />
         ) : (
-          <div className="flex flex-col gap-[16px]">
+          <div className="flex flex-col gap-[16px] flex-1 min-h-0">
+            {/* The frame's card (465:8653) is 777px at 1131 tall; here it takes the space above the pager and scrolls inside.
+                On phones it is only as tall as its cards (capped so the pager stays on screen) and the pager still sits at the bottom. */}
             <DataTable
               rows={rows}
               rowKey={(p) => p.id}
               onRowClick={(p) => navigate(`/dashboard/products/${p.id}`)}
+              scroll
+              className="min-h-0 md:flex-1 max-md:flex-none max-md:mb-auto max-md:max-h-[calc(100%-90px)]"
               columns={[
                 {
                   key: 'product',

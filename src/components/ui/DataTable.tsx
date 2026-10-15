@@ -37,6 +37,11 @@ interface DataTableProps<Row> {
   designWidth?: number
   /** The frame's corner radius; the products and payout tables use 20, the orders table 10. */
   radius?: number
+  /**
+   * The table scrolls inside its own frame (give it a height through `className`), with the
+   * header staying put, so a pager under it stays on screen.
+   */
+  scroll?: boolean
   className?: string
 }
 
@@ -61,6 +66,7 @@ export default function DataTable<Row>({
   cellPadding = 24,
   designWidth = 1091,
   radius = 20,
+  scroll = false,
   className = '',
 }: DataTableProps<Row>) {
   const title = columns.find((c) => c.card === 'title') ?? columns[0]
@@ -81,19 +87,23 @@ export default function DataTable<Row>({
   const textAlign = (c: DataColumn<Row>) => (c.align === 'center' ? 'text-center' : c.align === 'right' ? 'text-right' : 'text-left')
 
   return (
-    <div className={`border border-[#f7f7f7] bg-white overflow-hidden ${className}`} style={{ borderRadius: radius }}>
+    <div
+      className={`border border-[#f7f7f7] bg-white ${scroll ? 'overflow-y-auto' : 'overflow-hidden'} ${className}`}
+      style={{ borderRadius: radius }}
+    >
       <table className="w-full table-fixed border-collapse max-md:hidden">
         <colgroup>
           {columns.map((c) => (
             <col key={c.key} style={c.width ? { width: `${(c.width / designWidth) * 100}%` } : undefined} />
           ))}
         </colgroup>
-        <thead>
-          <tr className={`border-b border-[#807e7e] ${head === 'tinted' ? 'bg-[#f7f7f7]' : ''}`}>
+        {/* While scrolling, the header stays put; collapsed borders do not travel with sticky cells, so its rule is an inset shadow on each cell */}
+        <thead className={scroll ? 'sticky top-0 z-[1]' : undefined}>
+          <tr className={`${scroll ? '' : 'border-b border-[#807e7e]'} ${head === 'tinted' ? 'bg-[#f7f7f7]' : 'bg-white'}`}>
             {columns.map((c) => (
               <th
                 key={c.key}
-                className={`${HEAD} ${textAlign(c)}`}
+                className={`${HEAD} ${textAlign(c)} ${scroll ? 'shadow-[inset_0_-1px_0_#807e7e]' : ''}`}
                 style={{ ...jakarta(600), paddingLeft: cellPadding, paddingRight: cellPadding }}
               >
                 {c.header}

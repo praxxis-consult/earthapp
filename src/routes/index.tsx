@@ -7,6 +7,7 @@ import ProductDetail from '../pages/Marketplace/ProductDetail'
 import PlaceOrder from '../pages/Marketplace/PlaceOrder'
 import Signup from '../pages/Auth/Signup'
 import SignupOtp from '../pages/Auth/SignupOtp'
+import ReferralLanding from '../pages/Auth/ReferralLanding'
 import StoreName from '../pages/Onboarding/StoreName'
 import Location from '../pages/Onboarding/Location'
 import VerifyId from '../pages/Onboarding/VerifyId'
@@ -30,6 +31,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Standalone auth pages (no Navbar/Footer) */}
+      <Route path="/r/:handle" element={<ReferralLanding />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup/verify" element={<SignupOtp />} />
 

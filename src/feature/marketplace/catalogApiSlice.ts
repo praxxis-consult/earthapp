@@ -27,6 +27,24 @@ export const catalogApiSlice = apiSlice.injectEndpoints({
       },
       providesTags: ['Catalog'],
     }),
+    /** One store's published listings (the "Share my store" link); null when the store is not public. */
+    listStore: builder.query<{ store: PublicStore; listings: Listing[] } | null, string>({
+      async queryFn(storeId, _, __, baseQuery) {
+        const store = await baseQuery(`/stores/${encodeURIComponent(storeId)}`)
+        // 404: no such store; 400: not even a store id (a mangled link). Both read as "not on the marketplace".
+        if (store.error) return store.error.status === 404 || store.error.status === 400 ? { data: null } : { error: store.error }
+        const s = store.data as PublicStore
+        const [products, categories] = await Promise.all([
+          allPages<Product>((c) => baseQuery(`/stores/${s.id}/products?limit=50${c ? `&cursor=${encodeURIComponent(c)}` : ''}`)),
+          allPages<Category>((c) => baseQuery(`/store-categories?limit=50${c ? `&cursor=${encodeURIComponent(c)}` : ''}`)),
+        ])
+        if ('error' in products) return products
+        if ('error' in categories) return categories
+        const listings = products.data.map((p) => toListing(p, s, categories.data)).sort((a, b) => b.listedAt.localeCompare(a.listedAt))
+        return { data: { store: s, listings } }
+      },
+      providesTags: ['Catalog'],
+    }),
     /** One published listing with its store; null when it is not public (404). */
     getListing: builder.query<Listing | null, string>({
       async queryFn(id, _, __, baseQuery) {
@@ -46,4 +64,4 @@ export const catalogApiSlice = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useListRegionQuery, useGetListingQuery } = catalogApiSlice
+export const { useListRegionQuery, useListStoreQuery, useGetListingQuery } = catalogApiSlice

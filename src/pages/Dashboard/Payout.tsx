@@ -2,6 +2,7 @@ import { useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
+import EmptyBlock from '../../components/ui/EmptyBlock'
 import { naira } from '../../data/orders'
 import { orderLimit, paid, payouts, pending, received, type Payout } from '../../data/payouts'
 import { jakarta } from '../../utils/styles'
@@ -38,16 +39,17 @@ export default function Payout() {
         <div className="flex gap-[16px] max-md:flex-col">
           <div
             className="flex-1 h-[136px] rounded-[20px] pl-[25px] pr-[24px] pt-[24px] flex flex-col gap-[16px]"
-            style={{ backgroundImage: 'linear-gradient(128.3deg, #aee74a -19.5%, #007c53 46%)' }}
+            // Solved from the frame's gradient handles (594:15599, 539×136; bands parallel to the width handle)
+            style={{ backgroundImage: 'linear-gradient(177.27deg, #aee74a -61.8%, #007c53 74.7%)' }}
           >
             <p className="text-white text-[14px] leading-[24px]" style={jakarta(500)}>
               Paid
             </p>
-            <div className="flex items-baseline gap-[16px]">
+            <div className="flex items-start gap-[16px]">
               <p className="text-white text-[32px] leading-[48px]" style={jakarta(700)}>
                 {naira(paid)}
               </p>
-              <p className="text-[12px] leading-[15px]" style={{ ...jakarta(400), color: 'rgba(255,255,255,0.75)' }}>
+              <p className="text-[12px] leading-[15px] mt-[22px]" style={{ ...jakarta(400), color: 'rgba(255,255,255,0.75)' }}>
                 all time
               </p>
             </div>
@@ -56,11 +58,11 @@ export default function Payout() {
             <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(500)}>
               Pending
             </p>
-            <div className="flex items-baseline gap-[16px]">
+            <div className="flex items-start gap-[16px]">
               <p className="text-[#101604] text-[32px] leading-[48px]" style={jakarta(700)}>
                 {naira(pending)}
               </p>
-              <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
+              <p className="text-[#807e7e] text-[12px] leading-[15px] mt-[22px]" style={jakarta(400)}>
                 awaiting clearance
               </p>
             </div>
@@ -129,61 +131,72 @@ export default function Payout() {
           <h2 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Transactions
           </h2>
-          <DataTable
-            rows={rows}
-            rowKey={(p) => p.orderId}
-            columns={[
-              {
-                key: 'order',
-                header: 'Order',
-                card: 'title',
-                cell: (p) => (
-                  <div className="flex flex-col min-w-0">
-                    <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
-                      {p.orderId}
-                    </p>
-                    <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
-                      {p.buyer}, {p.date}
-                    </p>
-                  </div>
-                ),
-              },
-              ...(
-                [
-                  ['amount', 'Amount', 179, (p: Payout) => p.amount],
-                  ['commission', 'Commission', 168, (p: Payout) => -p.commission],
-                  ['vat', 'VAT', 168, (p: Payout) => -p.vat],
-                  ['deliveryFee', 'Delivery fee', 169, (p: Payout) => p.deliveryFee],
-                ] as const
-              ).map(([key, header, width, value]) => ({
-                key,
-                header,
-                width,
-                align: 'right' as const,
-                cell: (p: Payout) => {
-                  const v = value(p)
-                  return (
-                    <p className="text-[#101604] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(400)}>
-                      {v < 0 ? `−${naira(-v)}` : naira(v)}
-                    </p>
-                  )
-                },
-              })),
-              {
-                key: 'received',
-                header: 'You receive',
-                width: 168,
-                align: 'right',
-                card: 'footer',
-                cell: (p) => (
-                  <p className="text-[#007c53] text-[14px] leading-[24px] whitespace-nowrap max-md:text-[16px] max-md:leading-[20px]" style={jakarta(600)}>
-                    {naira(received(p))}
-                  </p>
-                ),
-              },
-            ]}
-          />
-          <Pager page={current} pageCount={pageCount} onChange={setPage} />
+          {payouts.length === 0 ? (
+            <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]">
+              <EmptyBlock
+                title="No payouts yet"
+                copy="Your share of each completed order will show here as soon as it is paid out."
+              />
+            </div>
+          ) : (
+            <>
+              <DataTable
+                rows={rows}
+                rowKey={(p) => p.orderId}
+                columns={[
+                  {
+                    key: 'order',
+                    header: 'Order',
+                    card: 'title',
+                    cell: (p) => (
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+                          {p.orderId}
+                        </p>
+                        <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
+                          {p.buyer}, {p.date}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  ...(
+                    [
+                      ['amount', 'Amount', 179, (p: Payout) => p.amount],
+                      ['commission', 'Commission', 168, (p: Payout) => -p.commission],
+                      ['vat', 'VAT', 168, (p: Payout) => -p.vat],
+                      ['deliveryFee', 'Delivery fee', 169, (p: Payout) => p.deliveryFee],
+                    ] as const
+                  ).map(([key, header, width, value]) => ({
+                    key,
+                    header,
+                    width,
+                    align: 'right' as const,
+                    cell: (p: Payout) => {
+                      const v = value(p)
+                      return (
+                        <p className="text-[#101604] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(400)}>
+                          {v < 0 ? `−${naira(-v)}` : naira(v)}
+                        </p>
+                      )
+                    },
+                  })),
+                  {
+                    key: 'received',
+                    header: 'You receive',
+                    width: 168,
+                    align: 'right',
+                    card: 'footer',
+                    cell: (p) => (
+                      <p className="text-[#007c53] text-[14px] leading-[24px] whitespace-nowrap max-md:text-[16px] max-md:leading-[20px]" style={jakarta(600)}>
+                        {naira(received(p))}
+                      </p>
+                    ),
+                  },
+                ]}
+              />
+              <Pager page={current} pageCount={pageCount} onChange={setPage} />
+            </>
+          )}
         </div>
       </div>
     </DashboardLayout>

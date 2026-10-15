@@ -304,8 +304,8 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
   return (
     <DashboardLayout>
       <div className="px-[24px] pt-[40px] pb-[48px] max-md:px-[16px] max-md:pt-[24px]">
-        {/* Header */}
-        <div className="flex items-start justify-between w-full mb-[24px] max-md:flex-col max-md:gap-[16px]">
+        {/* Header (471:15072 + 471:15173): the 103px title block, the buttons bottom-aligned to it, cards 40px below */}
+        <div className="flex items-end justify-between w-full mb-[40px] max-md:flex-col max-md:items-stretch max-md:gap-[16px] max-md:mb-[24px]">
           <div className="flex flex-col gap-[24px] max-w-[539px]">
             <button type="button" onClick={() => navigate(-1)} className="flex gap-[8px] items-center">
               <div className="flex items-center justify-center size-[16px]" style={{ transform: 'rotate(90deg)' }}>
@@ -319,14 +319,14 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
               <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
                 {title}
               </h1>
-              <p className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
+              <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
                 {subtitle}
               </p>
             </div>
           </div>
 
           {/* Save draft + Publish, or Discard + Save changes */}
-          <div className="flex items-center gap-[16px] pt-[8px] max-md:w-full max-md:pt-0 max-md:gap-[12px]">
+          <div className="flex items-center gap-[16px] max-md:w-full max-md:gap-[12px]">
             {editing ? (
               <button
                 type="button"

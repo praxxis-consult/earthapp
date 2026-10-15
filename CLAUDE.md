@@ -1,8 +1,9 @@
-# earthapp — Claude Code Agent Workflow
+# earthapp — agent workflow
 
-This file defines the multi-agent pipeline for converting Figma designs into
-production-ready TSX components inside this React + Vite + TypeScript +
-Tailwind v4 project.
+This file defines how agents work on this React + Vite + TypeScript + Tailwind v4
+project: the conventions every change follows, and the five-department loop that
+turns a design frame into a shipped, verified screen. The README explains the product;
+this file explains the work.
 
 ---
 
@@ -38,212 +39,111 @@ Add new tokens here instead of hardcoding hex values in component files.
 
 ---
 
-## Agent roles
+---
 
-### Agent 1 — Figma Agent
+## The loop: five departments
 
-**Trigger:** receives a Figma file URL and a node ID.
+The project runs as a multi-agent loop. Each department acts by itself, produces its
+own output, and hands to the next. A department never assumes another one covered a
+step. The loop ends only when the Judge awards full marks.
 
-**Responsibilities:**
-1. Call `mcp__plugin_figma_figma__get_design_context` with the provided URL/node.
-2. Call `mcp__plugin_figma_figma__get_screenshot` to capture a visual reference.
-3. Call `mcp__plugin_figma_figma__download_assets` for any SVG/PNG icons or
-   images referenced in the node. Save them to `src/assets/icons/` (SVGs) or
-   `src/assets/images/` (rasters). Use the original Figma asset name, lowercased
-   and hyphenated (e.g. `arrow-right.svg`).
-4. Extract the following from the design context and write them to
-   `design-spec.json` at the project root:
+### 1. Builder — implements the code
 
-```jsonc
-{
-  "meta": {
-    "figma_url": "<url>",
-    "node_id": "<id>",
-    "node_name": "<Figma layer name>",
-    "component_name": "<PascalCase name for the TSX file>",
-    "target_folder": "src/components/ui | layout | common",
-    "screenshot_path": "src/assets/images/<name>-spec.png"
-  },
-  "tokens": {
-    "colors": { "<role>": "<hex>" },
-    "typography": {
-      "<role>": {
-        "font_family": "",
-        "font_size_px": 0,
-        "font_weight": 0,
-        "line_height_px": 0,
-        "letter_spacing_px": 0,
-        "text_transform": "none | uppercase | lowercase"
-      }
-    },
-    "spacing": {
-      "padding_x_px": 0,
-      "padding_y_px": 0,
-      "gap_px": 0,
-      "border_radius_px": 0
-    },
-    "shadows": ["<tailwind shadow string or CSS box-shadow value>"],
-    "borders": { "width_px": 0, "color": "<hex>", "style": "solid" }
-  },
-  "assets": [
-    { "name": "<filename>", "path": "src/assets/icons/<filename>", "role": "<description>" }
-  ],
-  "layout": {
-    "display": "flex | grid",
-    "direction": "row | column",
-    "breakpoints": {}
-  },
-  "variants": ["<variant name>"],
-  "notes": "<any behaviour or interaction notes>"
-}
-```
+Trigger: a design frame (file URL + node id) and, where one exists, the API endpoint.
 
-5. Print a one-line summary: `FIGMA AGENT DONE — design-spec.json written, N assets saved.`
+1. Fetch the raw frame data over the REST API (`figma-refs/` holds dumps and
+   `figma-refs/tree.cjs <node-id> [depth]` prints a layout tree). Never build from a
+   screenshot or a summary; read widths, positions, padding, fills, strokes, effects,
+   fonts and copy from the nodes.
+2. Export the frame's own assets (icons, illustrations, images) and save them to
+   `src/assets/icons/` or `src/assets/images/`, lowercased and hyphenated. Never
+   substitute an icon pack.
+3. Solve gradients from the node's gradient handles (the colour bands run parallel to
+   the width handle; a start-to-end angle is wrong on non-square nodes). Sample the
+   render against the node's PNG export.
+4. Build with the conventions above: tokens, utility classes, shared components
+   (`Drawer`, `DataTable`, `StatCard`, `EmptyBlock`, `LineChart`, `Pager`,
+   `SelectorMenu`, `SCROLL_ROW`). The third copy of anything becomes a shared piece.
+5. Wire to the API through an RTK Query slice. If the endpoint does not exist, the page
+   reads a data module under `src/data/` shaped like the expected response and shows a
+   real zero state; sample rows go in a `.sample.ts` twin behind `src/data/sample.ts`.
+   Never put an invented figure on a page.
+6. Add the responsive layer with `max-lg:` / `max-md:` / `max-sm:` overrides or
+   `lg:hidden` swaps; desktop classes stay exactly as measured.
+7. Measure the result in headless Chrome against the frame at its own size; write down
+   every deliberate deviation in a code comment at the spot.
 
-**Must NOT:** write any TSX or CSS. Its only outputs are `design-spec.json` and
-downloaded assets.
+Hands over: the code, the measurements, the deviation list. Prints:
+`BUILDER DONE — <screen>, <n> elements measured, <m> deviations noted.`
+
+### 2. Adversarial auditor — attacks the work
+
+Trigger: the Builder's hand-over.
+
+Attack, do not review: overflow at 390, 768 and 1024; desktop regressions against the
+pre-change baseline; wrong or invented data on a page; controls that do nothing without
+a note; sign-in, refresh and session paths (double refresh, stale token, rate limit,
+closed tab); version conflicts on saves; races between queries on load; keyboard and
+Escape on dialogs; anything a hostile buyer or seller could exploit (unauthenticated
+routes, injected text, oversized uploads).
+
+Hands over: a findings list. Each finding names the file and line, the concrete input or
+state, and the wrong output or crash. Prints:
+`AUDITOR DONE — <n> findings.` A finding without a failure scenario is not a finding.
+
+### 3. Fixer — fixes every finding with a regression test
+
+Trigger: the auditor's list.
+
+For each finding: write the check that fails (a Vitest test in `src/test/`, or a scripted
+browser check where a test cannot reach), fix it, see the check pass, keep the check. Do
+not fix by removing the control or the feature. Prints:
+`FIXER DONE — <n>/<n> findings fixed, <t> tests added.`
+
+### 4. Design researcher — raises the frontend to the best real UIs
+
+Trigger: a screen where the design file is silent (mobile layouts, empty states, loading,
+motion, micro-copy) or a Judge note on quality.
+
+Go external: study the best real marketplace and seller-dashboard UIs for the pattern in
+question, bring back concrete proposals with references, and apply them where they do not
+contradict the frames. Never override a measured frame value. Prints:
+`RESEARCHER DONE — <n> proposals, <m> applied.`
+
+### 5. Judge — grades against the rubric
+
+Trigger: after the Fixer (and the Researcher, when involved).
+
+Grade the current state on the rubric below, one score per line, and say exactly what
+loses points and where. Anything short of full marks goes back to the Builder (frame or
+integration) or the Fixer (defects). Prints:
+`JUDGE DONE — <score>/<max>; <list of point losses>.`
+
+Rubric (each worth the same):
+1. Frame fidelity: every measured element within 1px at 1440; assets, copy and gradients
+   from the file; deviations written down.
+2. Responsive: nothing past the viewport at 390, 768 and 1024; touch targets ≥ 44px;
+   desktop unchanged against the baseline.
+3. Data honesty: every number from the API or a real zero; samples only behind the switch.
+4. Integration: every control does what it says or is marked inert with the reason; the
+   end-to-end flows pass on the QA API.
+5. Code health: `npm run lint`, `npx tsc --noEmit`, `npm run build` clean; shared pieces
+   used instead of copies; conventions above followed.
+6. Accessibility basics: labelled inputs, keyboard-reachable rows and dialogs, Escape
+   closes dialogs, decorative images marked.
+
+Maximum loops: **3**. If the Judge still withholds full marks after three, it writes a
+`MANUAL REVIEW REQUIRED` section naming the open points and stops.
 
 ---
 
-### Agent 2 — Builder Agent
+## Rules that apply to every department
 
-**Trigger:** `design-spec.json` exists at the project root.
-
-**Responsibilities:**
-1. Read `design-spec.json` in full.
-2. Map every pixel value to the closest Tailwind v4 utility. Use arbitrary values
-   (e.g. `px-[120px]`, `text-[14px]`, `tracking-[-0.28px]`) only when no
-   standard utility matches within 2 px / 0.05 rem.
-3. For new color roles not yet in `src/index.css @theme`, add them there before
-   writing the component. Do not hardcode hex values inline when a token name is
-   more expressive.
-4. Write the component to `<target_folder>/<ComponentName>.tsx`.
-5. Component rules:
-   - Functional component with named export as default.
-   - Props interface above the component (`interface <Name>Props { … }`).
-   - Import SVGs at the top of the file following the existing pattern.
-   - Never use inline `style={{ }}` for values that Tailwind can express.
-     Use `style={{ }}` only for gradient backgrounds, dynamic values, or
-     font-family overrides that Tailwind cannot express as static classes.
-   - Add `// BUILDER: <brief rationale>` comments on any non-obvious styling
-     decisions (e.g. why a specific arbitrary value was used).
-6. Run `npm run lint` via the shell tool. Fix any reported errors before handing off.
-7. Print: `BUILDER AGENT DONE — <path> written, lint passed.`
-
-**Must NOT:** call any Figma MCP tools. Read only from `design-spec.json` and
-existing source files.
-
----
-
-### Agent 3 — Reviewer Agent
-
-**Trigger:** Builder Agent has printed its completion line.
-
-**Responsibilities:**
-1. Read the generated component file.
-2. Read `design-spec.json`.
-3. For each token in `design-spec.json`, verify the component uses the correct
-   value. Build a checklist table:
-
-   | Token | Spec value | Component value | Status |
-   |---|---|---|---|
-   | primary color | #007C53 | bg-[#007C53] | PASS |
-   | font-size body | 14px | text-[14px] | PASS |
-   | border-radius | 30px | rounded-[30px] | PASS |
-
-4. Check structural correctness:
-   - All variants listed in `design-spec.json` are implemented.
-   - All assets from `design-spec.json` are imported and used.
-   - No unused imports.
-   - Props interface covers every configurable aspect visible in the spec.
-   - Component renders without JSX errors (static analysis — no runtime needed).
-
-5. Output a `review-report.md` in the project root with:
-   - The checklist table.
-   - A **PASS** or **NEEDS REVISION** verdict.
-   - A numbered list of issues (if any), each with the exact line number and
-     the required fix.
-
-6. If verdict is NEEDS REVISION, loop back to the Builder Agent with the
-   issue list appended to `design-spec.json` under a `"review_feedback"` key.
-   The Builder Agent must address every issue and increment
-   `"revision": <n>` in the meta block before re-handing off.
-
-7. Print: `REVIEWER AGENT DONE — verdict: PASS | NEEDS REVISION (N issues).`
-
-**Must NOT:** rewrite the component itself. Its only output is `review-report.md`
-and optional feedback written back to `design-spec.json`.
-
----
-
-## Handoff protocol
-
-```
-User provides: Figma URL + node ID
-       │
-       ▼
-  [Figma Agent]
-  → downloads assets
-  → writes design-spec.json
-       │
-       ▼
-  [Builder Agent]
-  → reads design-spec.json
-  → writes TSX component
-  → updates index.css tokens
-  → runs lint
-       │
-       ▼
-  [Reviewer Agent]
-  → reads component + spec
-  → writes review-report.md
-       │
-    PASS? ──── YES ──→ Done. Component is production-ready.
-       │
-      NO
-       │
-       ▼
-  append review_feedback to design-spec.json
-       │
-       ▼
-  [Builder Agent] (revision loop)
-       │
-       ▼
-  [Reviewer Agent] (re-check)
-       │
-    PASS? ──── YES ──→ Done.
-```
-
-Maximum revision loops: **3**. If still failing after 3 loops, the Reviewer
-Agent writes a `MANUAL REVIEW REQUIRED` section at the top of `review-report.md`
-and stops.
-
----
-
-## Context each agent must read on startup
-
-Every agent run must begin by reading:
-1. This file (`CLAUDE.md`).
-2. `src/index.css` — current design tokens.
-3. One existing component from the target folder to understand code style
-   (e.g. `src/components/ui/Button.tsx` for ui targets,
-   `src/components/layout/Navbar.tsx` for layout targets).
-
----
-
-## File inventory after a completed pipeline run
-
-```
-project root/
-  design-spec.json          ← written by Figma Agent, updated by Reviewer
-  review-report.md          ← written by Reviewer Agent
-src/
-  index.css                 ← may have new @theme tokens (Builder Agent)
-  assets/icons/*.svg        ← new SVG assets (Figma Agent)
-  assets/images/*.png       ← screenshot reference + any raster assets
-  components/<folder>/
-    <ComponentName>.tsx     ← final component (Builder Agent)
-```
-
-Clean up `design-spec.json` and `review-report.md` after merging the component
-into your branch if you do not want them committed.
+- Commit messages and pull requests describe the product change in plain words. They never
+  name the design tool or the tools used to make the change, and carry no attribution lines.
+- Never put an invented figure on a page. The zero state is the honest state.
+- Verify before stating: a claim about git, a deployment or an API is backed by a command
+  run in the session.
+- Development-only switches (`?sample=1`) are compiled out of production builds.
+- The scratchpad scripts used for measuring and auditing live outside the repository; the
+  measurements themselves go in the pull request.

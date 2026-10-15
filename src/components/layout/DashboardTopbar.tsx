@@ -58,11 +58,17 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
 
       {/* Right: notification + user */}
       <div className="flex gap-[24px] items-center shrink-0 max-lg:gap-[12px]">
-        <div className="relative shrink-0 size-[24px]">
+        <div className="relative shrink-0 size-[24px]" title="Notifications arrive here once the API sends them" aria-label="Notifications">
           <img src={notificationIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
 
-        <div className="flex gap-[8px] items-center">
+        {/* The seller block (467:12487) opens account settings */}
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/settings')}
+          aria-label="Account settings"
+          className="flex gap-[8px] items-center text-left rounded-[30px] focus-visible:outline-2 focus-visible:outline-[#007c53]"
+        >
           {/* Avatar initials */}
           <div className="bg-[#f2f8f6] flex items-center justify-center rounded-full size-[40px] shrink-0">
             <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>{name ? initials(name) : ''}</p>
@@ -87,7 +93,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
           <div className="relative shrink-0 size-[16px] max-md:hidden">
             <img src={chevronDownIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
           </div>
-        </div>
+        </button>
       </div>
     </header>
   )
