@@ -115,7 +115,7 @@ export default function Products() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[40px] pb-[32px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
+      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px] max-md:pb-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
         {q && (
           <p className="mt-[16px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -126,8 +126,8 @@ export default function Products() {
           </p>
         )}
 
-        {/* Page heading */}
-        <div className="flex items-start justify-between w-full max-md:flex-col max-md:gap-[16px]">
+        {/* Page heading (465:8648 + 467:12472): the button is centred on the 64px title block */}
+        <div className="flex items-center justify-between w-full max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[490px]">
             <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
               Products
@@ -149,10 +149,12 @@ export default function Products() {
           <EmptyState onAdd={() => navigate('/dashboard/products/add')} />
         ) : (
           <div className="flex flex-col gap-[16px]">
+            {/* The frame's card (465:8653) holds ten row slots, 777px, so the pager sits at the bottom whatever the count */}
             <DataTable
               rows={rows}
               rowKey={(p) => p.id}
               onRowClick={(p) => navigate(`/dashboard/products/${p.id}`)}
+              className="min-h-[777px] max-md:min-h-0"
               columns={[
                 {
                   key: 'product',
