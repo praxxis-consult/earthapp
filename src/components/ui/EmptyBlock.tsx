@@ -19,7 +19,7 @@ interface EmptyBlockProps {
  */
 export default function EmptyBlock({ title, copy, action, className = '' }: EmptyBlockProps) {
   return (
-    <div className={`flex flex-col items-center gap-[24px] ${className}`}>
+    <div className={`flex flex-col items-center gap-[24px] w-full ${className}`}>
       <div className="flex flex-col items-center w-[429px] max-w-full">
         <div className="relative size-[200px]">
           <div className="absolute" style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}>
