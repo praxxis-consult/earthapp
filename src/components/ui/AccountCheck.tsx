@@ -17,10 +17,10 @@ function Spinner() {
  * The 40px status row under the account number (bank details 424:4530, 428:4608): the spinner
  * with "Checking the bank…" while the lookup runs; the verify tick with "Name matched
  * successfully" and the bank's name on the right once it matches; a plain warning otherwise.
- * Renders nothing while idle or when the lookup is unavailable.
+ * Renders nothing while idle.
  */
 export function AccountCheckRow({ check, className = '' }: { check: AccountCheck; className?: string }) {
-  if (check.status === 'idle' || check.status === 'unavailable') return null
+  if (check.status === 'idle') return null
   if (check.status === 'checking')
     return (
       <div className={`flex items-center gap-[8px] h-[40px] py-[8px] rounded-[15px] w-full ${className}`} role="status">
@@ -48,7 +48,9 @@ export function AccountCheckRow({ check, className = '' }: { check: AccountCheck
     <p role="alert" className={`py-[8px] text-[#b13b3b] text-[13px] leading-[20px] ${className}`} style={jakarta(400)}>
       {check.status === 'mismatch'
         ? `This account is in another name (${check.accountName}). Use an account in your own name, as it appears on your ID.`
-        : check.message}
+        : check.status === 'unavailable'
+          ? 'Account lookup is not available right now. Try again in a moment.'
+          : check.message}
     </p>
   )
 }

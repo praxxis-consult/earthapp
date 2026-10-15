@@ -22,8 +22,8 @@ interface CheckInput {
 
 /**
  * Asks the API (Paystack behind it) for the name on a bank account and compares it with the
- * seller's name. `unavailable` means the API has no lookup endpoint yet: the caller then lets
- * the seller type the name, which is the only reason that field still exists.
+ * seller's name. `unavailable` means the lookup could not be reached (404, 501 or 503); the
+ * seller is told to try again, never to type the name.
  */
 export function useAccountCheck() {
   const [resolve] = useLazyResolveAccountQuery()
@@ -42,7 +42,7 @@ export function useAccountCheck() {
       } catch (e) {
         const err = toApiError(e)
         const next: AccountCheck =
-          err.status === 404 || err.status === 501
+          err.status === 404 || err.status === 501 || err.status === 503
             ? { status: 'unavailable' }
             : { status: 'failed', message: err.status === 422 || err.status === 400 ? 'The bank could not find an account with that number.' : err.message }
         setCheck(next)

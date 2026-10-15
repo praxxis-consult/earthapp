@@ -1,18 +1,38 @@
 {
   "rewrites": [
     {
+      "source": "/v1/banks",
+      "destination": "/api/banks"
+    },
+    {
+      "source": "/v1/banks/resolve",
+      "destination": "/api/banks/resolve"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "http://qaaniuvtddbfg3oi3mroui5u.62.171.189.223.sslip.io/v1/:path*"
     },
-    { "source": "/((?!v1/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!v1/).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "DENY" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
       ]
     }
   ]

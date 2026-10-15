@@ -316,14 +316,12 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
   const [country, setCountry] = useState(store.bank?.country ?? 'NG')
   const [bankName, setBankName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [typedName, setTypedName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [saveOnboarding] = useSaveOnboardingMutation()
   const { check, run, reset } = useAccountCheck()
   const { data: bankList } = useGetBanksQuery({ country })
   const banks = bankList?.map((b) => b.name) ?? BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
-  const fallback = check.status === 'unavailable'
   const matched = check.status === 'matched'
 
   const change = <T,>(setter: (v: T) => void) => (v: T) => {
@@ -352,11 +350,11 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!matched && !fallback) return confirm()
+    if (!matched) return confirm()
     const problem = validate()
     if (problem) return setError(problem)
-    const accountName = matched && check.status === 'matched' ? check.accountName : typedName.trim()
-    if (!accountName) return setError('Enter the name on the account.')
+    const accountName = check.status === 'matched' ? check.accountName : ''
+    if (!accountName) return setError('Confirm the account first.')
     setBusy(true)
     setError('')
     try {
@@ -377,7 +375,7 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
       onSubmit={submit}
       busy={busy || check.status === 'checking'}
       cancel
-      cta={matched || fallback ? 'Save changes' : 'Confirm account'}
+      cta={matched ? 'Save changes' : 'Confirm account'}
     >
       <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
         To avoid someone redirecting your money, your current account keeps getting paid until the new one is verified.
@@ -399,13 +397,8 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
           style={jakarta(400)}
         />
       </Field>
-      {/* The name comes from the bank's lookup (bank details 428:4608); typing it is only the fallback while the API has no lookup */}
+      {/* The name comes from the bank's lookup (bank details 428:4608); it is never typed */}
       <AccountCheckRow check={check} />
-      {fallback && (
-        <Field label="Account name" htmlFor="b-name" hint="Account lookup is not available yet, so type the name exactly as your bank has it.">
-          <input id="b-name" value={typedName} maxLength={160} onChange={(e) => setTypedName(e.target.value)} placeholder="Name on the account, as your bank has it" className={inputClass} style={jakarta(400)} />
-        </Field>
-      )}
       {error && (
         <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
           {error}

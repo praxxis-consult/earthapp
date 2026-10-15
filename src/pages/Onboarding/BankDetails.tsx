@@ -39,7 +39,6 @@ const inputClass =
  * "Confirm account" asks the bank for the name on the account. While it checks, the spinner row
  * shows under the number; when the name matches the seller's, the row shows the tick and the
  * name and the button becomes "Review details". The name is never typed, except while the API
- * has no lookup endpoint, when a labelled fallback field appears so onboarding can finish.
  */
 export default function BankDetails() {
   const navigate = useNavigate()
@@ -59,7 +58,6 @@ export default function BankDetails() {
     ? (bankList?.map((x) => x.name) ?? BANKS_BY_COUNTRY[countryName(b.country)] ?? BANKS_BY_COUNTRY.default)
     : ['Select a country first']
   const holderName = account ? `${account.firstName} ${account.lastName}` : ''
-  const fallback = check.status === 'unavailable'
   const matched = check.status === 'matched' && b.verified
 
   function validate() {
@@ -84,11 +82,10 @@ export default function BankDetails() {
     if (result.status === 'matched') update({ bank: { ...b, accountName: result.accountName, verified: true } })
   }
 
-  /** "Review details" (or the fallback's "Confirm account"): save and move on. */
+  /** "Review details": save and move on. */
   async function proceed() {
     const problem = validate()
     if (problem) return setError(problem)
-    if (fallback && !b.accountName.trim()) return setError('Enter the name on the account.')
     setBusy(true)
     setError('')
     try {
@@ -143,26 +140,6 @@ export default function BankDetails() {
           />
         </div>
 
-        {fallback && (
-          <div className="flex flex-col gap-[8px] items-start w-full">
-            <label htmlFor="account-name" className="text-[#101604] text-[14px] leading-[24px] w-full" style={jakarta(500)}>
-              Account name
-            </label>
-            <input
-              id="account-name"
-              type="text"
-              value={b.accountName}
-              maxLength={160}
-              onChange={(e) => update({ bank: { ...b, accountName: e.target.value } })}
-              placeholder="Name on the account, as your bank has it"
-              className={inputClass}
-              style={{ ...jakarta(400), color: '#101604' }}
-            />
-            <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
-              Account lookup is not available yet, so type the name exactly as your bank has it.
-            </p>
-          </div>
-        )}
 
         {error && (
           <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
@@ -176,7 +153,7 @@ export default function BankDetails() {
 
       {check.status !== 'checking' && (
         <GradientButton
-          onClick={matched || fallback ? proceed : confirm}
+          onClick={matched ? proceed : confirm}
           className="w-full mt-[64px]"
           style={{ opacity: busy ? 0.7 : 1 }}
         >

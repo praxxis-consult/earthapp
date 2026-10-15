@@ -186,6 +186,7 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 | Variable | Where | Meaning |
 | --- | --- | --- |
 | `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to the QA API |
+| `PAYSTACK_SECRET_KEY` | `.env` locally, Vercel project settings in production | Paystack secret key for the bank-account lookup. Read only by the dev server's middleware and the `api/banks` functions, never by the browser. See `.env.example` |
 | `/v1` rewrite | `vercel.json` | Where production forwards `/v1`. Change it to point a deployment at another API |
 
 There are no browser-side secrets: the app never holds an API key, and the refresh token is an HttpOnly cookie the browser manages.
@@ -275,7 +276,7 @@ vite.config.js          dev proxy for /v1
 | --- | --- |
 | authentication | `POST /accounts`, `POST /auth/otp/request`, `POST /auth/otp/resend`, `POST /auth/otp/verify` (intent `ACCOUNT_CONFIRMATION` or `LOGIN`), `GET /accounts/me`, `POST /auth/refresh`, `POST /auth/logout` |
 | stores | `GET /stores/me/onboarding`, `POST /stores/me/onboarding` (draft or live, with `expectedVersion`), `GET /store-categories` |
-| banks | `GET /banks?country`, `GET /banks/resolve?country&bankCode&bankName&accountNumber` (not on the API yet; the bank step falls back to a typed name until they are) |
+| banks | `GET /banks?country`, `GET /banks/resolve?country&bankCode&bankName&accountNumber`. Served by this repo's own server-side functions (`api/banks`, Paystack behind them, key in `PAYSTACK_SECRET_KEY`) until the Earth API takes the two paths over |
 | products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me`, `GET /products/{id}` |
 | uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE` or `PRODUCT_IMAGE`) |
 | marketplace | `GET /stores?country&region`, `GET /stores/{id}`, `GET /stores/{id}/products`, `GET /products/{id}` |
@@ -311,7 +312,7 @@ Checked against the API's `/v1/docs-json`, which lists 24 paths today. These are
 5. **Payouts and referrals**: paid total, pending, the order limit and tiers, transactions; referral code and link, counts and the list of referred users.
 6. **Reviews**: read and write per product, and a store rating.
 7. **Marketplace and buyers**: a country-wide store listing (the design has a Global view), product search across stores, placing an order from the buyer side and payment confirmation.
-8. **Bank account lookup (Paystack)**: the bank step and the change-bank dialog ask the API for the name on an account and compare it with the seller's name; they call `GET /banks?country=NG` (bank list with provider codes) and `GET /banks/resolve?country&bankCode&bankName&accountNumber` (returns `accountName`). Paystack's resolve needs the secret key, so both live on the API. Until they exist the step falls back to a typed name, labelled as such.
+8. **Bank account lookup (Paystack)**: the bank step and the change-bank dialog look the account name up and compare it with the seller's name; the name is never typed. They call `GET /banks?country=NG` and `GET /banks/resolve?country&bankCode&bankName&accountNumber`, served today by this repo's own server-side functions under `api/banks` (Paystack behind them, secret key in `PAYSTACK_SECRET_KEY`). The Earth API can take the two paths over whenever it serves them; nothing in the app changes.
 9. **Smaller**: confirmation does not sign the user in (a second LOGIN code is needed); the waitlist's dev code is off on the QA server; `otp/verify` rate-limits an address after a few sign-ins; phone is required on sign-up though the design marks it optional.
 
 ## Sample data
