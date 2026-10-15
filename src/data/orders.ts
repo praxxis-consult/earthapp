@@ -83,13 +83,13 @@ export const orderTotal = (o: Order) => o.payment.subtotal + o.payment.fee - o.p
  *
  * In development only, the sample rows in ./orders.sample.ts can be switched on to look at the
  * pages: open any dashboard URL with `?sample=1` (and `?sample=0` to switch back). The choice
- * is remembered in this browser; production builds never include the samples.
+ * lasts for that browser tab; production builds never include the samples.
  */
 function sampleMode(): boolean {
   if (!import.meta.env.DEV || typeof window === 'undefined') return false
   const wanted = new URLSearchParams(window.location.search).get('sample')
-  if (wanted !== null) localStorage.setItem('earth.sample', wanted === '1' ? '1' : '0')
-  return localStorage.getItem('earth.sample') === '1'
+  if (wanted !== null) sessionStorage.setItem('earth.sample', wanted === '1' ? '1' : '0')
+  return sessionStorage.getItem('earth.sample') === '1'
 }
 export const orders: Order[] = sampleMode() ? sampleOrders : []
 
