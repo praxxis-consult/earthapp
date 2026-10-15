@@ -31,6 +31,8 @@ const PLOT_TOP = 59
 const AREA_BOTTOM = 282
 /** The highest value sits 70% up the plot, as the frame's peak does. */
 const PEAK = 0.7
+/** A week with nothing in it draws as a flat line a third of the way up, with the tooltip on it. */
+const FLAT = 0.35
 
 /** Catmull-Rom through the points, as cubic Béziers, extended to both edges of the box. */
 function curve(pts: { x: number; y: number }[], width: number): string {
@@ -85,7 +87,7 @@ export default function LineChart({ values, xs, color, areaColor, highlight, pin
     index,
     value,
     x: (xs[index] ?? 0) * scale,
-    y: max > 0 ? CHART_H - (value / max) * PEAK * plotHeight : CHART_H - 1,
+    y: max > 0 ? CHART_H - (value / max) * PEAK * plotHeight : CHART_H - FLAT * plotHeight,
   }))
   const top = Math.min(...points.map((p) => p.y), CHART_H)
   const line = curve(points, width)
