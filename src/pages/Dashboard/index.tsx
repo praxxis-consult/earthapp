@@ -9,7 +9,8 @@ import emptyBgIcon from '../../assets/icons/db-empty-bg.svg'
 import emptyIllustrationIcon from '../../assets/icons/db-empty-illustration.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import addIcon from '../../assets/icons/db-add.svg'
-import { DAYS, overview, type ChartPin } from '../../data/overview'
+import LineChart, { type ChartPoint } from '../../components/ui/LineChart'
+import { DAYS, DAY_X, overview, type ChartSeries } from '../../data/overview'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { orderColumns } from './orderColumns'
 
@@ -22,10 +23,6 @@ import { orderColumns } from './orderColumns'
  * bottom edge is fully green. (Sampled against the frame's own export: within 1/255.)
  */
 const EARNED_BG = 'linear-gradient(175.03deg, #aee74a -61.9%, #007c53 74.7%)'
-
-/** Graph width and height in the frame (464:8226); pin positions are measured against them. */
-const GRAPH_W = 539
-const GRAPH_H = 270.05
 
 /** Columns measured on the overview frame (464:8329): a 1041px table inside its 1px frame. */
 const RECENT_COLUMNS = orderColumns({
@@ -59,28 +56,29 @@ function StatCard({ label, value, sub, gradient }: { label: string; value: strin
 }
 
 /**
- * The chart tooltip ("Pin", 464:8231): a 134×62.56 frame whose ringed dot sits 10.43px down
- * at the left and whose bubble starts 22px in. Both assets are exported with their shadow
- * margins (the dot in a 30×31 box offset 6/4, the bubble in 183×133 offset 30.2/20.2), so they
- * are drawn at their natural size and shifted back by those margins.
+ * The chart tooltip ("Pin", 464:8231): a 134×62.56 frame whose ringed dot (18×18.77, centred
+ * on the data point) sits 10.43px down at the left and whose bubble starts 22px in. Both assets
+ * are exported with their shadow margins (the dot in a 30×31 box offset 6/4, the bubble in
+ * 183×133 offset 30.2/20.2), so they are drawn at their natural size and shifted back.
  */
-function Pin({ pin, icon }: { pin: ChartPin; icon: string }) {
+function Pin({ point, series, icon }: { point: ChartPoint; series: ChartSeries; icon: string }) {
+  const { value, suffix } = series.format(point.value)
   return (
     <div
       className="absolute z-10 w-[134px] h-[63px] pointer-events-none"
-      style={{ left: `${(pin.x / GRAPH_W) * 100}%`, top: pin.y }}
+      style={{ left: point.x - 9, top: point.y - 19.8 }}
     >
       <img src={tooltipBgIcon} alt="" className="absolute block max-w-none w-[183px] h-[133px] -left-[8.17px] -top-[20.2px]" />
       <img src={icon} alt="" className="absolute block max-w-none w-[30px] h-[31px] -left-[6px] top-[6.43px]" />
       <p className="absolute left-[44px] top-[7.75px] text-[#807e7e] text-[14px] leading-[21px] whitespace-nowrap" style={jakarta(400)}>
-        {pin.label}
+        {DAYS[point.index]}.
       </p>
       <p className="absolute left-[44px] top-[30.69px] text-[#101604] text-[16px] leading-[20px] whitespace-nowrap" style={jakarta(700)}>
-        {pin.value}
-        {pin.suffix && (
+        {value}
+        {suffix && (
           <span className="text-[#807e7e] text-[13px]" style={jakarta(500)}>
             {' '}
-            {pin.suffix}
+            {suffix}
           </span>
         )}
       </p>
@@ -93,10 +91,30 @@ function Pin({ pin, icon }: { pin: ChartPin; icon: string }) {
  * the top 270px, the title sits at 24/24, the "7 days" pill at 16 from the top and 24 from the
  * right, and the day labels run 26px in from each side on a line 286px down.
  */
-function ChartCard({ title, graph, pin, pinIcon: icon }: { title: string; graph: string; pin: ChartPin; pinIcon: string }) {
+function ChartCard({
+  title,
+  series,
+  color,
+  areaColor,
+  pinIcon: icon,
+}: {
+  title: string
+  series: ChartSeries
+  color: string
+  areaColor: string
+  pinIcon: string
+}) {
   return (
     <div className="bg-white rounded-[20px] h-[322px] flex-1 min-w-0 overflow-hidden relative max-lg:flex-none max-lg:w-full">
-      <img src={graph} alt="" className="absolute left-0 top-0 w-full block" style={{ height: GRAPH_H }} />
+      <LineChart
+        values={series.values}
+        xs={DAY_X}
+        color={color}
+        areaColor={areaColor}
+        highlight={series.highlight}
+        pin={(point) => <Pin point={point} series={series} icon={icon} />}
+        className="absolute left-0 top-0 w-full"
+      />
       <p className="absolute top-[24px] left-[24px] text-[#101604] text-[16px] leading-[24px] z-10" style={jakarta(600)}>
         {title}
       </p>
@@ -110,7 +128,6 @@ function ChartCard({ title, graph, pin, pinIcon: icon }: { title: string; graph:
         </span>
         <img src={arrowDownIcon} alt="" className="block size-[16px]" />
       </button>
-      <Pin pin={pin} icon={icon} />
       <div className="absolute left-[26px] right-[25px] flex items-center justify-between" style={{ top: 286 }}>
         {DAYS.map((day) => (
           <p key={day} className="text-[#807e7e] text-[12px] leading-[20px] whitespace-nowrap" style={jakarta(400)}>
@@ -170,8 +187,9 @@ export default function DashboardOverview() {
 
         {/* Charts row */}
         <div className="mt-[24px] flex gap-[16px] max-lg:flex-col">
-          <ChartCard title="Sales Activities" graph={data.sales.graph} pin={data.sales.pin} pinIcon={pinIcon} />
-          <ChartCard title="Views" graph={data.views.graph} pin={data.views.pin} pinIcon={pin1Icon} />
+          {/* Line and fade colours from the frame's vectors: sales #007c53 over #3ad384, views #3dbbe2 over itself */}
+          <ChartCard title="Sales Activities" series={data.sales} color="#007c53" areaColor="#3ad384" pinIcon={pinIcon} />
+          <ChartCard title="Views" series={data.views} color="#3dbbe2" areaColor="#3dbbe2" pinIcon={pin1Icon} />
         </div>
 
         {/* New orders card (464:8253): 24px padding, the header row 57 tall, the table 24px below it */}

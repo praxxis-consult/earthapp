@@ -1,22 +1,16 @@
-import { orders } from './orders'
-import salesGraph from '../assets/images/db-graph-sales.svg'
-import salesEmptyGraph from '../assets/images/db-graph-sales-empty.svg'
-import viewsGraph from '../assets/images/db-graph-views.svg'
-import viewsEmptyGraph from '../assets/images/db-graph-views-empty.svg'
+import { naira, orders } from './orders'
 
 /**
  * The overview's numbers (dashboard 459:1048). The API has no overview endpoint yet, so these
  * are the frame's own figures; the page reads only this shape, so the endpoint slots in here.
  */
-export interface ChartPin {
-  /** The day the pin sits on, as the frame writes it ("Wed."). */
-  label: string
-  value: string
-  /** A lighter unit after the value ("views"), where the frame has one. */
-  suffix?: string
-  /** The pin frame's top-left inside the 539×270 graph, as measured on the frame. */
-  x: number
-  y: number
+export interface ChartSeries {
+  /** One value per day, Sunday first. */
+  values: number[]
+  /** The day whose tooltip shows until the pointer picks another. */
+  highlight: number
+  /** How a value reads in the tooltip ("₦4,700.05", "23 views"). */
+  format: (value: number) => { value: string; suffix?: string }
 }
 
 export interface Overview {
@@ -25,12 +19,18 @@ export interface Overview {
   completedOrders: number
   rating: string
   reviews: number
-  sales: { graph: string; pin: ChartPin }
-  views: { graph: string; pin: ChartPin }
+  sales: ChartSeries
+  views: ChartSeries
   recentOrders: typeof orders
 }
 
 export const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat']
+
+/** Where each day's point sits across the frame's 539px graph: the centres of its day labels. */
+export const DAY_X = [38, 117.5, 196, 275.5, 357, 432, 504.5]
+
+const money = (value: number) => ({ value: naira(value) })
+const views = (value: number) => ({ value: String(value), suffix: 'views' })
 
 export const overview: Overview = {
   earnedThisWeek: '₦16,178.75',
@@ -38,19 +38,21 @@ export const overview: Overview = {
   completedOrders: 3,
   rating: '4.8',
   reviews: 2,
-  sales: { graph: salesGraph, pin: { label: 'Wed.', value: '₦4,700.05', x: 273.5, y: 112.6 } },
-  views: { graph: viewsGraph, pin: { label: 'Tue.', value: '23', suffix: 'views', x: 185, y: 161 } },
+  // The heights of the frame's curve at each day, scaled so Wednesday reads ₦4,700.05.
+  sales: { values: [2081, 1432, 3516, 4700.05, 1356, 2314, 3249], highlight: 3, format: money },
+  // The same curve, scaled so Tuesday reads 23 views.
+  views: { values: [14, 9, 23, 31, 9, 15, 21], highlight: 2, format: views },
   recentOrders: orders.slice(0, 2),
 }
 
-/** The same page before the first order (dashboard 431:4736): zeros, flat graphs, no rows. */
+/** The same page before the first order (dashboard 431:4736): zeros, flat lines, no rows. */
 export const emptyOverview: Overview = {
   earnedThisWeek: '₦0.00',
   awaitingOrders: 0,
   completedOrders: 0,
   rating: '0',
   reviews: 0,
-  sales: { graph: salesEmptyGraph, pin: { label: 'Wed.', value: '₦0.00', x: 273.5, y: 112.6 } },
-  views: { graph: viewsEmptyGraph, pin: { label: 'Tue.', value: '0', x: 185, y: 161 } },
+  sales: { values: [0, 0, 0, 0, 0, 0, 0], highlight: 3, format: money },
+  views: { values: [0, 0, 0, 0, 0, 0, 0], highlight: 2, format: views },
   recentOrders: [],
 }
