@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+@layer base {
+  /* Tailwind v4 resets buttons to the arrow cursor; anything clickable shows the hand, and a
+     disabled button says so. A deliberate `cursor-default` utility still wins over this. */
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  [role='option'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='switch'],
+  [role='link'],
+  a[href],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 @theme {
   --font-goldman: 'Goldman', serif;
   --font-jakarta: 'Plus Jakarta Sans', sans-serif;
