@@ -6,6 +6,10 @@ import { describeError, toApiError, type Category, type Onboarding } from '../..
 import { useSaveOnboardingMutation, type SaveOnboardingBody } from '../../feature/stores/storesApiSlice'
 import { COUNTRY_NAMES, countryCode, countryName } from '../../onboarding/draft'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
+import { AccountCheckRow } from './AccountCheck'
+import { useAccountCheck } from '../../feature/banks/useAccountCheck'
+import { useAuth } from '../../feature/authentication/useAuth'
+import { useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 
 const labelClass = 'text-[#101604] text-[14px] leading-[24px]'
 const inputClass =
@@ -308,24 +312,55 @@ const BANKS: Record<string, string[]> = {
 }
 
 export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboarding; onClose: () => void; onSaved: (store: Onboarding) => void }) {
+  const { account } = useAuth()
   const [country, setCountry] = useState(store.bank?.country ?? 'NG')
   const [bankName, setBankName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [accountName, setAccountName] = useState('')
+  const [typedName, setTypedName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [saveOnboarding] = useSaveOnboardingMutation()
-  const banks = BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
+  const { check, run, reset } = useAccountCheck()
+  const { data: bankList } = useGetBanksQuery({ country })
+  const banks = bankList?.map((b) => b.name) ?? BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
+  const fallback = check.status === 'unavailable'
+  const matched = check.status === 'matched'
+
+  const change = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v)
+    reset()
+  }
+
+  function validate() {
+    if (!bankName) return 'Select your bank.'
+    if (accountNumber.length !== 10) return 'Enter the 10-digit account number.'
+    return ''
+  }
+
+  async function confirm() {
+    const problem = validate()
+    if (problem) return setError(problem)
+    setError('')
+    await run({
+      country,
+      bankName,
+      bankCode: bankList?.find((b) => b.name === bankName)?.code,
+      accountNumber,
+      holderName: account ? `${account.firstName} ${account.lastName}` : '',
+    })
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!bankName) return setError('Select your bank.')
-    if (accountNumber.length !== 10) return setError('Enter the 10-digit account number.')
-    if (!accountName.trim()) return setError('Enter the name on the account.')
+    if (!matched && !fallback) return confirm()
+    const problem = validate()
+    if (problem) return setError(problem)
+    const accountName = matched && check.status === 'matched' ? check.accountName : typedName.trim()
+    if (!accountName) return setError('Enter the name on the account.')
     setBusy(true)
     setError('')
     try {
-      const body = { ...liveBody(store), bank: { country, bankName, accountNumber, accountName: accountName.trim() } }
+      const body = { ...liveBody(store), bank: { country, bankName, accountNumber, accountName } }
       const saved = await saveOnboarding({ ...body, status: store.status === 'LIVE' ? 'LIVE' : 'DRAFT', expectedVersion: store.version } as SaveOnboardingBody).unwrap()
       onSaved(saved)
     } catch (err) {
@@ -336,31 +371,41 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
   }
 
   return (
-    <Shell title="Change Payout account" onClose={onClose} onSubmit={submit} busy={busy} cancel>
+    <Shell
+      title="Change Payout account"
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy || check.status === 'checking'}
+      cancel
+      cta={matched || fallback ? 'Save changes' : 'Confirm account'}
+    >
       <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
         To avoid someone redirecting your money, your current account keeps getting paid until the new one is verified.
       </p>
       <Field label="Country" htmlFor="b-country">
-        <Select id="b-country" value={countryName(country)} options={COUNTRY_NAMES} onChange={(n) => { setCountry(countryCode(n)); setBankName('') }} />
+        <Select id="b-country" value={countryName(country)} options={COUNTRY_NAMES} onChange={(n) => { change(setCountry)(countryCode(n)); setBankName('') }} />
       </Field>
       <Field label="Bank" htmlFor="b-bank">
-        <Select id="b-bank" value={bankName} options={banks} onChange={setBankName} placeholder="Select bank" />
+        <Select id="b-bank" value={bankName} options={banks} onChange={change(setBankName)} placeholder="Select bank" />
       </Field>
       <Field label="Account number" htmlFor="b-number">
         <input
           id="b-number"
           inputMode="numeric"
           value={accountNumber}
-          onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+          onChange={(e) => change(setAccountNumber)(e.target.value.replace(/\D/g, '').slice(0, 10))}
           placeholder="Enter bank account number (10 digits)"
           className={inputClass}
           style={jakarta(400)}
         />
       </Field>
-      {/* The design resolves the name from the bank; the API has no resolve endpoint yet, so it is typed. */}
-      <Field label="Account name" htmlFor="b-name">
-        <input id="b-name" value={accountName} maxLength={160} onChange={(e) => setAccountName(e.target.value)} placeholder="Name on the account, as your bank has it" className={inputClass} style={jakarta(400)} />
-      </Field>
+      {/* The name comes from the bank's lookup (bank details 428:4608); typing it is only the fallback while the API has no lookup */}
+      <AccountCheckRow check={check} />
+      {fallback && (
+        <Field label="Account name" htmlFor="b-name" hint="Account lookup is not available yet, so type the name exactly as your bank has it.">
+          <input id="b-name" value={typedName} maxLength={160} onChange={(e) => setTypedName(e.target.value)} placeholder="Name on the account, as your bank has it" className={inputClass} style={jakarta(400)} />
+        </Field>
+      )}
       {error && (
         <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
           {error}

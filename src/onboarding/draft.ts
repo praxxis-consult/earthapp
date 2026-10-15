@@ -13,7 +13,8 @@ export interface Draft {
   identityType: IdentityType | ''
   identityNumber: string
   selfieUrl: string
-  bank: { country: string; bankName: string; accountNumber: string; accountName: string }
+  /** `verified`: the name came from the bank's own lookup and matched the seller; never sent to the API. */
+  bank: { country: string; bankName: string; accountNumber: string; accountName: string; verified?: boolean }
   /** The API's optimistic-concurrency counter; 0 until the store exists. */
   version: number
   status: 'NONE' | 'DRAFT' | 'LIVE' | 'SUSPENDED'
@@ -77,7 +78,9 @@ function merge(local: Draft, remote: Onboarding): Draft {
     identityType: remote.identity?.type ?? local.identityType,
     identityNumber: remote.identity?.number ?? local.identityNumber,
     selfieUrl: remote.selfieUrl ?? local.selfieUrl,
-    bank: remote.bank ?? local.bank,
+    bank: remote.bank
+      ? { ...remote.bank, verified: local.bank.verified && remote.bank.accountNumber === local.bank.accountNumber && remote.bank.bankName === local.bank.bankName }
+      : local.bank,
     version: remote.version,
     status: remote.status,
     storeId: remote.id,
@@ -115,7 +118,8 @@ export function toApiDraft(d: Draft): OnboardingDraft {
   if (d.identityType && d.identityNumber) out.identity = { type: d.identityType, number: d.identityNumber }
   if (d.selfieUrl) out.selfieUrl = d.selfieUrl
   const b = d.bank
-  if (b.country && b.bankName && b.accountNumber && b.accountName) out.bank = b
+  if (b.country && b.bankName && b.accountNumber && b.accountName)
+    out.bank = { country: b.country, bankName: b.bankName, accountNumber: b.accountNumber, accountName: b.accountName }
   return out
 }
 
