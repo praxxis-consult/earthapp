@@ -133,7 +133,8 @@ export default function Orders() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
+      {/* The page fills the dashboard viewport: the list scrolls inside its panel and the pager stays on screen */}
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] h-full max-md:px-[16px] max-md:pt-[24px]">
         {/* Heading (561:3641): title 24/32 SemiBold, intro 16/24 Regular, gap 8 */}
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
@@ -152,7 +153,7 @@ export default function Orders() {
         </div>
 
         {/* All orders panel (561:3651): white, radius 20, padding 24 */}
-        <div className="bg-white rounded-[20px] p-[24px] flex flex-col max-md:p-[16px]">
+        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col flex-1 min-h-0 max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -269,8 +270,10 @@ export default function Orders() {
           </div>
 
           {filtered.length === 0 ? (
-            /* Empty state (orders 561:3689): illustration 200, title 20/25 SemiBold, copy 14/24 */
-            <div className="flex flex-col items-center py-[64px]">
+            /* Empty state (orders 561:3689): illustration 200, title 20/25 SemiBold, copy 14/24. The frame centres it on the
+               whole panel; on a screen tall enough for that it sits over the panel and centres there, otherwise it flows
+               under the search row and centres in the space left, so it never overlaps the tabs. */
+            <div className="flex flex-col items-center justify-center flex-1 min-h-0 py-[16px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0">
               <div className="relative size-[200px]">
                 <div className="absolute h-[140px] left-[23.57px] top-[16.07px] w-[153.208px]">
                   <img src={emptyBg} alt="" className="absolute block inset-0 max-w-none size-full" />
@@ -306,12 +309,15 @@ export default function Orders() {
                 head="tinted"
                 radius={10}
                 designWidth={1043}
-                className="mt-[24px] max-md:mt-[16px]"
+                scroll
+                className="mt-[24px] min-h-0 md:flex-1 max-md:mt-[16px] max-md:flex-none max-md:mb-auto max-md:max-h-[calc(100%-110px)]"
                 columns={ORDER_COLUMNS}
               />
 
               {/* Pagination (561:5295): 74 tall, padding 16/64, gap 16, 1px #f7f7f7 frame, radius 20 */}
-              <Pager page={current} pageCount={pageCount} onChange={setPage} />
+              <div className="mt-[16px] max-md:mt-[16px]">
+                <Pager page={current} pageCount={pageCount} onChange={setPage} />
+              </div>
             </>
           )}
         </div>
