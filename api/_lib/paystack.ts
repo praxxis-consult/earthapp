@@ -37,8 +37,12 @@ export async function listBanks(key: string, country: string): Promise<BankOptio
   const name = COUNTRY[country.toUpperCase()]
   if (!name) throw new LookupError(422, 'Bank lookup is not available for that country yet.')
   const data = await paystack<{ name: string; code: string; active: boolean }[]>(key, `/bank?country=${encodeURIComponent(name)}&perPage=100`)
+  // Paystack lists some banks more than once under one name (different codes for the same brand);
+  // the dropdown keys on the name, so keep the first of each.
+  const seen = new Set<string>()
   return data
     .filter((b) => b.active !== false)
+    .filter((b) => (seen.has(b.name) ? false : (seen.add(b.name), true)))
     .map((b) => ({ code: b.code, name: b.name }))
     .sort((a, b) => a.name.localeCompare(b.name))
 }
