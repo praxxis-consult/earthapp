@@ -224,7 +224,7 @@ export function EditStoreDialog({
           )}
         </div>
       </Field>
-      <Field label="Description" htmlFor="st-desc" hint={`${500 - description.length} characters left`}>
+      <Field label="Description" htmlFor="st-desc" hint={`${500 - description.length} characters left · kept on this device until Earth stores it`}>
         <textarea
           id="st-desc"
           value={description}
@@ -252,7 +252,7 @@ export function EditStoreDialog({
       <Field label="Landmark" htmlFor="st-landmark">
         <input id="st-landmark" value={landmark} maxLength={240} onChange={(e) => setLandmark(e.target.value)} className={inputClass} style={jakarta(400)} />
       </Field>
-      <Field label="Opening hours">
+      <Field label="Opening hours" hint="Kept on this device until Earth stores it">
         <div className="flex gap-[16px]">
           <Select id="st-opens" value={opens} options={HOURS} onChange={setOpens} />
           <Select id="st-closes" value={closes} options={HOURS} onChange={setCloses} />
