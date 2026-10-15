@@ -2,7 +2,7 @@
 
 **The marketplace for farm produce and raw commodities, built Nigeria-first.**
 
-Sellers list what they grow or source, buyers order it, and Earth handles the pickup and the payment. This repository is the Earth web app: the public site and marketplace, seller sign-up and onboarding, and the seller dashboard.
+Sellers list what they grow or source, buyers order it and pay them, and Earth takes a percentage. Earth is the marketplace, never the escrow and never the courier: delivery is by the logistics companies Earth plugs in, which the buyer picks from at checkout, or by pickup from the store. This repository is the Earth web app: the public site and marketplace, seller sign-up and onboarding, and the seller dashboard.
 
 - Live: https://earthapp.vercel.app
 - Repository: https://github.com/praxxis-consult/earthapp
@@ -35,7 +35,7 @@ Sellers list what they grow or source, buyers order it, and Earth handles the pi
 
 ## About the project
 
-Earth connects primary producers (farms, cooperatives, fisheries, mines) with buyers who want verified produce at the source, without a chain of middlemen. A seller sets up a store, lists products with photos, prices and units, and receives orders. Earth coordinates pickup and delivery, holds the payment, and pays the seller when the buyer receives the package.
+Earth connects primary producers (farms, cooperatives, fisheries, mines) with buyers who want verified produce at the source, without a chain of middlemen. A seller sets up a store, lists products with photos, prices and units, and receives orders. The buyer pays and confirms receipt; Earth takes a percentage and never holds the money. For delivery, Earth is an aggregator rather than a logistics company: it integrates logistics providers backend to backend, the buyer chooses one at checkout, and the alternative is pickup from the store. Earth's income is the commission on stores and on that logistics choice.
 
 The app has three parts:
 
