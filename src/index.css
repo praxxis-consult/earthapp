@@ -20,6 +20,17 @@
   }
 }
 
+/* The hero's "Scroll" arrow nods down to say the page continues. */
+@keyframes hero-scroll {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
 @theme {
   --font-goldman: 'Goldman', serif;
   --font-jakarta: 'Plus Jakarta Sans', sans-serif;

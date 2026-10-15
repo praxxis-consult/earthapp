@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import scrollIcon from '../../assets/icons/hero-scroll.svg'
 import arrowRight from '../../assets/icons/hero-arrow-right.svg'
@@ -29,8 +29,16 @@ export default function Hero() {
     return () => clearInterval(id)
   }, [])
 
+  const sectionRef = useRef<HTMLElement>(null)
+  // "Scroll" takes the reader to what follows the hero, however tall the screen made it.
+  const scrollPast = () => sectionRef.current?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
   return (
-    <section className="relative overflow-hidden w-full h-[1024px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
+    // The hero fills the first screen on every desktop: the viewport height under the 96px nav
+    // (the frame's 1024 is what a 1120-tall screen gives). The content stays anchored 80 above
+    // the fold, so the headline, text and buttons are on screen before any scroll on any size;
+    // 560 is the floor for a very short window.
+    <section ref={sectionRef} className="relative overflow-hidden w-full h-[calc(100svh-96px)] min-h-[560px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
 
       {/* ── Cycling backgrounds ── */}
       {SLIDES.map((src, i) => (
@@ -50,8 +58,9 @@ export default function Hero() {
       />
 
       {/* ── Content ── */}
-      {/* The 1200 block sits at 120/80 on the 1440 frame; it gets gutters under 1280 and flows on phones and tablets. */}
-      <div className="absolute flex flex-col items-start bottom-[80px] left-[120px] w-[1200px] gap-[64px] max-xl:left-[24px] max-xl:w-[calc(100%-48px)] max-lg:relative max-lg:bottom-auto max-lg:left-auto max-lg:w-full max-lg:gap-[40px] max-lg:px-[24px] max-lg:pt-[200px] max-lg:pb-[48px] max-md:px-[16px] max-md:pt-[160px] max-md:pb-[40px]">
+      {/* The 1200 block sits at 120/80 on the 1440 frame and stays centred on wider screens, in line with the
+          sections below; it gets gutters under 1280 and flows on phones and tablets. */}
+      <div className="absolute flex flex-col items-start bottom-[80px] left-[max(120px,calc((100%-1200px)/2))] w-[1200px] gap-[64px] max-xl:left-[24px] max-xl:w-[calc(100%-48px)] max-lg:relative max-lg:bottom-auto max-lg:left-auto max-lg:w-full max-lg:gap-[40px] max-lg:px-[24px] max-lg:pt-[200px] max-lg:pb-[48px] max-md:px-[16px] max-md:pt-[160px] max-md:pb-[40px]">
         {/* Eyebrow + headline */}
         <div className="flex flex-col items-start w-full" style={{ gap: '16px' }}>
           <p
@@ -126,15 +135,22 @@ export default function Hero() {
 
           {/* Scroll + dots */}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center max-md:hidden" style={{ gap: '12px', height: '24px' }}>
-              <img src={scrollIcon} alt="" className="size-[24px] shrink-0" />
+            <button
+              type="button"
+              onClick={scrollPast}
+              aria-label="Scroll to the next section"
+              className="flex items-center max-md:hidden"
+              style={{ gap: '12px', height: '24px' }}
+            >
+              {/* The arrow nods down (a 1.6s ease) unless the reader prefers reduced motion */}
+              <img src={scrollIcon} alt="" className="size-[24px] shrink-0 motion-safe:animate-[hero-scroll_1.6s_ease-in-out_infinite]" />
               <span
                 className="text-[12px] uppercase whitespace-nowrap"
                 style={{ ...jakarta(400), letterSpacing: '1.98px', color: 'rgba(248,248,248,0.75)' }}
               >
                 Scroll
               </span>
-            </div>
+            </button>
 
             {/* Slide indicator dots */}
             <div className="flex items-center max-md:ml-auto" style={{ gap: '8px' }}>
