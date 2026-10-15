@@ -1,46 +1,65 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import arrowRight from '../../assets/icons/mp-arrow-right.svg'
 import searchIcon from '../../assets/icons/mp-search.svg'
 import locationIcon from '../../assets/icons/mp-location.svg'
 import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
-import arrowLeft from '../../assets/icons/mp-arrow-left.svg'
-import { DEFAULT_REGION, REGIONS } from '../../lib/catalog'
-import { useListRegionQuery, useListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
+import Pager from '../../components/ui/Pager'
+import { COUNTRIES, countryName, regionsOf } from '../../data/locations'
+import { useListCountryQuery, useListGlobalQuery, useListRegionQuery, useListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { jakarta } from '../../utils/styles'
 
-const jakarta = (weight: number) => ({
-  fontFamily: "'Plus Jakarta Sans', sans-serif",
-  fontWeight: weight,
-})
-
-const ITEMS_PER_PAGE = 9
+/** The frame's grid (181:3041) is four rows of three 384×494 cards. */
+const ITEMS_PER_PAGE = 12
+/** The location picker's first choice (174:2565 "Location: Global"): the launch markets at once. */
+const GLOBAL = 'Global'
+const ALL = 'All Resources'
+/** Where the visitor is browsing: '' for everywhere, a country, or one region of it. */
+type Place = { country: string; region: string }
+const EVERYWHERE: Place = { country: '', region: '' }
 
 const sortOptions = ['Most recent', 'Price: Low to High', 'Price: High to Low']
 
+/**
+ * Marketplace (171:1851): title block, search + location + sort, category tabs with the count,
+ * a 3×4 grid of listings and the pager. Listings come from the public catalogue: the launch
+ * markets by default, one country or one region of it when the picker narrows it.
+ */
 export default function Marketplace() {
-  const navigate = useNavigate()
-  const [activeCategory, setActiveCategory] = useState('All Resources')
+  const [activeCategory, setActiveCategory] = useState(ALL)
   const [search, setSearch] = useState('')
-  // The catalogue API lists stores per region, so the location picker is the region (Nigeria's states).
-  const [location, setLocation] = useState(DEFAULT_REGION)
-  // "Share my store" links land here with ?store=<id>: one store's listings, its region in the picker.
+  // The catalogue API lists stores per country and region, so the picker is Global, a country, or a region of it.
+  const [place, setPlace] = useState<Place>(EVERYWHERE)
+  // "Share my store" links land here with ?store=<id>: one store's listings, its place in the picker.
   const [searchParams, setSearchParams] = useSearchParams()
   const storeId = searchParams.get('store') ?? ''
-  const regionListing = useListRegionQuery({ region: location }, { skip: Boolean(storeId) })
+  const globalListing = useListGlobalQuery(undefined, { skip: Boolean(storeId) || Boolean(place.country) })
+  const countryListing = useListCountryQuery({ country: place.country }, { skip: Boolean(storeId) || !place.country || Boolean(place.region) })
+  const regionListing = useListRegionQuery(place, { skip: Boolean(storeId) || !place.region })
   const storeListing = useListStoreQuery(storeId, { skip: !storeId })
-  const listing = storeId ? storeListing : regionListing
+  // The catalogue fills in place by place (see catalogApiSlice): cards show as they arrive and
+  // `pending` names what is still being read.
+  const catalog = storeId ? null : ((place.region ? regionListing : place.country ? countryListing : globalListing).currentData ?? null)
   const store = storeId ? (storeListing.currentData?.store ?? null) : null
   const { data: categoryList = [] } = useGetCategoriesQuery()
-  const loading = listing.isFetching || (listing.currentData === undefined && !listing.error)
+  const pending = catalog?.pending ?? []
+  const loading = storeId
+    ? storeListing.isFetching || (storeListing.currentData === undefined && !storeListing.error)
+    : !catalog || (catalog.listings.length === 0 && catalog.pending.length > 0)
   const products = useMemo(() => {
     if (loading) return []
     if (storeId) return storeListing.currentData?.listings ?? []
-    return regionListing.currentData ?? []
-  }, [loading, storeId, storeListing.currentData, regionListing.currentData])
-  const loadError = listing.error ? 'We could not load the marketplace. Check your connection and try again.' : ''
-  const shownRegion = store?.businessAddress.region ?? location
+    return catalog?.listings ?? []
+  }, [loading, storeId, storeListing.currentData, catalog])
+  const failed = storeId ? Boolean(storeListing.error) : Boolean(catalog && catalog.error && catalog.listings.length === 0 && catalog.pending.length === 0)
+  const loadError = failed ? 'We could not load the marketplace. Check your connection and try again.' : ''
+  const placeLabel = (p: Place) => (p.region ? `${p.region}, ${countryName(p.country)}` : p.country ? countryName(p.country) : GLOBAL)
+  const shownPlace = store ? placeLabel({ country: store.businessAddress.country, region: store.businessAddress.region }) : placeLabel(place)
+  // The location menu: the country list first, then the chosen country's regions; a filter box for both.
+  const [menuCountry, setMenuCountry] = useState('')
+  const [placeFilter, setPlaceFilter] = useState('')
   const categoryNames = useMemo(() => categoryList.map((c) => c.name), [categoryList])
   const [sort, setSort] = useState('Most recent')
   const [page, setPage] = useState(1)
@@ -49,22 +68,35 @@ export default function Marketplace() {
   const locationRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
 
-  const categories = ['All Resources', ...categoryNames]
+  const categories = [ALL, ...categoryNames]
+  function closeLocation() {
+    setLocationOpen(false)
+    setPlaceFilter('')
+  }
+  function choosePlace(next: Place) {
+    setPlace(next)
+    setPage(1)
+    closeLocation()
+  }
+  const q = placeFilter.trim().toLowerCase()
+  const menuCountries = q ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(q)) : COUNTRIES
+  const menuRegions = q ? regionsOf(menuCountry).filter((r) => r.toLowerCase().includes(q)) : regionsOf(menuCountry)
+  const menuRow = (selected: boolean, extra = '') =>
+    `w-full text-left px-[16px] py-[10px] text-[13px] leading-[20px] hover:bg-[#f7f7f7] transition-colors ${selected ? 'text-[#007c53]' : 'text-[#101604]'} ${extra}`
 
   // Close dropdowns on outside click
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (locationRef.current && !locationRef.current.contains(e.target as Node)) setLocationOpen(false)
+      if (locationRef.current && !locationRef.current.contains(e.target as Node)) closeLocation()
       if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
     }
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
-
   const filtered = products
     .filter((p) => {
-      const matchCat = activeCategory === 'All Resources' || p.category === activeCategory
+      const matchCat = activeCategory === ALL || p.category === activeCategory
       const q = search.toLowerCase()
       const matchSearch =
         q === '' ||
@@ -76,17 +108,27 @@ export default function Marketplace() {
     .sort((a, b) => {
       if (sort === 'Price: Low to High') return a.priceNum - b.priceNum
       if (sort === 'Price: High to Low') return b.priceNum - a.priceNum
-      return 0 // Most recent — preserve original order
+      return 0 // Most recent — the catalogue is already newest first
     })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+  const current = Math.min(page, totalPages)
+  const paginated = filtered.slice((current - 1) * ITEMS_PER_PAGE, current * ITEMS_PER_PAGE)
+  const emptyText = loading
+    ? ''
+    : loadError ||
+      (storeId
+        ? 'This store has nothing listed yet.'
+        : place.country
+          ? `No listings in ${placeLabel(place)} match your filters yet.`
+          : 'No listings match your filters yet.')
 
   return (
-    <div className="bg-white w-full pb-[120px] max-md:pb-[64px]">
+    // 171:1960 ends 66 below the pager (2656 → 2722)
+    <div className="bg-white w-full pb-[66px] max-md:pb-[48px]">
       <div className="max-w-[1200px] mx-auto max-xl:px-[24px] max-md:px-[16px]">
 
-        {/* ── Page header ── */}
+        {/* ── Page header (171:1961): 892 wide, 64 below the nav, title and text 8 apart ── */}
         <div className="flex flex-col gap-[8px] pt-[64px] w-[892px] max-lg:w-full max-md:pt-[32px]">
           <h1
             className="text-[#0c2310] text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px] max-md:tracking-[-0.64px]"
@@ -116,77 +158,163 @@ export default function Marketplace() {
           </p>
         )}
 
-        {/* ── Search + filter controls ── */}
+        {/* ── Search + filter controls (175:2625): 40 below the header, rows 24 apart ── */}
         <div className={`flex flex-col gap-[24px] ${storeId ? 'mt-[24px]' : 'mt-[40px]'}`}>
 
-          {/* Row 1: search + dropdowns */}
+          {/* Row 1 (175:2624): search 588×48 on the left, the two pickers 16 apart on the right */}
           <div className="flex items-center justify-between max-lg:flex-col max-lg:items-stretch max-lg:gap-[12px]">
 
-            {/* Search */}
-            <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-[588px] max-lg:w-full">
+            {/* Search (173:2423) */}
+            <label className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] rounded-[30px] w-[588px] max-lg:w-full">
               <img src={searchIcon} alt="" className="size-[20px] shrink-0" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by commodity name, location ..."
-                className="bg-transparent outline-none text-[#807e7e] text-[13px] w-full placeholder:text-[#807e7e]"
+                aria-label="Search listings"
+                className="bg-transparent outline-none text-[#101604] text-[13px] leading-[16px] w-full placeholder:text-[#807e7e]"
                 style={jakarta(400)}
               />
-            </div>
+            </label>
 
             <div className="flex gap-[16px] items-center max-md:flex-col max-md:items-stretch max-md:gap-[12px]">
 
-              {/* Location dropdown */}
+              {/* Location (174:2563): 187×48 hugging "Location: Global", 500 13 #807e7e. The frame shows the
+                  pill only; the menu is Global, then every country, then the chosen country's regions. */}
               <div className="relative max-md:w-full" ref={locationRef}>
                 <button
-                  onClick={() => { if (storeId) return; setLocationOpen((o) => !o); setSortOpen(false) }}
-                  title={storeId ? 'Showing one store; choose "See every store" to browse by state' : undefined}
-                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer max-md:w-full"
+                  type="button"
+                  onClick={() => { if (storeId) return; if (locationOpen) closeLocation(); else { setMenuCountry(place.country); setLocationOpen(true) } setSortOpen(false) }}
+                  title={storeId ? 'Showing one store; choose "See every store" to browse by location' : undefined}
+                  aria-haspopup="listbox"
+                  aria-expanded={locationOpen}
+                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] max-md:w-full"
                 >
                   <img src={locationIcon} alt="" className="size-[20px] shrink-0" />
-                  <span className="text-[13px]" style={jakarta(500)}>
-                    <span className="text-[#807e7e]">Location: </span>
-                    <span className="text-[#101604]" style={jakarta(600)}>{shownRegion}</span>
+                  <span className="text-[13px] leading-[16px] text-[#807e7e] whitespace-nowrap" style={jakarta(500)}>
+                    Location: {shownPlace}
                   </span>
                   <img src={arrowDown} alt="" className={`size-[16px] shrink-0 transition-transform ${locationOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {locationOpen && (
-                  <div className="absolute top-[52px] left-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[180px] overflow-hidden max-md:w-full max-md:max-h-[320px] max-md:overflow-y-auto">
-                    {REGIONS.map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => { setLocation(c); setLocationOpen(false); setPage(1) }}
-                        className={`w-full text-left px-[16px] py-[10px] text-[13px] hover:bg-[#f7f7f7] transition-colors ${
-                          c === location ? 'text-[#007c53]' : 'text-[#101604]'
-                        }`}
-                        style={jakarta(c === location ? 600 : 400)}
-                      >
-                        {c}
-                      </button>
-                    ))}
+                  <div
+                    role="listbox"
+                    aria-label="Location"
+                    className="absolute top-[52px] left-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 w-[260px] max-md:w-full flex flex-col overflow-hidden"
+                  >
+                    <div className="p-[8px] pb-0">
+                      <input
+                        type="text"
+                        value={placeFilter}
+                        onChange={(e) => setPlaceFilter(e.target.value)}
+                        placeholder={menuCountry ? `Find a region in ${countryName(menuCountry)}` : 'Find a country'}
+                        aria-label={menuCountry ? 'Find a region' : 'Find a country'}
+                        autoFocus
+                        className="bg-[#f7f7f7] h-[40px] w-full rounded-[30px] px-[16px] text-[13px] leading-[20px] text-[#101604] outline-none placeholder:text-[#807e7e]"
+                        style={jakarta(400)}
+                      />
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto py-[4px]">
+                      {menuCountry ? (
+                        <>
+                          <button type="button" onClick={() => { setMenuCountry(''); setPlaceFilter('') }} className={menuRow(false, 'text-[#807e7e]')} style={jakarta(500)}>
+                            ← All countries
+                          </button>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={place.country === menuCountry && !place.region}
+                            onClick={() => choosePlace({ country: menuCountry, region: '' })}
+                            className={menuRow(place.country === menuCountry && !place.region, 'border-b border-[#f7f7f7]')}
+                            style={jakarta(600)}
+                          >
+                            All of {countryName(menuCountry)}
+                          </button>
+                          {menuRegions.map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              role="option"
+                              aria-selected={place.country === menuCountry && place.region === r}
+                              onClick={() => choosePlace({ country: menuCountry, region: r })}
+                              className={menuRow(place.country === menuCountry && place.region === r)}
+                              style={jakarta(place.country === menuCountry && place.region === r ? 600 : 400)}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                          {menuRegions.length === 0 && (
+                            <p className="px-[16px] py-[10px] text-[13px] leading-[20px] text-[#807e7e]" style={jakarta(400)}>
+                              {q ? 'No region matches.' : 'No regions listed for this country.'}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {!q && (
+                            <button
+                              type="button"
+                              role="option"
+                              aria-selected={!place.country}
+                              onClick={() => choosePlace(EVERYWHERE)}
+                              className={menuRow(!place.country, 'border-b border-[#f7f7f7]')}
+                              style={jakarta(600)}
+                            >
+                              {GLOBAL}
+                            </button>
+                          )}
+                          {menuCountries.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => { setMenuCountry(c.code); setPlaceFilter('') }}
+                              className={`${menuRow(place.country === c.code)} flex items-center justify-between gap-[8px]`}
+                              style={jakarta(place.country === c.code ? 600 : 400)}
+                            >
+                              <span className="truncate">{c.name}</span>
+                              <span className="text-[#807e7e] shrink-0">›</span>
+                            </button>
+                          ))}
+                          {menuCountries.length === 0 && (
+                            <p className="px-[16px] py-[10px] text-[13px] leading-[20px] text-[#807e7e]" style={jakarta(400)}>
+                              No country matches.
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Sort dropdown */}
+              {/* Sort (174:2481): 193×48 hugging "Sort: Most recent" */}
               <div className="relative max-md:w-full" ref={sortRef}>
                 <button
+                  type="button"
                   onClick={() => { setSortOpen((o) => !o); setLocationOpen(false) }}
-                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] cursor-pointer max-md:w-full"
+                  aria-haspopup="listbox"
+                  aria-expanded={sortOpen}
+                  className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center justify-center px-[16px] rounded-[30px] max-md:w-full"
                 >
                   <img src={settingsIcon} alt="" className="size-[20px] shrink-0" />
-                  <span className="text-[13px]" style={jakarta(500)}>
-                    <span className="text-[#807e7e]">Sort: </span>
-                    <span className="text-[#101604]" style={jakarta(600)}>{sort}</span>
+                  <span className="text-[13px] leading-[16px] text-[#807e7e] whitespace-nowrap" style={jakarta(500)}>
+                    Sort: {sort}
                   </span>
                   <img src={arrowDown} alt="" className={`size-[16px] shrink-0 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {sortOpen && (
-                  <div className="absolute top-[52px] right-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[200px] overflow-hidden">
+                  <div
+                    role="listbox"
+                    aria-label="Sort"
+                    className="absolute top-[52px] right-0 bg-white border border-[#e4dede] rounded-[16px] shadow-[0px_8px_32px_rgba(0,0,0,0.1)] z-50 min-w-[193px] overflow-hidden"
+                  >
                     {sortOptions.map((s) => (
                       <button
                         key={s}
+                        type="button"
+                        role="option"
+                        aria-selected={s === sort}
                         onClick={() => { setSort(s); setSortOpen(false); setPage(1) }}
                         className={`w-full text-left px-[16px] py-[10px] text-[13px] hover:bg-[#f7f7f7] transition-colors ${
                           s === sort ? 'text-[#007c53]' : 'text-[#101604]'
@@ -203,14 +331,23 @@ export default function Marketplace() {
             </div>
           </div>
 
-          {/* Row 2: category tabs + count */}
-          <div className="flex items-center justify-between max-xl:flex-col max-xl:items-start max-xl:gap-[12px]">
-            <div className="flex gap-[12px] items-center max-xl:w-full max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden">
+          {/* Row 2 (174:2471): 40px category pills 12 apart, the count right-aligned on the same line.
+              The API has more categories than the frame's five, so the pills scroll sideways under a
+              hidden scrollbar instead of pushing the count onto a second line. */}
+          <div className="flex items-center justify-between gap-[24px] max-xl:flex-col max-xl:items-start max-xl:gap-[12px]">
+            <div
+              role="tablist"
+              aria-label="Categories"
+              className="flex gap-[12px] items-center min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-xl:w-full"
+            >
               {categories.map((cat) => (
                 <button
                   key={cat}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeCategory === cat}
                   onClick={() => { setActiveCategory(cat); setPage(1) }}
-                  className={`h-[40px] px-[16px] rounded-[30px] text-[13px] whitespace-nowrap transition-colors ${
+                  className={`h-[40px] px-[16px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap shrink-0 transition-colors ${
                     activeCategory === cat ? 'bg-[#007c53] text-white' : 'bg-[#f7f7f7] text-[#807e7e]'
                   }`}
                   style={jakarta(500)}
@@ -219,70 +356,80 @@ export default function Marketplace() {
                 </button>
               ))}
             </div>
-            <span className="text-[14px] text-[#807e7e]" style={jakarta(400)}>
-              Showing{' '}
-              <span className="text-[#101604]" style={jakarta(600)}>{filtered.length}</span>
-              {' '}of {products.length} commodities
+            {/* 174:2470: "Showing 12 of 12 commodities", 400 14/24 #807e7e */}
+            <span className="relative text-[14px] leading-[24px] text-[#807e7e] whitespace-nowrap shrink-0" style={jakarta(400)} aria-live="polite">
+              Showing {paginated.length} of {filtered.length} commodities
+              {/* While the sweep is still reading places, a 16px line in the 40px gap under the count. */}
+              {!loading && pending.length > 0 && (
+                <span className="absolute right-0 top-[28px] text-right text-[12px] leading-[16px] max-xl:static max-xl:block" style={jakarta(400)}>
+                  Still looking in {pending.length <= 2 ? pending.join(' and ') : `${pending.slice(0, 2).join(', ')} and ${pending.length - 2} more`}…
+                </span>
+              )}
             </span>
           </div>
         </div>
 
-        {/* ── Product grid ── */}
-        <div className="grid grid-cols-3 gap-[24px] mt-[24px] max-lg:grid-cols-2 max-md:grid-cols-1">
-          {paginated.length === 0 ? (
-            <div className="col-span-full text-center py-[64px] text-[#807e7e] text-[16px]" style={jakarta(400)}>
-              {loading ? 'Loading listings…' : loadError || `No listings in ${location} match your filters yet.`}
-            </div>
-          ) : (
-            paginated.map((p) => (
-              <div
-                key={p.id}
-                className="border border-[#e4dede] rounded-[30px] overflow-hidden flex flex-col"
-              >
+        {/* ── Listings (181:3041): 40 below the tabs, 3 × 384×494 cards 24 apart ── */}
+        {loading ? (
+          <div className="grid grid-cols-3 gap-[24px] mt-[40px] max-lg:grid-cols-2 max-md:grid-cols-1" aria-busy="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="h-[494px] rounded-[30px] bg-[#f7f7f7]" />
+            ))}
+          </div>
+        ) : paginated.length === 0 ? (
+          <p role={loadError ? 'alert' : undefined} className="mt-[40px] text-center py-[64px] text-[#807e7e] text-[16px]" style={jakarta(400)}>
+            {emptyText}
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-[24px] mt-[40px] max-lg:grid-cols-2 max-md:grid-cols-1">
+            {paginated.map((p) => (
+              // Card (171:1980): 384×494 with the 1px #e4dede stroke inside, so it is drawn as an inset ring
+              <div key={p.id} className="rounded-[30px] overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_#e4dede]">
+                {/* Image (171:1981): 200 tall on #eeeeee */}
                 <div className="h-[200px] bg-[#eee] overflow-hidden shrink-0">
-                  {p.image && (
-                    <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                  )}
+                  {p.image && <img src={p.image} alt={p.title} className="w-full h-full object-cover" />}
                 </div>
-                <div className="flex flex-col gap-[24px] p-[16px] flex-1">
+                {/* Content (171:1983): 24 top, 16 sides and bottom, blocks 24 apart */}
+                <div className="flex flex-col gap-[24px] p-[16px] pt-[24px] flex-1">
                   <div className="flex flex-col gap-[8px]">
-                    <div className="flex items-start justify-between text-[18px]">
-                      <p className="text-[#101604] tracking-[-1px] leading-[24px] w-[282px] max-lg:w-auto max-lg:flex-1 max-lg:min-w-0" style={jakarta(600)}>
+                    {/* Title row (351:3189): name on the left, price right-aligned, 24 apart */}
+                    <div className="flex items-center justify-between gap-[24px] text-[18px] leading-[24px]">
+                      <p className="text-[#101604] tracking-[-1px] flex-1 min-w-0 truncate" style={jakarta(600)}>
                         {p.title}
                       </p>
-                      <p className="text-[#007c53] tracking-[-0.36px] leading-[24px] whitespace-nowrap" style={jakarta(700)}>
+                      {/* The frame shows the price alone; the unit is in the Quantity row and on the detail page. */}
+                      <p className="text-[#007c53] whitespace-nowrap shrink-0" style={jakarta(700)} title={`${p.price} per ${p.unit}`}>
                         {p.price}
-                        <span className="text-[#807e7e] text-[12px]" style={jakarta(500)}>
-                          {' '}/ {p.unit}
-                        </span>
                       </p>
                     </div>
-                    <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
+                    <p className="text-[#807e7e] text-[14px] leading-[24px] h-[48px] line-clamp-2" style={jakarta(400)}>
                       {p.description}
                     </p>
                   </div>
+                  {/* Meta rows (171:1987): 18 tall, 12 apart */}
                   <div className="flex flex-col gap-[12px]">
                     {[
                       { label: 'Location', value: p.location },
                       { label: 'Quantity', value: p.quantity },
                       { label: 'Listed', value: p.listed },
                     ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between">
-                        <span className="text-[#101604] text-[14px]" style={jakarta(600)}>{label}</span>
-                        <span className="text-[#807e7e] text-[14px] text-right" style={jakarta(400)}>{value}</span>
+                      <div key={label} className="flex items-center justify-between gap-[12px] leading-[18px]">
+                        <span className="text-[#101604] text-[14px] shrink-0" style={jakarta(600)}>{label}</span>
+                        <span className="text-[#807e7e] text-[14px] text-right truncate" style={jakarta(400)}>{value}</span>
                       </div>
                     ))}
                   </div>
+                  {/* View details + Place order (171:2004): 168×48 each */}
                   <div className="flex items-center justify-between mt-auto max-lg:gap-[12px]">
-                    <button
-                      onClick={() => navigate(`/marketplace/${p.id}`)}
+                    <Link
+                      to={`/marketplace/${p.id}`}
                       className="bg-[#f7f7f7] text-[#101604] text-[14px] tracking-[-0.14px] h-[48px] w-[168px] rounded-[30px] flex items-center justify-center max-lg:w-auto max-lg:flex-1"
                       style={jakarta(500)}
                     >
                       View details
-                    </button>
-                    <button
-                      onClick={() => navigate(`/marketplace/${p.id}/order`)}
+                    </Link>
+                    <Link
+                      to={`/marketplace/${p.id}/order`}
                       className="h-[48px] w-[168px] rounded-[30px] flex items-center justify-center gap-[8px] max-lg:w-auto max-lg:flex-1"
                       style={{ background: 'rgb(0, 124, 83)' }}
                     >
@@ -298,43 +445,18 @@ export default function Marketplace() {
                         Place order
                       </span>
                       <img src={arrowRight} alt="" className="size-[16px]" />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* ── Pagination ── */}
-        {totalPages > 1 && (
-          <div className="flex gap-[16px] items-center justify-center mt-[64px]">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="size-[20px] flex items-center justify-center disabled:opacity-30 transition-opacity"
-            >
-              <img src={arrowLeft} alt="Previous" className="size-[20px]" />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button
-                key={n}
-                onClick={() => setPage(n)}
-                className={`size-[40px] rounded-[30px] flex items-center justify-center text-[14px] transition-colors ${
-                  n === page ? 'bg-[#f2f9f7] text-[#007c53]' : 'bg-[#f7f7f7] text-[#807e7e]'
-                }`}
-                style={jakarta(600)}
-              >
-                {n}
-              </button>
             ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="size-[20px] flex items-center justify-center disabled:opacity-30 transition-opacity"
-            >
-              <img src={arrowRight} alt="Next" className="size-[20px]" />
-            </button>
+          </div>
+        )}
+
+        {/* ── Pager (177:2853): 24 below the grid, 1200×72 white, no frame ── */}
+        {totalPages > 1 && (
+          <div className="mt-[24px]">
+            <Pager variant="plain" page={current} pageCount={totalPages} onChange={setPage} />
           </div>
         )}
 
