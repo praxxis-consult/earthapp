@@ -42,7 +42,7 @@ function AddProductButton({ onClick }: { onClick: () => void }) {
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] flex items-center justify-center overflow-hidden max-md:h-auto max-md:py-[48px] max-md:px-[16px]">
+    <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] lg:h-auto lg:flex-1 flex items-center justify-center overflow-hidden max-md:h-auto max-md:py-[48px] max-md:px-[16px]">
       <div className="flex flex-col gap-[24px] items-center w-[429px] max-w-full">
         <div className="flex flex-col items-center relative shrink-0 w-full">
           <div className="relative size-[200px]">
@@ -115,7 +115,8 @@ export default function Products() {
 
   return (
     <DashboardLayout>
-      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px] max-md:pb-[24px]">
+      {/* On desktop the page fills the dashboard viewport: the list scrolls inside its card and the pager stays on screen */}
+      <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] lg:h-full max-md:px-[16px] max-md:pt-[24px] max-md:pb-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
         {q && (
           <p className="mt-[16px] text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
@@ -144,17 +145,18 @@ export default function Products() {
             {error}
           </p>
         ) : items === null ? (
-          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] max-md:h-[320px]" aria-busy="true" />
+          <div className="bg-white border border-[#f7f7f7] rounded-[20px] w-full h-[777px] lg:h-auto lg:flex-1 max-md:h-[320px]" aria-busy="true" />
         ) : items.length === 0 ? (
           <EmptyState onAdd={() => navigate('/dashboard/products/add')} />
         ) : (
-          <div className="flex flex-col gap-[16px]">
-            {/* The frame's card (465:8653) holds ten row slots, 777px, so the pager sits at the bottom whatever the count */}
+          <div className="flex flex-col gap-[16px] lg:flex-1 lg:min-h-0">
+            {/* The frame's card (465:8653) is 777px at 1131 tall; here it takes the space above the pager and scrolls inside */}
             <DataTable
               rows={rows}
               rowKey={(p) => p.id}
               onRowClick={(p) => navigate(`/dashboard/products/${p.id}`)}
-              className="min-h-[777px] max-md:min-h-0"
+              scroll
+              className="lg:flex-1 lg:min-h-0"
               columns={[
                 {
                   key: 'product',
