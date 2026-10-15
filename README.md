@@ -342,7 +342,7 @@ The conventions the code follows (tokens, folders, icon imports, state managemen
 
 | Role | |
 | --- | --- |
-| Frontend | Prince Akpolo |
+| Frontend | Prince Akpolo, Uchechukwu Ekezie |
 | Backend and API | Ralph |
 | Design | Seleem |
 | Company | Praxxis Consult |
