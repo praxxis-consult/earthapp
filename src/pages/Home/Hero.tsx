@@ -30,7 +30,10 @@ export default function Hero() {
   }, [])
 
   return (
-    <section className="relative overflow-hidden w-full h-[1024px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
+    // The frame's hero is 1024 tall under the 96px nav, which only fits a screen at least 1120 tall.
+    // On shorter desktops it shrinks to the viewport so the headline, text and buttons are on screen
+    // before any scroll, and the page continues below as normal; it never grows past the frame.
+    <section className="relative overflow-hidden w-full h-[min(1024px,calc(100svh-96px))] min-h-[560px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
 
       {/* ── Cycling backgrounds ── */}
       {SLIDES.map((src, i) => (
