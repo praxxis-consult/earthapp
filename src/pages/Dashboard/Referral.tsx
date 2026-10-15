@@ -7,26 +7,12 @@ import giftIcon from '../../assets/icons/ref-gift.svg'
 import linkIcon from '../../assets/icons/ref-link.svg'
 import copyIcon from '../../assets/icons/ref-copy.svg'
 import exportIcon from '../../assets/icons/ref-export.svg'
-import { useAuth } from '../../feature/authentication/useAuth'
+import EmptyBlock from '../../components/ui/EmptyBlock'
+import { useStore } from '../../feature/stores/useStore'
+import { referralLink, referrals } from '../../data/referrals'
 import { jakarta } from '../../utils/styles'
 
 const PAGE_SIZE = 10
-
-/** Figma referral 599:19337's Activities rows; local until the referrals API exists. */
-const REFERRALS: { name: string; email: string; as: 'Buyer' | 'Seller'; date: string }[] = [
-  ['Yemisi Adewale', 'aishaabdullahi85@yahoo.com', 'Buyer', 'Oct 25, 2023'],
-  ['Onyeka Ibe', 'chinedueze79@gmail.com', 'Seller', 'Nov 30, 2023'],
-  ['Ronke Ojo', 'emekanwosu77@gmail.com', 'Buyer', 'Jan 10, 2024'],
-  ['Femi Olayemi', 'ogechiokafor88@yahoo.com', 'Buyer', 'Nov 1, 2023'],
-  ['Morenike Adeyemi', 'tobiadeyemi99@gmail.com', 'Seller', 'Dec 1, 2023'],
-  ['Kunle Adeyemi', 'chikaobi92@gmail.com', 'Buyer', 'Oct 10, 2023'],
-  ['Olabisi Owolabi', 'fatimai123@yahoo.com', 'Buyer', 'Nov 5, 2023'],
-  ['Sani Lawal', 'adaobiokoro87@yahoo.com', 'Seller', 'Dec 15, 2023'],
-  ['Opeyemi Ogunbiyi', 'ngozionuoha80@yahoo.com', 'Buyer', 'Oct 15, 2023'],
-  ['Khadija Abubakar', 'ibrahimsuleiman95@gmail.com', 'Buyer', 'Oct 5, 2023'],
-  ['Tunde Bakare', 'tundeb@gmail.com', 'Seller', 'Sep 30, 2023'],
-  ['Amaka Johnson', 'amakaj@yahoo.com', 'Buyer', 'Sep 22, 2023'],
-].map(([name, email, as, date]) => ({ name, email, as: as as 'Buyer' | 'Seller', date }))
 
 const ROLE_STYLE = {
   Buyer: { bg: 'rgba(138,88,255,0.1)', color: '#8a58ff' },
@@ -34,26 +20,18 @@ const ROLE_STYLE = {
 }
 
 
-const slug = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-
 /**
  * Figma referral 599:19337: title, the photo banner with the link pill, copy and share buttons,
  * then Activities (490/283/319 columns) and the pager.
  */
 export default function Referral() {
-  const { account } = useAuth()
+  const { store } = useStore()
   const [page, setPage] = useState(1)
   const [copied, setCopied] = useState(false)
-  const handle = slug(account ? `${account.firstName} ${account.lastName}` : 'akpolo-agro-mine')
-  const link = `${window.location.origin}/r/${handle}`
-  const pageCount = Math.max(1, Math.ceil(REFERRALS.length / PAGE_SIZE))
+  const link = referralLink(store?.id)
+  const pageCount = Math.max(1, Math.ceil(referrals.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
-  const rows = REFERRALS.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const rows = referrals.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
   async function copy() {
     try {
@@ -101,7 +79,7 @@ export default function Referral() {
             style={{ objectPosition: '50% 40%' }}
           />
           <div className="absolute inset-0" style={{ background: 'rgba(12,11,9,0.5)' }} />
-          <div className="relative flex flex-col gap-[24px] px-[24px] pt-[40px] max-w-[567px] max-md:px-[16px] max-md:py-[24px]">
+          <div className="relative flex flex-col gap-[24px] px-[24px] pt-[40px] max-w-[591px] max-md:px-[16px] max-md:py-[24px]">
             <div className="flex flex-col gap-[16px]">
               <span
                 className="inline-flex h-[32px] w-fit items-center gap-[8px] rounded-[30px] px-[12px]"
@@ -140,7 +118,7 @@ export default function Referral() {
               <button
                 type="button"
                 onClick={share}
-                className="flex h-[48px] items-center gap-[8px] rounded-[30px] bg-[#aee74a] px-[24px] max-md:justify-center"
+                className="flex h-[48px] w-[128px] items-center justify-center gap-[8px] rounded-[30px] bg-[#aee74a] shrink-0 max-md:w-full"
               >
                 <img src={exportIcon} alt="" className="size-[20px]" />
                 <span className="text-[#0c2310] text-[14px] leading-[18px]" style={jakarta(500)}>
@@ -155,54 +133,65 @@ export default function Referral() {
           <h2 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Activities
           </h2>
-          <DataTable
-            rows={rows}
-            rowKey={(r) => r.email}
-            columns={[
-              {
-                key: 'user',
-                header: 'User',
-                card: 'title',
-                cell: (r) => (
-                  <div className="flex flex-col min-w-0">
-                    <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
-                      {r.name}
-                    </p>
-                    <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
-                      {r.email}
-                    </p>
-                  </div>
-                ),
-              },
-              {
-                key: 'as',
-                header: 'Signed up as',
-                width: 283,
-                align: 'center',
-                card: 'badge',
-                cell: (r) => (
-                  <span
-                    className="inline-flex min-w-[74px] justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px]"
-                    style={{ ...jakarta(600), background: ROLE_STYLE[r.as].bg, color: ROLE_STYLE[r.as].color }}
-                  >
-                    {r.as}
-                  </span>
-                ),
-              },
-              {
-                key: 'date',
-                header: 'Date',
-                width: 319,
-                align: 'right',
-                cell: (r) => (
-                  <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(500)}>
-                    {r.date}
-                  </p>
-                ),
-              },
-            ]}
-          />
-          <Pager page={current} pageCount={pageCount} onChange={setPage} />
+          {referrals.length === 0 ? (
+            <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]">
+              <EmptyBlock
+                title="No referrals yet"
+                copy="Everyone who joins Earth through your link will appear here, from the day they join."
+              />
+            </div>
+          ) : (
+            <>
+              <DataTable
+                rows={rows}
+                rowKey={(r) => r.email}
+                columns={[
+                  {
+                    key: 'user',
+                    header: 'User',
+                    card: 'title',
+                    cell: (r) => (
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>
+                          {r.name}
+                        </p>
+                        <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
+                          {r.email}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'as',
+                    header: 'Signed up as',
+                    width: 283,
+                    align: 'center',
+                    card: 'badge',
+                    cell: (r) => (
+                      <span
+                        className="inline-flex min-w-[74px] justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px]"
+                        style={{ ...jakarta(600), background: ROLE_STYLE[r.as].bg, color: ROLE_STYLE[r.as].color }}
+                      >
+                        {r.as}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'date',
+                    header: 'Date',
+                    width: 319,
+                    align: 'right',
+                    cell: (r) => (
+                      <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(500)}>
+                        {r.date}
+                      </p>
+                    ),
+                  },
+                ]}
+              />
+              <Pager page={current} pageCount={pageCount} onChange={setPage} />
+            </>
+          )}
         </div>
       </div>
     </DashboardLayout>
