@@ -76,7 +76,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       }`}
     >
       {/* Logo */}
-      <div className="flex gap-[8px] items-center px-[24px] pt-[24px] pb-[16px]">
+      <div className="flex gap-[8px] items-center px-[24px] pt-[24px] pb-[40px]">
         <div className="h-[48px] relative shrink-0 w-[46.629px]">
           <img src={unionLogo} alt="" className="absolute block inset-0 max-w-none size-full" />
         </div>
@@ -98,7 +98,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       </div>
 
       {/* Store card */}
-      <div className="mx-[16px] mb-[16px] bg-[#f7f7f7] flex gap-[8px] items-center px-[16px] py-[12px] rounded-[15px]">
+      <div className="mx-[24px] mb-[40px] bg-[#f7f7f7] flex gap-[8px] items-center px-[16px] py-[12px] rounded-[15px]">
         <div className="bg-[#f2f8f6] overflow-clip relative rounded-full shrink-0 size-[40px]">
           <img src={avatarImg} alt="" className="absolute inset-0 max-w-none object-cover size-full" />
         </div>
@@ -133,7 +133,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
                     <img src={icon} alt="" className="absolute block inset-0 max-w-none size-full" />
                   </div>
                   <p
-                    className="text-[13px] flex-1 min-w-0 text-left"
+                    className="text-[13px] leading-[16px] flex-1 min-w-0 text-left"
                     style={{ ...jakarta(500), color: isActive ? '#007c53' : '#807e7e' }}
                   >
                     {label}
@@ -151,16 +151,16 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       </nav>
 
       {/* Share my store banner */}
-      <div className="mx-[16px] mb-[16px] relative h-[144px] rounded-[20px] overflow-hidden bg-[#e3e3e3]">
+      <div className="mx-[16px] mb-[40px] relative h-[144px] rounded-[20px] overflow-hidden bg-[#e3e3e3]">
         <img src={sidebarBgImg} alt="" className="absolute inset-0 max-w-none object-cover size-full pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#141414] from-[1%] to-transparent" />
-        <div className="absolute bottom-[70px] left-[16px] w-[235px]">
+        <div className="absolute top-[16px] left-[16px] w-[235px] flex flex-col gap-[4px]">
           <p className="text-white text-[16px] leading-[24px]" style={jakarta(700)}>Sell where you are already</p>
-          <p className="text-[rgba(255,255,255,0.75)] text-[12px]" style={jakarta(500)}>
+          <p className="text-[rgba(255,255,255,0.75)] text-[12px] leading-[15px]" style={jakarta(500)}>
             Share your store link where your customers already are.
           </p>
         </div>
-        <button type="button" onClick={share} disabled={!store} className="absolute bottom-[8px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center py-[8px] rounded-[30px] w-[235px] disabled:opacity-60">
+        <button type="button" onClick={share} disabled={!store} className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px] disabled:opacity-60">
           <div className="relative shrink-0 size-[20px]">
             <img src={shareIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
           </div>
