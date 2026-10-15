@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import EmptyBlock from '../../components/ui/EmptyBlock'
 import ReceiptModal from '../../components/ui/ReceiptModal'
 import { MenuItem, MenuList } from '../../components/ui/SelectorMenu'
 import { useMenu } from '../../components/ui/useMenu'
@@ -60,7 +61,7 @@ export default function Messages() {
   const navigate = useNavigate()
   // The first chat opens on arrival, so it starts read.
   const [chats, setChats] = useState<Chat[]>(() => seed.map((c, i) => (i === 0 ? { ...c, unread: 0 } : c)))
-  const [activeId, setActiveId] = useState(seed[0].id)
+  const [activeId, setActiveId] = useState<string | undefined>(seed[0]?.id)
   // Below lg the list and the conversation are two screens; opening a chat moves to the second.
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
   const [tab, setTab] = useState<'all' | 'unread'>('all')
@@ -72,7 +73,7 @@ export default function Messages() {
   const [loadMine] = useLazyGetMyProductsQuery()
   const [receipt, setReceipt] = useState<Extract<Message, { kind: 'invoice' }> | null>(null)
 
-  const active = chats.find((c) => c.id === activeId) ?? chats[0]
+  const active: Chat | undefined = chats.find((c) => c.id === activeId) ?? chats[0]
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
     return chats.filter(
@@ -84,7 +85,7 @@ export default function Messages() {
 
   useEffect(() => {
     history.current?.scrollTo({ top: history.current.scrollHeight })
-  }, [activeId, active.messages.length])
+  }, [activeId, active?.messages.length])
 
   function open(id: string) {
     setActiveId(id)
@@ -96,7 +97,7 @@ export default function Messages() {
   function append(msg: Message, preview: string) {
     setChats((cs) =>
       cs.map((c) =>
-        c.id === active.id
+        c.id === active?.id
           ? { ...c, messages: [...c.messages.filter((m) => m.kind !== 'typing'), msg], preview, previewAt: 'at' in msg ? msg.at : now(), typing: false }
           : c,
       ),
@@ -141,7 +142,7 @@ export default function Messages() {
     const msg: Message = { id: nextId('s'), from: 'me', kind: 'text', text, at: now() }
     setChats((cs) =>
       cs.map((c) =>
-        c.id === active.id
+        c.id === active?.id
           ? {
               ...c,
               messages: [...c.messages.filter((m) => m.kind !== 'typing'), msg],
@@ -204,9 +205,9 @@ export default function Messages() {
                 <button
                   type="button"
                   onClick={() => open(c.id)}
-                  aria-current={c.id === active.id || undefined}
+                  aria-current={c.id === active?.id || undefined}
                   className="flex w-full h-[80px] items-center justify-between gap-[10px] rounded-[20px] px-[16px] text-left"
-                  style={{ background: c.id === active.id ? 'rgba(0,124,83,0.05)' : '#ffffff' }}
+                  style={{ background: c.id === active?.id ? 'rgba(0,124,83,0.05)' : '#ffffff' }}
                 >
                   <div className="flex items-center gap-[12px] min-w-0">
                     <Avatar chat={c} />
@@ -244,13 +245,28 @@ export default function Messages() {
               </li>
             )}
           </ul>
+          {list.length === 0 && (
+            <EmptyBlock
+              className="flex-1 justify-center py-[24px]"
+              title={chats.length === 0 ? 'No messages yet' : 'No unread messages'}
+              copy={chats.length === 0 ? 'Chats with your buyers will show up here.' : 'You are all caught up.'}
+            />
+          )}
         </section>
 
         {/* Chat pane */}
         <section
           className={`flex-1 min-w-0 h-full bg-white rounded-[20px] flex flex-col overflow-hidden max-lg:w-full ${mobileView === 'list' ? 'max-lg:hidden' : ''}`}
-          aria-label={`Chat with ${active.name}`}
+          aria-label={active ? `Chat with ${active.name}` : 'Messages'}
         >
+          {!active ? (
+            <EmptyBlock
+              className="flex-1 justify-center p-[24px]"
+              title="No conversation yet"
+              copy="When a buyer messages you about a listing, the chat opens here."
+            />
+          ) : (
+            <>
           <header className="flex items-center justify-between h-[88px] px-[20px] border-b border-[#f7f7f7] shrink-0 max-md:px-[16px] max-md:h-[72px]">
             <div className="flex items-center gap-[12px] min-w-0">
               <button
@@ -498,6 +514,8 @@ export default function Messages() {
               <img src={sendIcon} alt="" className="size-[16px]" />
             </button>
           </form>
+            </>
+          )}
         </section>
       </div>
 
@@ -524,7 +542,7 @@ export default function Messages() {
             receiptNumber: `RCT-${receipt.number.replace(/\D/g, '')}`,
             paidAt: `today, ${receipt.at}`,
             amount: receipt.amount,
-            product: { title: receipt.summary.split(' · ')[0], detail: `${receipt.summary.split(' · ').slice(1).join(' · ')} · Delivery to ${active.name}`, image: productThumb },
+            product: { title: receipt.summary.split(' · ')[0], detail: `${receipt.summary.split(' · ').slice(1).join(' · ')} · Delivery to ${active?.name ?? ''}`, image: productThumb },
             paidWith: 'Bank transfer',
             reference: `PAY-${receipt.id.toUpperCase()}${receipt.number.replace(/\D/g, '')}`,
             deliveryTitle: 'Order confirmed · Preparing next',

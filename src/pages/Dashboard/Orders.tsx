@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
+import EmptyBlock from '../../components/ui/EmptyBlock'
 import StatCard from '../../components/ui/StatCard'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
-import emptyBg from '../../assets/icons/db-empty-bg.svg'
-import emptyIllustration from '../../assets/icons/db-empty-illustration.svg'
 import { orders, type Order, type OrderStatus } from '../../data/orders'
 import { orderColumns } from './orderColumns'
 import { jakarta, SCROLL_ROW } from '../../utils/styles'
@@ -241,31 +240,11 @@ export default function Orders() {
             /* Empty state (orders 561:3689): illustration 200, title 20/25 SemiBold, copy 14/24. The frame centres it on the
                whole panel; on a screen tall enough for that it sits over the panel and centres there, otherwise it flows
                under the search row and centres in the space left, so it never overlaps the tabs. */
-            <div className="flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-[16px] max-md:py-[48px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0">
-              <div className="relative size-[200px]">
-                <div className="absolute h-[140px] left-[23.57px] top-[16.07px] w-[153.208px]">
-                  <img src={emptyBg} alt="" className="absolute block inset-0 max-w-none size-full" />
-                </div>
-                <div className="absolute flex h-[162.27px] items-center justify-center left-[31.56px] top-[21.67px] w-[137.713px]">
-                  <div style={{ transform: 'rotate(-20.53deg)' }}>
-                    <img
-                      src={emptyIllustration}
-                      alt=""
-                      className="block max-w-none"
-                      style={{ width: '95.564px', height: '137.487px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-[8px] items-center text-center w-[429px] max-w-full">
-                <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
-                  No order yet
-                </p>
-                <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-                  New orders will appear here as soon as customers place them.
-                </p>
-              </div>
-            </div>
+            <EmptyBlock
+              className="justify-center md:flex-1 md:min-h-0 py-[16px] max-md:py-[48px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0"
+              title="No order yet"
+              copy="New orders will appear here as soon as customers place them."
+            />
           ) : (
             <>
               {/* Table (561:4221): 1px #f7f7f7 frame, radius 10; header 44 + 1px #807e7e rule; rows 72 + 1px #f7f7f7 */}

@@ -1,13 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import DataTable from '../../components/ui/DataTable'
+import EmptyBlock from '../../components/ui/EmptyBlock'
 import StatCard from '../../components/ui/StatCard'
 import { useAuth } from '../../feature/authentication/useAuth'
 import pinIcon from '../../assets/icons/db-pin.svg'
 import pin1Icon from '../../assets/icons/db-pin1.svg'
 import tooltipBgIcon from '../../assets/icons/db-tooltip-bg.svg'
-import emptyBgIcon from '../../assets/icons/db-empty-bg.svg'
-import emptyIllustrationIcon from '../../assets/icons/db-empty-illustration.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import addIcon from '../../assets/icons/db-add.svg'
 import LineChart, { type ChartPoint } from '../../components/ui/LineChart'
@@ -193,30 +192,11 @@ export default function DashboardOverview() {
               columns={RECENT_COLUMNS}
             />
           ) : (
-            <div className="flex flex-col items-center pt-[40px] pb-[40px] max-md:pb-[24px]">
-              {/* Empty state illustration (431:4736) */}
-              <div className="relative size-[200px]">
-                <div className="absolute" style={{ left: '23.57px', top: '16.07px', width: '153.208px', height: '140px' }}>
-                  <img src={emptyBgIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
-                </div>
-                <div
-                  className="absolute flex items-center justify-center"
-                  style={{ left: '31.56px', top: '21.67px', width: '137.713px', height: '162.27px' }}
-                >
-                  <div style={{ transform: 'rotate(-20.53deg)' }}>
-                    <img src={emptyIllustrationIcon} alt="" style={{ width: '95.564px', height: '137.487px' }} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-[8px] items-center text-center">
-                <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
-                  No new order yet
-                </p>
-                <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-                  New orders will appear here as soon as customers place them.
-                </p>
-              </div>
-            </div>
+            <EmptyBlock
+              className="pt-[40px] pb-[40px] max-md:pb-[24px]"
+              title="No new order yet"
+              copy="New orders will appear here as soon as customers place them."
+            />
           )}
         </div>
       </div>

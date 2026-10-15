@@ -15,12 +15,13 @@ import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
+import { unreadChats } from '../../data/messages'
 
 const NAV_ITEMS = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
   { label: 'Products',         icon: productsIcon,  href: '/dashboard/products' },
   { label: 'Orders',           icon: ordersIcon,    href: '/dashboard/orders' },
-  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 9 },
+  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: unreadChats || undefined },
   { label: 'Payout',           icon: payoutIcon,    href: '/dashboard/payout' },
   { label: 'Referrals',        icon: referralsIcon, href: '/dashboard/referrals' },
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
