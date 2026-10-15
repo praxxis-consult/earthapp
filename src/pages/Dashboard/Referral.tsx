@@ -28,7 +28,7 @@ export default function Referral() {
   const { store } = useStore()
   const [page, setPage] = useState(1)
   const [copied, setCopied] = useState(false)
-  const link = referralLink(store?.id)
+  const link = referralLink(store?.storeName)
   const pageCount = Math.max(1, Math.ceil(referrals.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = referrals.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)

@@ -15,9 +15,18 @@ export interface Referral {
 
 export const referrals: Referral[] = sampleMode() ? sampleReferrals : []
 
+/** The store's handle as the frame writes it ("Akpolo Agro & Mine" → "akpolo-agro-mine"). */
+export const referralHandle = (storeName: string) =>
+  storeName
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
 /**
- * Until the API issues referral codes, the link a seller shares is their store's marketplace
- * link, which works today; the referral endpoint will replace it with a tracked link.
+ * The link the seller shares (referral 599:19337: `…/r/akpolo-agro-mine`). The `/r/:handle`
+ * route keeps the handle and opens sign-up; attribution waits for the API to accept a referral
+ * handle on account creation and to report sign-ups.
  */
-export const referralLink = (storeId: string | undefined) =>
-  storeId ? `${window.location.origin}/marketplace?store=${storeId}` : ''
+export const referralLink = (storeName: string | undefined) =>
+  storeName ? `${window.location.origin}/r/${referralHandle(storeName)}` : ''
