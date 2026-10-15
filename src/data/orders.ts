@@ -1,4 +1,6 @@
 
+import { sampleOrders } from './orders.sample'
+
 export type OrderStatus = 'new' | 'processing' | 'ready' | 'dispatched' | 'completed' | 'cancelled' | 'declined'
 
 export type DeliveryMethod = 'Motorbike' | 'Pickup' | 'Car'
@@ -77,9 +79,18 @@ export const orderTotal = (o: Order) => o.payment.subtotal + o.payment.fee - o.p
 
 /**
  * The store's orders. The API has no orders endpoint yet, so this is empty and every order
- * page shows its zero state; the endpoint's rows replace this list. (./orders.sample.ts holds
- * sample rows for exercising the status flows locally.)
+ * page shows its zero state; the endpoint's rows replace this list.
+ *
+ * In development only, the sample rows in ./orders.sample.ts can be switched on to look at the
+ * pages: open any dashboard URL with `?sample=1` (and `?sample=0` to switch back). The choice
+ * is remembered in this browser; production builds never include the samples.
  */
-export const orders: Order[] = []
+function sampleMode(): boolean {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false
+  const wanted = new URLSearchParams(window.location.search).get('sample')
+  if (wanted !== null) localStorage.setItem('earth.sample', wanted === '1' ? '1' : '0')
+  return localStorage.getItem('earth.sample') === '1'
+}
+export const orders: Order[] = sampleMode() ? sampleOrders : []
 
 export const findOrder = (id: string | undefined) => orders.find((o) => o.id === id)
