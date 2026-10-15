@@ -239,11 +239,6 @@ export default function Messages() {
                 </button>
               </li>
             ))}
-            {list.length === 0 && (
-              <li className="text-[#807e7e] text-[13px] leading-[20px] px-[16px]" style={jakarta(400)}>
-                No chats here yet.
-              </li>
-            )}
           </ul>
           {list.length === 0 && (
             <EmptyBlock
