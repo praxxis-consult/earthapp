@@ -9,7 +9,7 @@ import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { AccountCheckRow } from './AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useGetBanksQuery } from '../../feature/banks/banksApiSlice'
+import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 
 const labelClass = 'text-[#101604] text-[14px] leading-[24px]'
 const inputClass =
@@ -305,12 +305,6 @@ export function EditPersonalDialog({
   )
 }
 
-const BANKS: Record<string, string[]> = {
-  Nigeria: ['Access Bank', 'Guaranty Trust Bank', 'Zenith Bank', 'First Bank Nigeria', 'UBA', 'Fidelity Bank', 'Sterling Bank', 'Opay', 'Moniepoint', 'Kuda'],
-  Ghana: ['GCB Bank', 'Ecobank Ghana', 'Absa Bank Ghana', 'Fidelity Bank Ghana'],
-  Kenya: ['KCB Bank', 'Equity Bank', 'Cooperative Bank', 'NCBA Bank'],
-}
-
 export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboarding; onClose: () => void; onSaved: (store: Onboarding) => void }) {
   const { account } = useAuth()
   const [country, setCountry] = useState(store.bank?.country ?? 'NG')
@@ -320,8 +314,8 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
   const [error, setError] = useState('')
   const [saveOnboarding] = useSaveOnboardingMutation()
   const { check, run, reset } = useAccountCheck()
-  const { data: bankList } = useGetBanksQuery({ country })
-  const banks = bankList?.map((b) => b.name) ?? BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
+  const { data: bankList, error: bankError } = useGetBanksQuery({ country })
+  const banks = bankList?.map((b) => b.name) ?? []
   const matched = check.status === 'matched'
 
   const change = <T,>(setter: (v: T) => void) => (v: T) => {
@@ -383,7 +377,7 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
       <Field label="Country" htmlFor="b-country">
         <Select id="b-country" value={countryName(country)} options={COUNTRY_NAMES} onChange={(n) => { change(setCountry)(countryCode(n)); setBankName('') }} />
       </Field>
-      <Field label="Bank" htmlFor="b-bank">
+      <Field label="Bank" htmlFor="b-bank" hint={banks.length === 0 ? bankListHint(country, bankError) : undefined}>
         <Select id="b-bank" value={bankName} options={banks} onChange={change(setBankName)} placeholder="Select bank" />
       </Field>
       <Field label="Account number" htmlFor="b-number">

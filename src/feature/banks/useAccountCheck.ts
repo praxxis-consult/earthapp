@@ -21,9 +21,10 @@ interface CheckInput {
 }
 
 /**
- * Asks the API (Paystack behind it) for the name on a bank account and compares it with the
- * seller's name. `unavailable` means the lookup could not be reached (404, 501 or 503); the
- * seller is told to try again, never to type the name.
+ * Asks the API (Paystack behind it) for the name on a bank account and whether it is the
+ * signed-in seller's. The API's own verdict (`matchesIdentity`) decides; the local name
+ * comparison only stands in if an older API answers without one. `unavailable` means the lookup
+ * could not be reached (404, 501 or 503); the seller is told to try again, never to type the name.
  */
 export function useAccountCheck() {
   const [resolve] = useLazyResolveAccountQuery()
@@ -33,8 +34,9 @@ export function useAccountCheck() {
     async ({ country, bankName, bankCode, accountNumber, holderName }: CheckInput) => {
       setCheck({ status: 'checking' })
       try {
-        const { accountName } = await resolve({ country, bankName, bankCode, accountNumber }).unwrap()
-        const next: AccountCheck = namesMatch(accountName, holderName)
+        const { accountName, matchesIdentity } = await resolve({ country, bankName, bankCode, accountNumber }).unwrap()
+        const matched = typeof matchesIdentity === 'boolean' ? matchesIdentity : namesMatch(accountName, holderName)
+        const next: AccountCheck = matched
           ? { status: 'matched', accountName: titleCase(accountName) }
           : { status: 'mismatch', accountName: titleCase(accountName) }
         setCheck(next)

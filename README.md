@@ -186,10 +186,9 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 | Variable | Where | Meaning |
 | --- | --- | --- |
 | `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to the QA API |
-| `PAYSTACK_SECRET_KEY` | `.env` locally, Vercel project settings in production | Paystack secret key for the bank-account lookup. Read only by the dev server's middleware and the `api/banks` functions, never by the browser. See `.env.example` |
 | `/v1` rewrite | `vercel.json` | Where production forwards `/v1`. Change it to point a deployment at another API |
 
-There are no browser-side secrets: the app never holds an API key, and the refresh token is an HttpOnly cookie the browser manages.
+There are no secrets anywhere in this repo or its deployment: the app never holds an API key (the bank lookup's Paystack key lives on the Earth API), and the refresh token is an HttpOnly cookie the browser manages.
 
 ## Usage
 
@@ -275,14 +274,14 @@ vite.config.js          dev proxy for /v1
 | Area (`src/feature/`) | Endpoints |
 | --- | --- |
 | authentication | `POST /accounts`, `POST /auth/otp/request`, `POST /auth/otp/resend`, `POST /auth/otp/verify` (intent `ACCOUNT_CONFIRMATION` or `LOGIN`), `GET /accounts/me`, `POST /auth/refresh`, `POST /auth/logout` |
-| stores | `GET /stores/me/onboarding`, `POST /stores/me/onboarding` (draft or live, with `expectedVersion`), `GET /store-categories` |
-| banks | `GET /banks?country`, `GET /banks/resolve?country&bankCode&bankName&accountNumber`. Served by this repo's own server-side functions (`api/banks`, Paystack behind them, key in `PAYSTACK_SECRET_KEY`) until the Earth API takes the two paths over |
-| products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me`, `GET /products/{id}` |
+| stores | `GET /stores/me/onboarding`, `POST /stores/me/onboarding` (draft or live, with `expectedVersion`), `GET /store-categories?page&limit` |
+| banks | `GET /banks?country` (501 where the API has no lookup for that country), `GET /banks/resolve?country&bankCode&bankName&accountNumber` (signed in; answers `matchesIdentity`, the API's own comparison with the holder's name) |
+| products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}` |
 | uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE` or `PRODUCT_IMAGE`) |
-| marketplace | `GET /stores?country&region`, `GET /stores/{id}`, `GET /stores/{id}/products`, `GET /products/{id}` |
+| marketplace | `GET /stores?page&limit` (every LIVE store; `country`, then `region`, narrow it), `GET /stores/{id}`, `GET /stores/{id}/products?page&limit`, `GET /products/{id}` |
 | waitlist | `POST /waitlist/entries` (with an `Idempotency-Key`), `POST /waitlist/verification`, `POST /waitlist/verification/claim`, `GET /waitlist/me` (with `x-place-token`) |
 
-**Rules the API enforces that the UI respects**: country codes are ISO-2 upper case; a product's category must be one the store selected; a LIVE onboarding save must send the whole profile back; `expectedVersion` must match or the save is refused with a version-conflict message.
+**Rules the API enforces that the UI respects**: every list pages by number (`page`, `limit`; the answer carries `hasNext` and `nextPage`) and the app reads lists to the end; country codes are ISO-2 upper case; a product's category must be one the store selected; a LIVE onboarding save must send the whole profile back; `expectedVersion` must match or the save is refused with a version-conflict message.
 
 **What runs on the API today**
 
@@ -292,7 +291,7 @@ vite.config.js          dev proxy for /v1
 | Seller onboarding, all four steps and go live | Live |
 | Products: list, add with photo uploads, edit, publish or draft, detail | Live (no delete endpoint; Delete is present but inert with a note) |
 | Account settings: store details, payout account, cover photo | Live (personal details, description, hours and notifications are kept in the browser until the API has fields for them) |
-| Marketplace list, product page, order page | Live catalogue, one region at a time; Place order opens the modal but cannot submit |
+| Marketplace list, product page, order page | Live catalogue: every store, a country or a region; Place order opens the modal but cannot submit |
 | Waitlist on the landing page | Live |
 | Dashboard shell: store name and area, seller name, share-store link | Live |
 | Overview numbers and charts, orders, messages, payouts | Zero state |
@@ -311,9 +310,8 @@ Checked against the API's `/v1/docs-json`, which lists 24 paths today. These are
 4. **Messages**: threads with unread counts; messages of kind text, product, media and invoice; send; mark read; later a live channel for new messages and typing.
 5. **Payouts and referrals**: paid total, pending, the order limit and tiers, transactions; referral code and link, counts and the list of referred users.
 6. **Reviews**: read and write per product, and a store rating.
-7. **Marketplace and buyers**: a country-wide store listing (the design has a Global view), product search across stores, placing an order from the buyer side and payment confirmation.
-8. **Bank account lookup (Paystack)**: the bank step and the change-bank dialog look the account name up and compare it with the seller's name; the name is never typed. They call `GET /banks?country=NG` and `GET /banks/resolve?country&bankCode&bankName&accountNumber`, served today by this repo's own server-side functions under `api/banks` (Paystack behind them, secret key in `PAYSTACK_SECRET_KEY`). The Earth API can take the two paths over whenever it serves them; nothing in the app changes.
-9. **Smaller**: confirmation does not sign the user in (a second LOGIN code is needed); the waitlist's dev code is off on the QA server; `otp/verify` rate-limits an address after a few sign-ins; phone is required on sign-up though the design marks it optional.
+7. **Marketplace and buyers**: a cross-store product listing (today the catalogue reads every store's products one store at a time), placing an order from the buyer side and payment confirmation.
+8. **Smaller**: confirmation does not sign the user in (a second LOGIN code is needed); the waitlist's dev code is off on the QA server; `otp/verify` rate-limits an address after a few sign-ins; phone is required on sign-up though the design marks it optional.
 
 ## Sample data
 

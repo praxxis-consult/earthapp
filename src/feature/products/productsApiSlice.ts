@@ -12,10 +12,9 @@ export const productsApiSlice = apiSlice.injectEndpoints({
     /** Every listing of the signed-in seller, drafts included; [] when there is no store yet. */
     getMyProducts: builder.query<Product[], 'DRAFT' | 'PUBLISHED' | void>({
       async queryFn(status, _, __, baseQuery) {
-        const res = await allPages<Product>((cursor) => {
-          const q = new URLSearchParams({ limit: '50' })
+        const res = await allPages<Product>((page) => {
+          const q = new URLSearchParams({ limit: '50', page: String(page) })
           if (status) q.set('status', status)
-          if (cursor) q.set('cursor', cursor)
           return baseQuery(`/products/me?${q}`)
         })
         if ('error' in res) return res.error.status === 404 ? { data: [] } : { error: res.error }

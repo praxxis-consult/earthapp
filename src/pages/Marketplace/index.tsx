@@ -7,53 +7,44 @@ import arrowDown from '../../assets/icons/mp-arrow-down.svg'
 import settingsIcon from '../../assets/icons/mp-settings.svg'
 import Pager from '../../components/ui/Pager'
 import { COUNTRIES, countryName, regionsOf } from '../../data/locations'
-import { useListCountryQuery, useListGlobalQuery, useListRegionQuery, useListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
+import { EVERYWHERE, useListCatalogQuery, useListStoreQuery, type Place } from '../../feature/marketplace/catalogApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { jakarta } from '../../utils/styles'
 
 /** The frame's grid (181:3041) is four rows of three 384×494 cards. */
 const ITEMS_PER_PAGE = 12
-/** The location picker's first choice (174:2565 "Location: Global"): the launch markets at once. */
+/** The location picker's first choice (174:2565 "Location: Global"): every LIVE store on the marketplace. */
 const GLOBAL = 'Global'
 const ALL = 'All Resources'
-/** Where the visitor is browsing: '' for everywhere, a country, or one region of it. */
-type Place = { country: string; region: string }
-const EVERYWHERE: Place = { country: '', region: '' }
 
 const sortOptions = ['Most recent', 'Price: Low to High', 'Price: High to Low']
 
 /**
  * Marketplace (171:1851): title block, search + location + sort, category tabs with the count,
- * a 3×4 grid of listings and the pager. Listings come from the public catalogue: the launch
- * markets by default, one country or one region of it when the picker narrows it.
+ * a 3×4 grid of listings and the pager. Listings come from the public catalogue: every store by
+ * default, one country or one region of it when the picker narrows it.
  */
 export default function Marketplace() {
   const [activeCategory, setActiveCategory] = useState(ALL)
   const [search, setSearch] = useState('')
-  // The catalogue API lists stores per country and region, so the picker is Global, a country, or a region of it.
+  // The catalogue narrows by country and region, so the picker is Global, a country, or a region of it.
   const [place, setPlace] = useState<Place>(EVERYWHERE)
   // "Share my store" links land here with ?store=<id>: one store's listings, its place in the picker.
   const [searchParams, setSearchParams] = useSearchParams()
   const storeId = searchParams.get('store') ?? ''
-  const globalListing = useListGlobalQuery(undefined, { skip: Boolean(storeId) || Boolean(place.country) })
-  const countryListing = useListCountryQuery({ country: place.country }, { skip: Boolean(storeId) || !place.country || Boolean(place.region) })
-  const regionListing = useListRegionQuery(place, { skip: Boolean(storeId) || !place.region })
+  const catalogListing = useListCatalogQuery(place, { skip: Boolean(storeId) })
   const storeListing = useListStoreQuery(storeId, { skip: !storeId })
-  // The catalogue fills in place by place (see catalogApiSlice): cards show as they arrive and
-  // `pending` names what is still being read.
-  const catalog = storeId ? null : ((place.region ? regionListing : place.country ? countryListing : globalListing).currentData ?? null)
+  const listing = storeId ? storeListing : catalogListing
   const store = storeId ? (storeListing.currentData?.store ?? null) : null
   const { data: categoryList = [] } = useGetCategoriesQuery()
-  const pending = catalog?.pending ?? []
-  const loading = storeId
-    ? storeListing.isFetching || (storeListing.currentData === undefined && !storeListing.error)
-    : !catalog || (catalog.listings.length === 0 && catalog.pending.length > 0)
+  // `currentData` is for the current place only, so changing the picker shows the skeleton, not the last place's cards.
+  const loading = listing.isFetching || (listing.currentData === undefined && !listing.error)
   const products = useMemo(() => {
     if (loading) return []
     if (storeId) return storeListing.currentData?.listings ?? []
-    return catalog?.listings ?? []
-  }, [loading, storeId, storeListing.currentData, catalog])
-  const failed = storeId ? Boolean(storeListing.error) : Boolean(catalog && catalog.error && catalog.listings.length === 0 && catalog.pending.length === 0)
+    return catalogListing.currentData ?? []
+  }, [loading, storeId, storeListing.currentData, catalogListing.currentData])
+  const failed = Boolean(listing.error)
   const loadError = failed ? 'We could not load the marketplace. Check your connection and try again.' : ''
   const placeLabel = (p: Place) => (p.region ? `${p.region}, ${countryName(p.country)}` : p.country ? countryName(p.country) : GLOBAL)
   const shownPlace = store ? placeLabel({ country: store.businessAddress.country, region: store.businessAddress.region }) : placeLabel(place)
@@ -357,14 +348,8 @@ export default function Marketplace() {
               ))}
             </div>
             {/* 174:2470: "Showing 12 of 12 commodities", 400 14/24 #807e7e */}
-            <span className="relative text-[14px] leading-[24px] text-[#807e7e] whitespace-nowrap shrink-0" style={jakarta(400)} aria-live="polite">
+            <span className="text-[14px] leading-[24px] text-[#807e7e] whitespace-nowrap shrink-0" style={jakarta(400)} aria-live="polite">
               Showing {paginated.length} of {filtered.length} commodities
-              {/* While the sweep is still reading places, a 16px line in the 40px gap under the count. */}
-              {!loading && pending.length > 0 && (
-                <span className="absolute right-0 top-[28px] text-right text-[12px] leading-[16px] max-xl:static max-xl:block" style={jakarta(400)}>
-                  Still looking in {pending.length <= 2 ? pending.join(' and ') : `${pending.slice(0, 2).join(', ')} and ${pending.length - 2} more`}…
-                </span>
-              )}
             </span>
           </div>
         </div>
