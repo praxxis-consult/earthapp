@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import CheckoutDialog from '../../components/ui/CheckoutDialog'
+import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
 import SignInDialogs from '../../components/ui/SignInDialogs'
 import { useStartChatMutation } from '../../feature/chats/chatsApiSlice'
 import { describeError } from '../../services/earthApi'
@@ -491,7 +491,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {ordering && <CheckoutDialog listing={product} quantity={quantity} onClose={() => setWants(null)} />}
+      {ordering && <PlaceOrderModal listing={product} quantity={quantity} onClose={() => setWants(null)} />}
       <SignInDialogs open={signInOpen} onClose={() => setWants(null)} redirectTo={location.pathname} />
     </div>
   )
