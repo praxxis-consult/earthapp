@@ -2,6 +2,8 @@ import { useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
+import DeliveryDialog from '../../components/ui/DeliveryDialog'
+import { useGetShippingProfileQuery } from '../../feature/delivery/deliveryApiSlice'
 import coverPhoto from '../../assets/images/store-cover.jpg'
 import editIcon from '../../assets/icons/st-edit.svg'
 import uploadIcon from '../../assets/icons/st-upload.svg'
@@ -131,8 +133,10 @@ export default function Settings() {
   const prefs = useGetNotificationPreferencesQuery(undefined, { skip: tab !== 'notifications' })
   const [updatePrefs] = useUpdateNotificationPreferencesMutation()
   const [local, setLocal] = useState<Local>(readLocal)
-  const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | null>(null)
-  const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'warning' | null>(null)
+  const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | null>(null)
+  const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | null>(null)
+  // The store's delivery setup (pickup contact and parcel); null until the seller sets it.
+  const shipping = useGetShippingProfileQuery(store?.id ?? '', { skip: !store })
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
 
@@ -259,6 +263,29 @@ export default function Settings() {
                   <Field label="Landmark" value={addr?.landmark} />
                   <Field label="Opening hours" value={`${local.opens} to ${local.closes}`} />
                 </div>
+              </div>
+            </Card>
+            {/* Delivery setup: no frame for it in the design file; the card follows the payout card (649:25596). */}
+            <Card className="flex flex-col gap-[16px]">
+              <div className="flex items-start justify-between gap-[16px] max-md:flex-col">
+                <div className="flex items-center gap-[12px] min-w-0">
+                  <span className="flex size-[48px] shrink-0 items-center justify-center rounded-full bg-[#f2f8f6]">
+                    <img src={checkIcon} alt="" className="size-[20px]" />
+                  </span>
+                  <div className="flex flex-col gap-[4px] min-w-0">
+                    <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(500)}>
+                      {shipping.data ? 'Delivery is set up' : shipping.isLoading ? 'Delivery' : 'Delivery is not set up yet'}
+                    </p>
+                    <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
+                      {shipping.data
+                        ? `Carriers collect from ${shipping.data.profile.pickup.area}, ${shipping.data.profile.pickup.region} · packages up to ${shipping.data.profile.parcel.maxWeightGrams / 1000} kg · ${shipping.data.profile.pickup.firstName} ${shipping.data.profile.pickup.lastName}, ${shipping.data.profile.pickup.phone}`
+                        : shipping.error
+                          ? describeError(shipping.error)
+                          : 'Buyers cannot order until carriers know where to collect and what they carry.'}
+                    </p>
+                  </div>
+                </div>
+                <PrimaryButton label={shipping.data ? 'Edit delivery' : 'Set up delivery'} onClick={() => store && !shipping.isLoading && setDialog('delivery')} />
               </div>
             </Card>
           </div>
@@ -482,6 +509,17 @@ export default function Settings() {
           }}
         />
       )}
+      {dialog === 'delivery' && store && (
+        <DeliveryDialog
+          store={store}
+          current={shipping.data ?? null}
+          onClose={() => setDialog(null)}
+          onSaved={() => {
+            setDialog(null)
+            setDone('delivery')
+          }}
+        />
+      )}
       {dialog === 'bank' && store && (
         <ChangeBankDialog
           store={store}
@@ -518,6 +556,14 @@ export default function Settings() {
               the platform.
             </>
           }
+          primary={{ label: 'Proceed', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
+        />
+      )}
+      {done === 'delivery' && (
+        <SuccessModal
+          title="Delivery set up"
+          body="Carriers can now quote orders from your store, and buyers can place them."
           primary={{ label: 'Proceed', onClick: () => setDone(null) }}
           onClose={() => setDone(null)}
         />

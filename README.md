@@ -279,7 +279,7 @@ vite.config.js          dev proxy for /v1
 | products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}`, `DELETE /products/{id}` |
 | uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE`, `PRODUCT_IMAGE`, or `CHAT_MEDIA` with `conversationId`) |
 | chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` (Message seller) |
-| delivery | `POST /delivery/quotes` (the checkout's first step) |
+| delivery | `GET`/`PUT /delivery/stores/{storeId}/shipping` (the seller's pickup contact and parcel, in store settings), `POST /delivery/quotes` (the checkout's first step) |
 | notifications | `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/{id}/read` |
 | accounts | `PATCH /accounts/me`, `GET`/`PATCH /accounts/me/notification-preferences` |
 | marketplace | `GET /stores?page&limit` (every LIVE store; `country`, then `region`, narrow it), `GET /stores/{id}`, `GET /stores/{id}/products?page&limit`, `GET /products/{id}` |
