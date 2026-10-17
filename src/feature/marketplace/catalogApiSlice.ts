@@ -25,13 +25,13 @@ export async function pooled<T>(tasks: (() => Promise<T>)[], width: number): Pro
 }
 
 const CATEGORIES = (baseQuery: BaseQuery) => allPages<Category>((page) => baseQuery(`/store-categories?limit=50&page=${page}`))
-/** `GET /stores` lists every LIVE store; `country` narrows it, and `region` (with `country`) narrows further. */
-const STORES = (baseQuery: BaseQuery, { country, region }: Place) =>
-  allPages<PublicStore>((page) => {
+/** `GET /products` lists every published product of every LIVE store; `country`, then `region`, narrow it. */
+const PRODUCTS_EVERYWHERE = (baseQuery: BaseQuery, { country, region }: Place) =>
+  allPages<Product>((page) => {
     const q = new URLSearchParams({ limit: '50', page: String(page) })
     if (country) q.set('country', country)
     if (country && region) q.set('region', region)
-    return baseQuery(`/stores?${q}`)
+    return baseQuery(`/products?${q}`)
   })
 const PRODUCTS = (baseQuery: BaseQuery, storeId: string) =>
   allPages<Product>((page) => baseQuery(`/stores/${encodeURIComponent(storeId)}/products?limit=50&page=${page}`))
@@ -39,9 +39,9 @@ const PRODUCTS = (baseQuery: BaseQuery, storeId: string) =>
 const newestFirst = (a: Listing, b: Listing) => b.listedAt.localeCompare(a.listedAt)
 
 /**
- * The published listings in a place: the stores there, then each store's products (the API has
- * no cross-store product listing). One store whose products could not be read does not lose the
- * others; it is an error only when the store list itself could not be read.
+ * The published listings in a place: one cross-store product listing, then the stores they
+ * belong to (one read per store, for the name and address on the card). A store that could not
+ * be read loses only its own listings; it is an error only when the product list itself failed.
  */
 export async function listPlace(
   baseQuery: BaseQuery,
@@ -49,13 +49,19 @@ export async function listPlace(
   place: Place,
   width = 8,
 ): Promise<{ data: Listing[] } | { error: ApiProblem }> {
-  const stores = await STORES(baseQuery, place)
-  if ('error' in stores) return stores
-  const perStore = await pooled(stores.data.map((s) => () => PRODUCTS(baseQuery, s.id)), width)
-  const listings: Listing[] = []
-  perStore.forEach((products, i) => {
-    if ('data' in products) listings.push(...products.data.map((p) => toListing(p, stores.data[i], categories)))
+  const products = await PRODUCTS_EVERYWHERE(baseQuery, place)
+  if ('error' in products) return products
+  const storeIds = [...new Set(products.data.map((p) => p.storeId))]
+  const stores = await pooled(storeIds.map((id) => () => baseQuery(`/stores/${encodeURIComponent(id)}`)), width)
+  const byId = new Map<string, PublicStore>()
+  stores.forEach((res, i) => {
+    if (!res.error) byId.set(storeIds[i], res.data as PublicStore)
   })
+  const listings: Listing[] = []
+  for (const p of products.data) {
+    const store = byId.get(p.storeId)
+    if (store) listings.push(toListing(p, store, categories))
+  }
   return { data: listings.sort(newestFirst) }
 }
 

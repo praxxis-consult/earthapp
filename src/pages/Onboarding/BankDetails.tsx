@@ -6,7 +6,6 @@ import FormDropdown from '../../components/ui/FormDropdown'
 import GradientButton from '../../components/ui/GradientButton'
 import { AccountCheckRow } from '../../components/ui/AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
-import { useAuth } from '../../feature/authentication/useAuth'
 import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 import { describeError } from '../../services/earthApi'
 import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '../../onboarding/draft'
@@ -23,7 +22,6 @@ const inputClass =
  */
 export default function BankDetails() {
   const navigate = useNavigate()
-  const { account } = useAuth()
   const [draft, update] = useDraft()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -37,7 +35,6 @@ export default function BankDetails() {
   // The API's bank list for the country; the dropdown stays empty, with a reason, where there is none.
   const { data: bankList, error: bankError } = useGetBanksQuery({ country: b.country }, { skip: !b.country })
   const banks = b.country ? (bankList?.map((x) => x.name) ?? []) : []
-  const holderName = account ? `${account.firstName} ${account.lastName}` : ''
   const matched = check.status === 'matched' && b.verified
 
   function validate() {
@@ -47,7 +44,7 @@ export default function BankDetails() {
     return ''
   }
 
-  /** "Confirm account": look the name up and keep it when it is the seller's. */
+  /** "Confirm account": ask the bank for the name on the account and keep it. */
   async function confirm() {
     const problem = validate()
     if (problem) return setError(problem)
@@ -57,9 +54,8 @@ export default function BankDetails() {
       bankName: b.bankName,
       bankCode: bankList?.find((x) => x.name === b.bankName)?.code,
       accountNumber: b.accountNumber,
-      holderName,
     })
-    if (result.status === 'matched') update({ bank: { ...b, accountName: result.accountName, verified: true } })
+    if (result.status === 'matched') update({ bank: { ...b, accountName: result.accountName, bankCode: result.bankCode, verified: true } })
   }
 
   /** "Review details": save and move on. */
@@ -84,7 +80,7 @@ export default function BankDetails() {
         onBack={() => navigate(-1)}
         step={4}
         title="Payout Bank Details"
-        subtitle="Your share goes straight to your bank. The account must be in the same name as your ID."
+        subtitle="Your share goes straight to this bank account. We check the account with the bank before you continue."
       />
 
       <div className="mt-[40px] flex flex-col gap-[16px] items-start w-full">

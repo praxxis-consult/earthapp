@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
+import { to12h } from '../../lib/hours'
 import DeliveryDialog from '../../components/ui/DeliveryDialog'
 import { useGetShippingProfileQuery } from '../../feature/delivery/deliveryApiSlice'
 import coverPhoto from '../../assets/images/store-cover.jpg'
@@ -14,8 +16,8 @@ import trashIcon from '../../assets/icons/st-trash.svg'
 import checkIcon from '../../assets/icons/od-truck-fast.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation } from '../../feature/authentication/authApiSlice'
-import { describeError, type NotificationTopic } from '../../services/earthApi'
+import { useDeleteMeMutation, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation } from '../../feature/authentication/authApiSlice'
+import { describeError, type NotificationTopic, type OpeningHours } from '../../services/earthApi'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
@@ -31,21 +33,25 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'notifications', label: 'Notifications' },
 ]
 
-/** Settings the API has no field for yet live in the browser. */
+/** The cover photo has no API field yet and lives in the browser. */
 const LOCAL_KEY = 'earth.settings'
 interface Local {
-  description: string
-  opens: string
-  closes: string
   cover: string
   /** When the payout account last changed; a second change inside 48 hours is held (689:8948). */
   bankChangedAt?: number
 }
 const DEFAULT_LOCAL: Local = {
-  description: '',
-  opens: '09:00 AM',
-  closes: '06:00 PM',
   cover: '',
+}
+
+/** The first interval of the first open day, in the design's 12-hour labels. */
+const firstInterval = (h: OpeningHours | null | undefined) => {
+  const i = h?.days?.[0]?.intervals?.[0]
+  return i ? { opens: to12h(i.opens), closes: to12h(i.closes) } : null
+}
+const hoursLabel = (h: OpeningHours | null | undefined) => {
+  const i = firstInterval(h)
+  return i ? `${i.opens} to ${i.closes}` : 'Not set'
 }
 
 /** The notification table's rows (649:26248), each the API topic it switches. */
@@ -120,9 +126,9 @@ function Toggle({ on, onChange, label, disabled }: { on: boolean; onChange: (v: 
 
 /**
  * Figma "store settings" (604:20255 / 647:25081 / 649:25596 / 649:25922): one page, four tabs.
- * Store and payout details read and write the real onboarding profile; personal details and the
- * notification choices read and write the account; description, opening hours and the cover photo
- * have no API fields and stay on this device.
+ * Store and payout details, the description and the opening hours read and write the onboarding
+ * profile; personal details and the notification choices read and write the account; the cover
+ * photo has no API field and stays on this device.
  */
 export default function Settings() {
   const { account } = useAuth()
@@ -134,7 +140,9 @@ export default function Settings() {
   const [updatePrefs] = useUpdateNotificationPreferencesMutation()
   const [local, setLocal] = useState<Local>(readLocal)
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | null>(null)
-  const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | null>(null)
+  const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | 'delete' | null>(null)
+  const [deleteMe, { isLoading: deleting }] = useDeleteMeMutation()
+  const navigate = useNavigate()
   // The store's delivery setup (pickup contact and parcel); null until the seller sets it.
   const shipping = useGetShippingProfileQuery(store?.id ?? '', { skip: !store })
   const [error, setError] = useState('')
@@ -254,14 +262,14 @@ export default function Settings() {
                     </div>
                   </Field>
                 </div>
-                <Field label="Description" value={local.description || 'Add a description so buyers know what you sell.'} />
+                <Field label="Description" value={store?.description || 'Add a description so buyers know what you sell.'} />
                 <div className="flex gap-[16px] max-md:flex-col">
                   <Field label="Country" value={addr ? countryName(addr.country) : ''} />
                   <Field label="Address" value={addr ? `${addr.street}, ${addr.area}, ${addr.region}` : ''} />
                 </div>
                 <div className="flex gap-[16px] max-md:flex-col">
                   <Field label="Landmark" value={addr?.landmark} />
-                  <Field label="Opening hours" value={`${local.opens} to ${local.closes}`} />
+                  <Field label="Opening hours" value={hoursLabel(store?.openingHours)} />
                 </div>
               </div>
             </Card>
@@ -380,7 +388,7 @@ export default function Settings() {
                   </p>
                 </div>
               </div>
-              <button type="button" disabled title="Account deletion is not available yet" className="rounded-[30px] px-[16px] py-[12px] text-[#d80027] text-[14px] leading-[18px] opacity-60 cursor-not-allowed" style={{ ...jakarta(500), background: 'rgba(216,0,39,0.05)' }}>
+              <button type="button" onClick={() => setDone('delete')} className="rounded-[30px] px-[16px] py-[12px] text-[#d80027] text-[14px] leading-[18px]" style={{ ...jakarta(500), background: 'rgba(216,0,39,0.05)' }}>
                 Delete account
               </button>
             </div>
@@ -417,8 +425,7 @@ export default function Settings() {
               <div className="flex items-center gap-[4px]">
                 <img src={verifiedIcon} alt="" className="size-[20px]" />
                 <p className="text-[#007c53] text-[14px] leading-[18px]" style={jakarta(500)}>
-                  {/* The API has no name check yet, so this never claims a match. */}
-                  Name check pending
+                  Account checked with the bank
                 </p>
               </div>
             )}
@@ -489,11 +496,10 @@ export default function Settings() {
         <EditStoreDialog
           store={store}
           categories={categories}
-          extras={{ description: local.description, opens: local.opens, closes: local.closes }}
+          extras={{ description: store.description ?? '', opens: firstInterval(store.openingHours)?.opens ?? '09:00 AM', closes: firstInterval(store.openingHours)?.closes ?? '06:00 PM' }}
           onClose={() => setDialog(null)}
-          onSaved={(s, extras) => {
+          onSaved={(s) => {
             setStore(s)
-            saveLocal(extras)
             setDialog(null)
             setDone('store')
           }}
@@ -573,6 +579,28 @@ export default function Settings() {
           title="Request Submitted"
           body="Your payout account change request has been submitted. Your new account will start receiving payments within 48 hours from now after verification."
           primary={{ label: 'Proceed', onClick: () => setDone(null) }}
+          onClose={() => setDone(null)}
+        />
+      )}
+      {done === 'delete' && (
+        <SuccessModal
+          icon="danger"
+          destructive
+          title="Delete your account?"
+          body="Your store closes and comes off the marketplace, and you are signed out at once. Records the law requires are kept; everything else is deleted."
+          primary={{
+            label: deleting ? 'Deleting…' : 'Yes, delete my account',
+            onClick: async () => {
+              try {
+                await deleteMe().unwrap()
+                navigate('/', { replace: true })
+              } catch (e) {
+                setDone(null)
+                setError(describeError(e))
+              }
+            },
+          }}
+          secondary={{ label: 'No, keep it', onClick: () => setDone(null) }}
           onClose={() => setDone(null)}
         />
       )}

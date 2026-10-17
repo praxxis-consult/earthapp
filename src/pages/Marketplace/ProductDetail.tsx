@@ -6,7 +6,8 @@ import { useStartChatMutation } from '../../feature/chats/chatsApiSlice'
 import { describeError } from '../../services/earthApi'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { addReview, summarise, timeAgo, useReviews } from '../../lib/reviews'
+import { timeAgo } from '../../lib/reviews'
+import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { naira } from '../../lib/productView'
 import { initials } from '../../data/orders'
 import backIcon from '../../assets/icons/pd-back-16.svg'
@@ -23,10 +24,17 @@ import star16 from '../../assets/icons/pd-star-16.svg'
 import starLight14 from '../../assets/icons/pd-star-light-14.svg'
 import reviewStarOn from '../../assets/icons/pd-review-star-on.svg'
 import reviewStarOff from '../../assets/icons/pd-review-star-off.svg'
-import rateStar from '../../assets/icons/pd-rate-star-35.svg'
 import { jakarta } from '../../utils/styles'
 
 type Tab = 'details' | 'shipping' | 'reviews'
+
+/** The API's rating summary in the shape the tab draws: count, average and a share per star. */
+function summarise(s: { average: string | null; count: string; stars: { rating: number; count: string }[] } | undefined) {
+  const count = Number(s?.count ?? 0) || 0
+  const average = s?.average ? Number(s.average) : 0
+  const share = [5, 4, 3, 2, 1].map((stars) => ({ stars, pct: count ? Math.round(((Number(s?.stars.find((b) => b.rating === stars)?.count ?? 0) || 0) / count) * 100) : 0 }))
+  return { count, average, share }
+}
 const TABS: { key: Tab; label: string }[] = [
   { key: 'details', label: 'Product details' },
   { key: 'shipping', label: 'Shipping and terms' },
@@ -73,7 +81,13 @@ export default function ProductDetail() {
   const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   // undefined while loading, null when the API has no such public listing
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
-  const reviews = useReviews(id ?? '')
+  // Reviews come from the API; a visitor's view of the listing is counted for the seller's overview.
+  const reviewsQuery = useGetReviewsQuery(id ?? '', { skip: !id })
+  const reviews = reviewsQuery.data?.items ?? []
+  const [recordView] = useRecordViewMutation()
+  useEffect(() => {
+    if (id) recordView(id)
+  }, [id, recordView])
   const [tab, setTab] = useState<Tab>('details')
   const [more, setMore] = useState(false)
   const [qty, setQty] = useState<{ id: string; qty: number } | null>(null)
@@ -102,9 +116,6 @@ export default function ProductDetail() {
     }
   }
   const [shown, setShown] = useState(3)
-  const [draftRating, setDraftRating] = useState(0)
-  const [draftText, setDraftText] = useState('')
-  const [reviewNote, setReviewNote] = useState('')
 
   if (!product) {
     return (
@@ -121,22 +132,9 @@ export default function ProductDetail() {
   const inStock = product.available > 0
   const thumbs = product.images.slice(1, 4)
   const extra = Math.max(0, product.images.length - 4)
-  const summary = summarise(reviews)
+  const summary = summarise(reviewsQuery.data?.summary)
   const longDescription = product.description.length > 150
 
-  function submitReview() {
-    if (!draftRating) return setReviewNote('Tap a star to rate this listing.')
-    if (!draftText.trim()) return setReviewNote('Write a few words about the product.')
-    addReview({
-      productId: product!.id,
-      author: account ? `${account.firstName} ${account.lastName}` : 'A buyer',
-      rating: draftRating as 1 | 2 | 3 | 4 | 5,
-      text: draftText.trim(),
-    })
-    setDraftRating(0)
-    setDraftText('')
-    setReviewNote('Thanks. Your review is saved on this device until reviews reach the platform.')
-  }
 
   return (
     <div className="bg-white w-full pb-[80px]">
@@ -417,11 +415,11 @@ export default function ProductDetail() {
                     <article key={r.id} className="flex flex-col gap-[16px]">
                       <div className="flex gap-[8px]">
                         <span className="flex size-[56px] shrink-0 items-center justify-center rounded-full bg-[#f2f8f6] text-[#007c53] text-[16px]" style={jakarta(700)}>
-                          {initials(r.author)}
+                          {initials(r.author.name)}
                         </span>
                         <div className="flex min-w-0 flex-col gap-[8px]">
                           <p className="text-[#121212] text-[18px] leading-[24px]" style={jakarta(600)}>
-                            {r.author}
+                            {r.author.name}
                           </p>
                           <div className="flex items-center gap-[8px] max-md:flex-wrap">
                             <span className="flex items-center gap-[4px]">
@@ -430,7 +428,7 @@ export default function ProductDetail() {
                               ))}
                             </span>
                             <span className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-                              {timeAgo(r.at)}
+                              {timeAgo(r.createdAt)}
                             </span>
                           </div>
                         </div>
@@ -449,42 +447,14 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Write a review (668:30220) */}
+              {/* Write a review (668:30220): the API takes a review only against a completed order, so the form opens from the order once it is delivered. */}
               <div className="flex flex-col gap-[24px]">
                 <p className="text-black text-[18px] leading-[24px]" style={jakarta(600)}>
                   Write a review
                 </p>
-                <div className="flex items-center gap-[16px]" role="radiogroup" aria-label="Your rating">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      role="radio"
-                      aria-checked={draftRating === i}
-                      aria-label={`${i} star${i === 1 ? '' : 's'}`}
-                      onClick={() => setDraftRating(i)}
-                      className="size-[35px]"
-                    >
-                      <img src={i <= draftRating ? reviewStarOn : rateStar} alt="" className="size-[35px]" />
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={draftText}
-                  onChange={(e) => setDraftText(e.target.value)}
-                  placeholder="Start typing here"
-                  aria-label="Your review"
-                  className="h-[160px] w-full resize-none rounded-[20px] bg-[#f7f7f7] p-[16px] text-[#101604] text-[14px] leading-[24px] outline-none placeholder:text-[#807e7e]"
-                  style={jakarta(400)}
-                />
-                {reviewNote && (
-                  <p role="status" className="text-[#007c53] text-[13px] leading-[20px]" style={jakarta(400)}>
-                    {reviewNote}
-                  </p>
-                )}
-                <button type="button" onClick={submitReview} className="flex h-[48px] w-full items-center justify-center rounded-[30px] bg-[#007c53] text-white text-[14px] leading-[18px]" style={jakarta(500)}>
-                  Submit review
-                </button>
+                <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
+                  Reviews come from buyers who received this product. Once your order is delivered, you can rate it from the order.
+                </p>
               </div>
             </div>
           )}

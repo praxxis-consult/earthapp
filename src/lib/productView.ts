@@ -21,11 +21,21 @@ export function listingStatus(p: Pick<Product, 'status' | 'availableQuantity'>):
   return 'On Sale'
 }
 
+/** A naira amount (not kobo), as "₦12,500.00". */
 export const naira = (n: number | string) => {
   const v = typeof n === 'string' ? Number(n) : n
   if (!Number.isFinite(v)) return '—'
   return '₦' + v.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+/**
+ * Every amount on the API is an integer string in kobo (`price`, `amountMinor`, `priceMinor`:
+ * "1250000" is ₦12,500). These two are the only crossing points between kobo and naira.
+ */
+export const nairaFromMinor = (minor: number | string) => naira(Number(minor) / 100)
+/** What a seller types in naira ("12500", "12,500.50") → the kobo string the API stores. */
+export const toMinor = (nairaInput: string | number) => String(Math.round(Number(String(nairaInput).replace(/,/g, '')) * 100))
+export const fromMinor = (minor: string | number | undefined) => (minor === undefined || minor === '' ? '' : String(Number(minor) / 100))
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 

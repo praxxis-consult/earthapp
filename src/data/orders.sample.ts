@@ -316,6 +316,7 @@ const COURIER: Record<DeliveryMethod, string> = {
   Motorbike: 'GIG Logistics, via Shipbubble',
   Car: 'Kwik Delivery, via Shipbubble',
   Pickup: 'Buyer collects from store',
+  Shipping: 'Carrier chosen at checkout, via Shipbubble',
 }
 
 export const sampleOrders: Order[] = seeds.map(

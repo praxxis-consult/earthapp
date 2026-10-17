@@ -84,6 +84,19 @@ export const authApiSlice = apiSlice.injectEndpoints({
         }
       },
     }),
+    /** Disables the account at once and asks for deletion; the session is cleared the same way as a logout. */
+    deleteMe: builder.mutation<null, void>({
+      query: () => ({ url: '/accounts/me', method: 'DELETE', body: {} }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled
+          dispatch(logOut())
+          dispatch(apiSlice.util.resetApiState())
+        } catch {
+          /* the dialog reports the failure */
+        }
+      },
+    }),
     logout: builder.mutation<null, void>({
       query: () => ({ url: '/auth/logout', method: 'POST', body: {} }),
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
@@ -108,5 +121,6 @@ export const {
   useUpdateMeMutation,
   useGetNotificationPreferencesQuery,
   useUpdateNotificationPreferencesMutation,
+  useDeleteMeMutation,
   useLogoutMutation,
 } = authApiSlice

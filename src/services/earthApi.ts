@@ -65,8 +65,15 @@ export interface Identity {
 export interface Bank {
   country: string
   bankName: string
+  /** The bank's code at the payment provider; required to go LIVE, it comes from the bank list and the name lookup. */
+  bankCode?: string
   accountNumber: string
   accountName: string
+}
+/** When the store is open: ISO weekday 1 (Monday) to 7, up to two intervals a day, "HH:MM" (closes may be "24:00"). */
+export interface OpeningHours {
+  timezone: string
+  days: { day: number; intervals: { opens: string; closes: string }[] }[]
 }
 export interface Onboarding {
   id: string
@@ -80,6 +87,8 @@ export interface Onboarding {
   identity?: Identity
   bank?: Bank
   selfieUrl?: string
+  description?: string | null
+  openingHours?: OpeningHours | null
   missingFields: string[]
 }
 export interface OnboardingDraft {
@@ -89,6 +98,8 @@ export interface OnboardingDraft {
   identity?: Identity
   bank?: Bank
   selfieUrl?: string
+  description?: string | null
+  openingHours?: OpeningHours | null
 }
 export interface Category {
   id: string

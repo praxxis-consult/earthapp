@@ -3,13 +3,13 @@ import closeIcon from '../../assets/icons/od-close-circle.svg'
 import chevronDown from '../../assets/icons/signup-chevron-down-24.svg'
 import gpsIcon from '../../assets/icons/onboarding-gps.svg'
 import { describeError, toApiError, type Account, type Category, type Onboarding } from '../../services/earthApi'
+import { toOpeningHours } from '../../lib/hours'
 import { useSaveOnboardingMutation, type SaveOnboardingBody } from '../../feature/stores/storesApiSlice'
 import { useUpdateMeMutation } from '../../feature/authentication/authApiSlice'
 import { COUNTRY_NAMES, countryCode, countryName } from '../../onboarding/draft'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { AccountCheckRow } from './AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
-import { useAuth } from '../../feature/authentication/useAuth'
 import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 
 const labelClass = 'text-[#101604] text-[14px] leading-[24px]'
@@ -115,7 +115,7 @@ export function Select({ id, value, options, onChange, placeholder }: { id: stri
   )
 }
 
-/** What the API can hold for a LIVE store; description and opening hours have no field yet. */
+/** Everything the API holds for a LIVE store, sent back whole on every save (the API accepts no partial LIVE save). */
 function liveBody(o: Onboarding) {
   return {
     storeName: o.storeName,
@@ -124,11 +124,12 @@ function liveBody(o: Onboarding) {
     identity: o.identity!,
     bank: o.bank!,
     selfieUrl: o.selfieUrl!,
+    description: o.description ?? null,
+    openingHours: o.openingHours ?? null,
   }
 }
 
 const HOURS = Array.from({ length: 24 }, (_, h) => `${String(h % 12 || 12).padStart(2, '0')}:00 ${h < 12 ? 'AM' : 'PM'}`)
-
 export function EditStoreDialog({
   store,
   categories,
@@ -167,6 +168,8 @@ export function EditStoreDialog({
         storeName: name.trim(),
         categoryIds: ids,
         businessAddress: { ...store.businessAddress, country, street: street.trim(), landmark: landmark.trim() || 'Not provided' },
+        description: description.trim() || null,
+        openingHours: toOpeningHours(opens, closes),
       }
       const saved = await saveOnboarding({ ...body, status: store.status === 'LIVE' ? 'LIVE' : 'DRAFT', expectedVersion: store.version } as SaveOnboardingBody).unwrap()
       onSaved(saved, { description: description.trim(), opens, closes })
@@ -229,7 +232,7 @@ export function EditStoreDialog({
           )}
         </div>
       </Field>
-      <Field label="Description" htmlFor="st-desc" hint={`${500 - description.length} characters left · kept on this device until Earth stores it`}>
+      <Field label="Description" htmlFor="st-desc" hint={`${500 - description.length} characters left`}>
         <textarea
           id="st-desc"
           value={description}
@@ -257,7 +260,7 @@ export function EditStoreDialog({
       <Field label="Landmark" htmlFor="st-landmark">
         <input id="st-landmark" value={landmark} maxLength={240} onChange={(e) => setLandmark(e.target.value)} className={inputClass} style={jakarta(400)} />
       </Field>
-      <Field label="Opening hours" hint="Kept on this device until Earth stores it">
+      <Field label="Opening hours">
         <div className="flex gap-[16px]">
           <Select id="st-opens" value={opens} options={HOURS} onChange={setOpens} />
           <Select id="st-closes" value={closes} options={HOURS} onChange={setCloses} />
@@ -327,7 +330,6 @@ export function EditPersonalDialog({
 }
 
 export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboarding; onClose: () => void; onSaved: (store: Onboarding) => void }) {
-  const { account } = useAuth()
   const [country, setCountry] = useState(store.bank?.country ?? 'NG')
   const [bankName, setBankName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
@@ -359,7 +361,6 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
       bankName,
       bankCode: bankList?.find((b) => b.name === bankName)?.code,
       accountNumber,
-      holderName: account ? `${account.firstName} ${account.lastName}` : '',
     })
   }
 
@@ -368,12 +369,12 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
     if (!matched) return confirm()
     const problem = validate()
     if (problem) return setError(problem)
-    const accountName = check.status === 'matched' ? check.accountName : ''
-    if (!accountName) return setError('Confirm the account first.')
+    if (check.status !== 'matched') return setError('Confirm the account first.')
+    const { accountName, bankCode } = check
     setBusy(true)
     setError('')
     try {
-      const body = { ...liveBody(store), bank: { country, bankName, accountNumber, accountName } }
+      const body = { ...liveBody(store), bank: { country, bankName, bankCode, accountNumber, accountName } }
       const saved = await saveOnboarding({ ...body, status: store.status === 'LIVE' ? 'LIVE' : 'DRAFT', expectedVersion: store.version } as SaveOnboardingBody).unwrap()
       onSaved(saved)
     } catch (err) {

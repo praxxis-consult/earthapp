@@ -4,7 +4,7 @@ import { sampleMode } from './sample'
 
 export type OrderStatus = 'new' | 'processing' | 'ready' | 'dispatched' | 'completed' | 'cancelled' | 'declined'
 
-export type DeliveryMethod = 'Motorbike' | 'Pickup' | 'Car'
+export type DeliveryMethod = 'Motorbike' | 'Pickup' | 'Car' | 'Shipping'
 
 export interface Order {
   id: string

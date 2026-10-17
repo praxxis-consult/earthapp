@@ -12,7 +12,7 @@ import { useDeleteProductMutation, useGetMyProductsQuery, useSaveProductMutation
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
-import { PICKUP_PRESETS, pickupPresetLabel } from '../../lib/productView'
+import { PICKUP_PRESETS, fromMinor, pickupPresetLabel, toMinor } from '../../lib/productView'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
 const MAX_PHOTOS = 6
@@ -60,7 +60,7 @@ function fromProduct(p: Product): Form {
     productName: p.productName ?? '',
     categoryId: p.categoryId ?? '',
     description: p.description ?? '',
-    price: p.price ?? '',
+    price: fromMinor(p.price),
     soldAs: p.soldAs ?? '',
     weightKg: p.approximateWeightGrams ? String(p.approximateWeightGrams / 1000) : '',
     moq: p.moq ? String(p.moq) : '1',
@@ -222,7 +222,8 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
       ...(form.productName.trim() ? { productName: form.productName.trim().slice(0, 160) } : {}),
       ...(form.categoryId ? { categoryId: form.categoryId } : {}),
       ...(form.description.trim() ? { description: form.description.trim().slice(0, 5000) } : {}),
-      ...(form.price ? { price: String(Number(form.price)), currency: 'NGN' } : {}),
+      // Typed in naira; stored in kobo, as every amount on the API.
+      ...(form.price ? { price: toMinor(form.price), currency: 'NGN' } : {}),
       ...(form.soldAs.trim() ? { soldAs: form.soldAs.trim().slice(0, 40) } : {}),
       ...(grams && grams > 0 ? { approximateWeightGrams: grams } : {}),
       ...(form.moq && Number(form.moq) > 0 ? { moq: Math.round(Number(form.moq)) } : {}),

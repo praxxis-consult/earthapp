@@ -29,7 +29,7 @@ import {
   type ChatMessage,
   type ChatThread,
 } from '../../feature/chats/chatsApiSlice'
-import { naira } from '../../lib/productView'
+import { nairaFromMinor } from '../../lib/productView'
 import { initials } from '../../data/orders'
 import { jakarta } from '../../utils/styles'
 
@@ -253,7 +253,7 @@ export default function Messages() {
                   Amount Paid
                 </p>
                 <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
-                  {naira(inv.amount).replace(/\.00$/, '')}
+                  {nairaFromMinor(inv.amount).replace(/\.00$/, '')}
                 </p>
               </div>
               <button type="button" onClick={() => navigate(`/dashboard/orders/${inv.orderId}`)} className="text-[#007c53] text-[12px] leading-[15px]" style={jakarta(600)}>
@@ -280,7 +280,7 @@ export default function Messages() {
             </div>
             <div className="flex flex-col items-end gap-[4px] shrink-0">
               <p className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
-                {naira(prod.price)}
+                {nairaFromMinor(prod.price)}
               </p>
               <button type="button" onClick={() => navigate(productHref(prod))} className="flex items-center gap-[8px] text-[#177b4d] text-[10px] leading-[13px]" style={jakarta(600)}>
                 View product
@@ -553,7 +553,7 @@ export default function Messages() {
           <div onClick={(e) => e.stopPropagation()}>
             <MenuList width={Math.min(375, window.innerWidth - 32)} hint={picker.length ? 'Choose a listing to send' : 'Loading your listings…'}>
               {picker.map((p) => (
-                <MenuItem key={p.id} label={`${p.productName ?? 'Product'} · ${naira(Number(p.price ?? 0))}`} selected={false} onSelect={() => sendProduct(p)} />
+                <MenuItem key={p.id} label={`${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}`} selected={false} onSelect={() => sendProduct(p)} />
               ))}
               {picker.length === 0 && (
                 <p className="px-[16px] py-[12px] text-[#807e7e] text-[14px] leading-[20px]" style={jakarta(400)}>

@@ -5,8 +5,8 @@ import { listPlace, pooled, EVERYWHERE } from '../feature/marketplace/catalogApi
 import { COUNTRIES, regionsOf, countryName } from '../data/locations'
 
 /**
- * The catalogue reads `GET /stores` (every LIVE store, or a country, or a region of it) and then
- * each store's products; every list endpoint pages by number.
+ * The catalogue reads `GET /products` (every published product, or a country's, or a region's)
+ * and then each listing's store; every list endpoint pages by number.
  */
 
 const stores = [
@@ -23,14 +23,15 @@ let failing: (url: string) => boolean = () => false
 async function fakeBaseQuery(url: string): Promise<{ data?: unknown; error?: ApiProblem }> {
   calls.push(url)
   if (failing(url)) return { error: { status: 503, data: null } }
-  if (url.startsWith('/stores?')) {
+  if (url.startsWith('/products?')) {
     const q = new URLSearchParams(url.slice(url.indexOf('?') + 1))
     const country = q.get('country')
     const region = q.get('region')
-    return page(stores.filter((s) => (!country || s.businessAddress.country === country) && (!region || s.businessAddress.region === region)))
+    const here = stores.filter((s) => (!country || s.businessAddress.country === country) && (!region || s.businessAddress.region === region)).map((s) => s.id)
+    return page([...products.s1, ...products.s2].filter((p) => here.includes(p.storeId)))
   }
-  const m = /^\/stores\/(s\d)\/products/.exec(url)
-  if (m) return page(products[m[1] as 's1' | 's2'])
+  const m = /^\/stores\/(s\d)$/.exec(url)
+  if (m) return { data: stores.find((s) => s.id === m[1]) }
   return { error: { status: 404, data: null } }
 }
 const categories = [{ id: 'vegetables', name: 'Vegetables' }, { id: 'cash-crops', name: 'Cash crops' }]
@@ -76,25 +77,25 @@ describe('listPlace', () => {
     const res = await listPlace(fakeBaseQuery, categories as never, EVERYWHERE)
     expect('data' in res && res.data.map((l) => l.title)).toEqual(['Cocoa Beans', 'Organic Tomatoes'])
     expect('data' in res && res.data[1].category).toBe('Vegetables')
-    expect(calls[0]).toBe('/stores?limit=50&page=1')
+    expect(calls[0]).toBe('/products?limit=50&page=1')
   })
   it('narrows by country and by region', async () => {
     calls.length = 0
     const country = await listPlace(fakeBaseQuery, categories as never, { country: 'NG', region: '' })
     expect('data' in country && country.data.length).toBe(2)
-    expect(calls[0]).toBe('/stores?limit=50&page=1&country=NG')
+    expect(calls[0]).toBe('/products?limit=50&page=1&country=NG')
     const region = await listPlace(fakeBaseQuery, categories as never, { country: 'NG', region: 'Delta' })
     expect('data' in region && region.data.map((l) => l.title)).toEqual(['Cocoa Beans'])
-    expect(calls.find((u) => u.includes('region='))).toBe('/stores?limit=50&page=1&country=NG&region=Delta')
+    expect(calls.find((u) => u.includes('region='))).toBe('/products?limit=50&page=1&country=NG&region=Delta')
     // a region alone means nothing to the API, so it is never sent without its country
     const stray = await listPlace(fakeBaseQuery, categories as never, { country: '', region: 'Delta' })
     expect('data' in stray && stray.data.length).toBe(2)
   })
-  it('keeps the stores whose products loaded when one store fails, and errors only when the store list fails', async () => {
-    failing = (url) => url.startsWith('/stores/s2/')
+  it('keeps the listings whose store loaded when one store fails, and errors only when the product list fails', async () => {
+    failing = (url) => url === '/stores/s2'
     const partial = await listPlace(fakeBaseQuery, categories as never, EVERYWHERE)
     expect('data' in partial && partial.data.map((l) => l.title)).toEqual(['Organic Tomatoes'])
-    failing = (url) => url.startsWith('/stores?')
+    failing = (url) => url.startsWith('/products?')
     const none = await listPlace(fakeBaseQuery, categories as never, EVERYWHERE)
     expect('error' in none && none.error.status).toBe(503)
     failing = () => false
