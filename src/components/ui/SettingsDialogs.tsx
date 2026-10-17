@@ -2,14 +2,15 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import closeIcon from '../../assets/icons/od-close-circle.svg'
 import chevronDown from '../../assets/icons/signup-chevron-down-24.svg'
 import gpsIcon from '../../assets/icons/onboarding-gps.svg'
-import { describeError, toApiError, type Category, type Onboarding } from '../../services/earthApi'
+import { describeError, toApiError, type Account, type Category, type Onboarding } from '../../services/earthApi'
 import { useSaveOnboardingMutation, type SaveOnboardingBody } from '../../feature/stores/storesApiSlice'
+import { useUpdateMeMutation } from '../../feature/authentication/authApiSlice'
 import { COUNTRY_NAMES, countryCode, countryName } from '../../onboarding/draft'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { AccountCheckRow } from './AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useGetBanksQuery } from '../../feature/banks/banksApiSlice'
+import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 
 const labelClass = 'text-[#101604] text-[14px] leading-[24px]'
 const inputClass =
@@ -271,6 +272,7 @@ export function EditStoreDialog({
   )
 }
 
+/** Figma "personal details" (647:25081): name and phone go to `PATCH /accounts/me`; the email is the sign-in and stays. */
 export function EditPersonalDialog({
   initial,
   onClose,
@@ -278,37 +280,50 @@ export function EditPersonalDialog({
 }: {
   initial: { firstName: string; lastName: string; email: string; phoneNumber: string }
   onClose: () => void
-  onSaved: (v: { firstName: string; lastName: string; email: string; phoneNumber: string }) => void
+  onSaved: (account: Account) => void
 }) {
   const [v, setV] = useState(initial)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [updateMe] = useUpdateMeMutation()
   const set = (patch: Partial<typeof v>) => setV((s) => ({ ...s, ...patch }))
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault()
-    // The API has no account-update endpoint yet; the change is kept on this device.
-    onSaved({ ...v, firstName: v.firstName.trim(), lastName: v.lastName.trim(), email: v.email.trim(), phoneNumber: v.phoneNumber.trim() })
+    const firstName = v.firstName.trim().slice(0, 100)
+    const lastName = v.lastName.trim().slice(0, 100)
+    const phoneNumber = v.phoneNumber.trim().slice(0, 30)
+    if (!firstName || !lastName) return setError('Enter your first and last name.')
+    setBusy(true)
+    setError('')
+    try {
+      onSaved(await updateMe({ firstName, lastName, phoneNumber: phoneNumber || null }).unwrap())
+    } catch (err) {
+      setError(describeError(err))
+    } finally {
+      setBusy(false)
+    }
   }
   return (
-    <Shell title="Edit personal details" onClose={onClose} onSubmit={submit} busy={false}>
+    <Shell title="Edit personal details" onClose={onClose} onSubmit={submit} busy={busy}>
       <Field label="First name" htmlFor="p-first">
-        <input id="p-first" value={v.firstName} onChange={(e) => set({ firstName: e.target.value })} className={inputClass} style={jakarta(400)} />
+        <input id="p-first" value={v.firstName} maxLength={100} onChange={(e) => set({ firstName: e.target.value })} className={inputClass} style={jakarta(400)} />
       </Field>
       <Field label="Last name" htmlFor="p-last">
-        <input id="p-last" value={v.lastName} onChange={(e) => set({ lastName: e.target.value })} className={inputClass} style={jakarta(400)} />
+        <input id="p-last" value={v.lastName} maxLength={100} onChange={(e) => set({ lastName: e.target.value })} className={inputClass} style={jakarta(400)} />
       </Field>
-      <Field label="Email address" htmlFor="p-email">
-        <input id="p-email" type="email" value={v.email} onChange={(e) => set({ email: e.target.value })} className={inputClass} style={jakarta(400)} />
+      <Field label="Email address" htmlFor="p-email" hint="Your email is how you sign in; it cannot be changed here.">
+        <input id="p-email" type="email" value={v.email} readOnly className={`${inputClass} text-[#807e7e]`} style={jakarta(400)} />
       </Field>
-      <Field label="Phone number" htmlFor="p-phone" hint="Account changes are not saved to Earth yet; they stay on this device.">
-        <input id="p-phone" type="tel" value={v.phoneNumber} onChange={(e) => set({ phoneNumber: e.target.value })} className={inputClass} style={jakarta(400)} />
+      <Field label="Phone number" htmlFor="p-phone" hint="Optional">
+        <input id="p-phone" type="tel" value={v.phoneNumber} maxLength={30} onChange={(e) => set({ phoneNumber: e.target.value })} className={inputClass} style={jakarta(400)} />
       </Field>
+      {error && (
+        <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+          {error}
+        </p>
+      )}
     </Shell>
   )
-}
-
-const BANKS: Record<string, string[]> = {
-  Nigeria: ['Access Bank', 'Guaranty Trust Bank', 'Zenith Bank', 'First Bank Nigeria', 'UBA', 'Fidelity Bank', 'Sterling Bank', 'Opay', 'Moniepoint', 'Kuda'],
-  Ghana: ['GCB Bank', 'Ecobank Ghana', 'Absa Bank Ghana', 'Fidelity Bank Ghana'],
-  Kenya: ['KCB Bank', 'Equity Bank', 'Cooperative Bank', 'NCBA Bank'],
 }
 
 export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboarding; onClose: () => void; onSaved: (store: Onboarding) => void }) {
@@ -320,8 +335,8 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
   const [error, setError] = useState('')
   const [saveOnboarding] = useSaveOnboardingMutation()
   const { check, run, reset } = useAccountCheck()
-  const { data: bankList } = useGetBanksQuery({ country })
-  const banks = bankList?.map((b) => b.name) ?? BANKS[countryName(country)] ?? ['Central Bank', 'Commercial Bank', 'Standard Bank']
+  const { data: bankList, error: bankError } = useGetBanksQuery({ country })
+  const banks = bankList?.map((b) => b.name) ?? []
   const matched = check.status === 'matched'
 
   const change = <T,>(setter: (v: T) => void) => (v: T) => {
@@ -383,7 +398,7 @@ export function ChangeBankDialog({ store, onClose, onSaved }: { store: Onboardin
       <Field label="Country" htmlFor="b-country">
         <Select id="b-country" value={countryName(country)} options={COUNTRY_NAMES} onChange={(n) => { change(setCountry)(countryCode(n)); setBankName('') }} />
       </Field>
-      <Field label="Bank" htmlFor="b-bank">
+      <Field label="Bank" htmlFor="b-bank" hint={banks.length === 0 ? bankListHint(country, bankError) : undefined}>
         <Select id="b-bank" value={bankName} options={banks} onChange={change(setBankName)} placeholder="Select bank" />
       </Field>
       <Field label="Account number" htmlFor="b-number">

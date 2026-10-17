@@ -2,22 +2,31 @@ import { apiSlice } from '../../app/api/apiSlice'
 import type { ApiProblem } from '../../app/api/problem'
 import type { Category, Onboarding, OnboardingDraft } from '../../services/earthApi'
 
-type Page<T> = { items: T[]; nextCursor: string | null }
+/** One page of a list endpoint: `?page=&limit=` in, `hasNext`/`nextPage` out. */
+export interface Page<T> {
+  items: T[]
+  page: number
+  limit: number
+  hasNext: boolean
+  nextPage: number | null
+}
 
-/** Follows keyset pagination to the end. */
-export async function allPages<T>(
-  fetchPage: (cursor: string | null) => Promise<{ data?: unknown; error?: ApiProblem }>,
-): Promise<{ data: T[] } | { error: ApiProblem }> {
+type PageResult = { data?: unknown; error?: ApiProblem }
+
+/** Follows page-number pagination to the end, first page to last. */
+export async function allPages<T>(fetchPage: (page: number) => PageResult | PromiseLike<PageResult>): Promise<{ data: T[] } | { error: ApiProblem }> {
   const all: T[] = []
-  let cursor: string | null = null
-  do {
-    const res = await fetchPage(cursor)
+  let page = 1
+  for (;;) {
+    const res = await fetchPage(page)
     if (res.error) return { error: res.error }
-    const page = res.data as Page<T>
-    all.push(...page.items)
-    cursor = page.nextCursor
-  } while (cursor)
-  return { data: all }
+    const got = res.data as Page<T>
+    all.push(...got.items)
+    // A page that says "next" but points back at itself (or nowhere) would loop forever.
+    const next = got.hasNext ? (got.nextPage ?? page + 1) : null
+    if (next === null || next <= page) return { data: all }
+    page = next
+  }
 }
 
 export type SaveOnboardingBody =
@@ -49,8 +58,7 @@ export const storesApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ['Catalog'],
     }),
     getCategories: builder.query<Category[], void>({
-      queryFn: (_, __, ___, baseQuery) =>
-        allPages<Category>((cursor) => baseQuery(`/store-categories?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)),
+      queryFn: (_, __, ___, baseQuery) => allPages<Category>((page) => baseQuery(`/store-categories?limit=50&page=${page}`)),
       providesTags: ['Categories'],
       keepUnusedDataFor: 3600,
     }),

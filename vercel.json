@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/v1/banks",
-      "destination": "/api/banks"
-    },
-    {
-      "source": "/v1/banks/resolve",
-      "destination": "/api/banks/resolve"
-    },
-    {
       "source": "/v1/:path*",
       "destination": "http://qaaniuvtddbfg3oi3mroui5u.62.171.189.223.sslip.io/v1/:path*"
     },

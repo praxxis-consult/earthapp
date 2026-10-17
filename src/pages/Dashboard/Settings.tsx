@@ -12,7 +12,8 @@ import trashIcon from '../../assets/icons/st-trash.svg'
 import checkIcon from '../../assets/icons/od-truck-fast.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { describeError } from '../../services/earthApi'
+import { useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation } from '../../feature/authentication/authApiSlice'
+import { describeError, type NotificationTopic } from '../../services/earthApi'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
@@ -37,16 +38,25 @@ interface Local {
   cover: string
   /** When the payout account last changed; a second change inside 48 hours is held (689:8948). */
   bankChangedAt?: number
-  personal?: { firstName: string; lastName: string; email: string; phoneNumber: string }
-  notifications: Record<string, { email: boolean; whatsapp: boolean }>
 }
 const DEFAULT_LOCAL: Local = {
   description: '',
   opens: '09:00 AM',
   closes: '06:00 PM',
   cover: '',
-  notifications: { orders: { email: true, whatsapp: true }, messages: { email: true, whatsapp: true }, earth: { email: true, whatsapp: false } },
 }
+
+/** The notification table's rows (649:26248), each the API topic it switches. */
+const TOPICS: { key: NotificationTopic; title: string; sub: string }[] = [
+  { key: 'orderUpdates', title: 'Order updates', sub: 'Paid, accepted, on the way, delivered' },
+  { key: 'chatMessages', title: 'New messages', sub: 'When a buyer writes you' },
+  { key: 'marketing', title: 'Update from Earth', sub: 'New stores, product updates, etc' },
+]
+/** The API's channels are email and in-app; the frame's second column says WhatsApp, which the API does not send. */
+const CHANNELS = [
+  { key: 'email', label: 'Email' },
+  { key: 'inApp', label: 'In-app' },
+] as const
 const readLocal = (): Local => {
   try {
     return { ...DEFAULT_LOCAL, ...(JSON.parse(localStorage.getItem(LOCAL_KEY) ?? 'null') ?? {}) }
@@ -86,15 +96,16 @@ function PrimaryButton({ label, onClick, icon = editIcon }: { label: string; onC
 }
 
 /** Figma "toggle button" (649:26934): 40×20 track, #007c53 on / #f7f7f7 off, 14px lime knob. */
-function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+function Toggle({ on, onChange, label, disabled }: { on: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!on)}
-      className="relative h-[20px] w-[40px] rounded-[12.76px] transition-colors"
+      className="relative h-[20px] w-[40px] rounded-[12.76px] transition-colors disabled:opacity-60"
       style={{ background: on ? '#007c53' : '#f7f7f7' }}
     >
       <span
@@ -107,9 +118,9 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
 
 /**
  * Figma "store settings" (604:20255 / 647:25081 / 649:25596 / 649:25922): one page, four tabs.
- * Store and payout details read and write the real onboarding profile; personal details come from
- * the account (no update endpoint yet); notifications, description, opening hours and the cover
- * photo have no API fields and stay on this device.
+ * Store and payout details read and write the real onboarding profile; personal details and the
+ * notification choices read and write the account; description, opening hours and the cover photo
+ * have no API fields and stay on this device.
  */
 export default function Settings() {
   const { account } = useAuth()
@@ -117,6 +128,8 @@ export default function Settings() {
   const { store, setStore } = useStore()
   const { data: categories = [] } = useGetCategoriesQuery()
   const [uploadImage] = useUploadImageMutation()
+  const prefs = useGetNotificationPreferencesQuery(undefined, { skip: tab !== 'notifications' })
+  const [updatePrefs] = useUpdateNotificationPreferencesMutation()
   const [local, setLocal] = useState<Local>(readLocal)
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'warning' | null>(null)
@@ -134,7 +147,7 @@ export default function Settings() {
       return next
     })
 
-  const person = local.personal ?? (account ? { firstName: account.firstName, lastName: account.lastName, email: account.email, phoneNumber: account.phoneNumber } : null)
+  const person = account ? { firstName: account.firstName, lastName: account.lastName, email: account.email, phoneNumber: account.phoneNumber ?? '' } : null
   const categoryNames = (store?.categoryIds ?? []).map((id) => categories.find((c) => c.id === id)?.name ?? id)
   const addr = store?.businessAddress
 
@@ -143,6 +156,7 @@ export default function Settings() {
     setUploading(true)
     try {
       const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
+      if (!url) throw new Error('The photo could not be stored. Try again.')
       saveLocal({ cover: url })
     } catch (e) {
       setError(describeError(e))
@@ -386,7 +400,12 @@ export default function Settings() {
 
         {tab === 'notifications' && (
           <Card className="mt-[24px]">
-            <div className="rounded-[20px] border border-[#f7f7f7] overflow-hidden">
+            {prefs.error && (
+              <p role="alert" className="mb-[16px] text-[#b13b3b] text-[14px] leading-[24px]" style={jakarta(400)}>
+                {describeError(prefs.error)}
+              </p>
+            )}
+            <div className="rounded-[20px] border border-[#f7f7f7] overflow-hidden" aria-busy={prefs.isLoading}>
               {/* Figma 649:26248: header 45 and rows 73 each including a 1px #f7f7f7 separator, so borders add to the cells */}
               <table className="w-full table-fixed border-separate border-spacing-0">
                 <colgroup>
@@ -397,7 +416,7 @@ export default function Settings() {
                 </colgroup>
                 <thead>
                   <tr>
-                    {['Action', 'Email', 'Whatsapp'].map((h, i) => (
+                    {['Action', ...CHANNELS.map((c) => c.label)].map((h, i) => (
                       <th key={h} className={`h-[45px] px-[24px] border-b border-[#f7f7f7] text-[#807e7e] text-[12px] leading-[15px] max-md:px-[8px] ${i ? 'text-center' : 'text-left'}`} style={jakarta(600)}>
                         {h}
                       </th>
@@ -405,11 +424,7 @@ export default function Settings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    ['orders', 'Order updates', 'Paid, accepted, on the way, delivered'],
-                    ['messages', 'New messages', 'When a buyer writes you'],
-                    ['earth', 'Update from Earth', 'New stores, product updates, etc'],
-                  ].map(([key, title, sub]) => (
+                  {[...TOPICS, { key: 'security' as const, title: 'Security notices', sub: 'Sign-in codes and account changes; always on' }].map(({ key, title, sub }) => (
                     <tr key={key}>
                       <td className="p-0 border-b border-[#f7f7f7]">
                         <div className="h-[72px] px-[24px] flex flex-col justify-center max-md:h-auto max-md:min-h-[72px] max-md:px-[8px] max-md:py-[8px]">
@@ -421,13 +436,15 @@ export default function Settings() {
                           </p>
                         </div>
                       </td>
-                      {(['email', 'whatsapp'] as const).map((ch) => (
-                        <td key={ch} className="p-0 border-b border-[#f7f7f7]">
+                      {CHANNELS.map((ch) => (
+                        <td key={ch.key} className="p-0 border-b border-[#f7f7f7]">
                           <div className="h-[72px] flex items-center justify-center">
+                            {/* Off until the choices load, so a switch never shows a state the API did not report. */}
                             <Toggle
-                              on={local.notifications[key]?.[ch] ?? false}
-                              label={`${title} by ${ch}`}
-                              onChange={(v) => saveLocal({ notifications: { ...local.notifications, [key]: { ...local.notifications[key], [ch]: v } } })}
+                              on={key === 'security' ? true : (prefs.data?.[key][ch.key] ?? false)}
+                              disabled={key === 'security' || !prefs.data}
+                              label={`${title} by ${ch.label.toLowerCase()}`}
+                              onChange={(v) => key !== 'security' && updatePrefs({ [key]: { [ch.key]: v } })}
                             />
                           </div>
                         </td>
@@ -459,8 +476,7 @@ export default function Settings() {
         <EditPersonalDialog
           initial={person}
           onClose={() => setDialog(null)}
-          onSaved={(v) => {
-            saveLocal({ personal: v })
+          onSaved={() => {
             setDialog(null)
             setDone('personal')
           }}
@@ -497,9 +513,9 @@ export default function Settings() {
           title="Changes saved"
           body={
             <>
-              Your profile details have been saved on this device
+              Your profile details have been saved and updated across
               <br />
-              until profile editing reaches the platform.
+              the platform.
             </>
           }
           primary={{ label: 'Proceed', onClick: () => setDone(null) }}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import SuccessModal from '../../components/ui/SuccessModal'
 import Toast from '../../components/ui/Toast'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import trashIcon from '../../assets/icons/prod-trash.svg'
@@ -15,7 +16,7 @@ import locationIcon from '../../assets/icons/prod-location.svg'
 import clockIcon from '../../assets/icons/prod-clock.svg'
 import calendarIcon from '../../assets/icons/prod-calendar.svg'
 import { describeError } from '../../services/earthApi'
-import { useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
+import { useDeleteProductMutation, useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { listingStatus, naira, pickupHoursLabel, soldAsLabel, unitPlural, weightLabel } from '../../lib/productView'
@@ -96,11 +97,25 @@ export default function ProductDetail() {
   const [toast, setToast] = useState<ProductsToast | null>(
     () => (location.state as { toast?: ProductsToast } | null)?.toast ?? null,
   )
+  const [deleteProduct, { isLoading: deleting }] = useDeleteProductMutation()
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if ((location.state as { toast?: ProductsToast } | null)?.toast)
       navigate(location.pathname, { replace: true, state: null })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** "Yes, delete" (476:16119): the listing is archived and the list page says so. */
+  async function remove() {
+    if (!product) return
+    try {
+      await deleteProduct(product.id).unwrap()
+      navigate('/dashboard/products', { state: { toast: { title: 'Listing deleted', body: `${product.productName || 'The listing'} is off the marketplace.` } } })
+    } catch (e) {
+      setConfirmDelete(false)
+      setToast({ title: 'The listing could not be deleted', body: describeError(e) })
+    }
+  }
 
   const category = categories.find((c) => c.id === product?.categoryId)?.name ?? product?.categoryId ?? '—'
   const status = product ? listingStatus(product) : 'Draft'
@@ -121,6 +136,17 @@ export default function ProductDetail() {
     <DashboardLayout>
       <div className="relative px-[24px] pt-[40px] pb-[40px] flex flex-col gap-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
+        {confirmDelete && product && (
+          <SuccessModal
+            icon="danger"
+            destructive
+            title="Delete this listing?"
+            body={`“${product.productName || 'This listing'}” comes off the marketplace and cannot be restored.`}
+            primary={{ label: deleting ? 'Deleting…' : 'Yes, delete', onClick: remove }}
+            secondary={{ label: 'No, cancel', onClick: () => setConfirmDelete(false) }}
+            onClose={() => setConfirmDelete(false)}
+          />
+        )}
 
         {/* Back + title row */}
         <div className="flex items-start justify-between w-full max-md:flex-col max-md:gap-[16px]">
@@ -140,11 +166,11 @@ export default function ProductDetail() {
 
           {/* Action buttons */}
           <div className="flex items-center gap-[16px] pt-[8px] max-md:w-full max-md:pt-0 max-md:gap-[12px]">
-            {/* The API has no delete yet; the button stays as designed but says so. */}
             <button
-              disabled
-              title="Deleting a listing is not available yet"
-              className="bg-[#f5ebed] flex gap-[8px] h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] opacity-60 cursor-not-allowed max-md:w-auto max-md:flex-1 max-md:px-[16px]"
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={!product || deleting}
+              className="bg-[#f5ebed] flex gap-[8px] h-[48px] items-center justify-center px-[28px] rounded-[30px] w-[168px] disabled:opacity-60 max-md:w-auto max-md:flex-1 max-md:px-[16px]"
             >
               <div className="relative shrink-0 size-[20px]">
                 <img src={trashIcon} alt="" className="absolute block inset-0 max-w-none size-full" />

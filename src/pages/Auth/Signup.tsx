@@ -131,8 +131,8 @@ export default function Signup() {
     if (!lastName.trim()) next.lastName = FIELD_MESSAGES.lastName
     if (!EMAIL.test(email.trim())) next.email = FIELD_MESSAGES.email
     const digits = phone.replace(/\D/g, '')
-    // The design calls the phone optional; the API requires one, so say so before sending.
-    if (!digits) next.phoneNumber = 'Enter your phone number.'
+    // The phone is optional, as the field says; a typed one must be a usable number.
+    if (digits && digits.replace(/^0+/, '').length < 6) next.phoneNumber = FIELD_MESSAGES.phoneNumber
     if (!agreed) next.termsConsent = FIELD_MESSAGES.termsConsent
     setErrors(next)
     setFormError('')
@@ -145,7 +145,7 @@ export default function Signup() {
         firstName: firstName.trim().slice(0, 100),
         lastName: lastName.trim().slice(0, 100),
         email: email.trim().toLowerCase(),
-        phoneNumber: `${dial.code}${digits.replace(/^0+/, '')}`,
+        phoneNumber: digits ? `${dial.code}${digits.replace(/^0+/, '')}` : null,
         termsConsent: true,
       }).unwrap()
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase() } })

@@ -8,7 +8,7 @@ import galleryAddIcon from '../../assets/icons/prod-gallery-add.svg'
 import verifyIcon from '../../assets/icons/db-verify.svg'
 import chevronDownIcon from '../../assets/icons/db-chevron-down.svg'
 import { describeError, type Category, type Product, type ProductInput, toApiError } from '../../services/earthApi'
-import { useGetMyProductsQuery, useSaveProductMutation } from '../../feature/products/productsApiSlice'
+import { useDeleteProductMutation, useGetMyProductsQuery, useSaveProductMutation } from '../../feature/products/productsApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
@@ -159,6 +159,8 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
   const editing = Boolean(id)
   const [form, setForm] = useState<Form>(() => (original ? fromProduct(original) : EMPTY))
   const [saveProduct] = useSaveProductMutation()
+  const [deleteProduct, { isLoading: deleting }] = useDeleteProductMutation()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [uploadImage] = useUploadImageMutation()
   const [catOpen, setCatOpen] = useState(false)
   const [hoursOpen, setHoursOpen] = useState(false)
@@ -192,6 +194,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
         if (!/^image\/(jpeg|png)$/.test(file.type)) throw new Error('Use JPG or PNG photos.')
         if (file.size > MAX_PHOTO_BYTES) throw new Error('Each photo must be under 5 MB.')
         const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
+        if (!url) throw new Error('The photo could not be stored. Try again.')
         setForm((f) => ({ ...f, images: [...f.images, { url, isPrimary: f.images.length === 0 }] }))
       }
     } catch (e) {
@@ -286,6 +289,18 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
       } else setError(describeError(e))
     } finally {
       setBusy('')
+    }
+  }
+
+  /** "Delete listing" while editing archives it on the API; "Delete" on a new form just leaves it. */
+  async function remove() {
+    if (!original) return navigate('/dashboard/products')
+    try {
+      await deleteProduct(original.id).unwrap()
+      navigate('/dashboard/products', { state: { toast: { title: 'Listing deleted', body: `${original.productName || 'The listing'} is off the marketplace.` } } })
+    } catch (e) {
+      setConfirmDelete(false)
+      setError(describeError(e))
     }
   }
 
@@ -884,12 +899,11 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
                 {editing ? 'Save changes' : 'Publish listing'}
               </p>
             </button>
-            {/* The API has no delete yet; the button stays as designed but says so. */}
             <button
               type="button"
-              disabled
-              title="Deleting a listing is not available yet"
-              className="bg-[#f5ebed] flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-full opacity-60 cursor-not-allowed"
+              onClick={() => (editing ? setConfirmDelete(true) : navigate('/dashboard/products'))}
+              disabled={busy !== '' || deleting}
+              className="bg-[#f5ebed] flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-full disabled:opacity-60"
             >
               <p className="text-[#d80027] text-[14px] tracking-[-0.14px]" style={jakarta(500)}>
                 {editing ? 'Delete listing' : 'Delete'}
@@ -898,6 +912,17 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
           </div>
         </div>
       </div>
+      {confirmDelete && original && (
+        <SuccessModal
+          icon="danger"
+          destructive
+          title="Delete this listing?"
+          body={`“${original.productName || 'This listing'}” comes off the marketplace and cannot be restored.`}
+          primary={{ label: deleting ? 'Deleting…' : 'Yes, delete', onClick: remove }}
+          secondary={{ label: 'No, cancel', onClick: () => setConfirmDelete(false) }}
+          onClose={() => setConfirmDelete(false)}
+        />
+      )}
       {published && (
         <SuccessModal
           title={published.edited ? 'Changes saved' : 'Product published! 🎉'}

@@ -184,7 +184,7 @@ export default function OrderDetail() {
   const base = findOrder(id)
   // Local until the orders API exists: a change made here is kept per order id.
   const [override, setOverride] = useState<{ id: string; status: OrderStatus } | null>(null)
-  const status: OrderStatus = override?.id === id ? override.status : (base?.status ?? 'new')
+  const status: OrderStatus = override && override.id === id ? override.status : (base?.status ?? 'new')
   const setStatus = (next: OrderStatus) => setOverride({ id: id ?? '', status: next })
   const [dialog, setDialog] = useState<'evidence' | 'ready' | 'dispatched' | 'decline' | null>(null)
   const [tracking, setTracking] = useState(false)

@@ -7,29 +7,10 @@ import GradientButton from '../../components/ui/GradientButton'
 import { AccountCheckRow } from '../../components/ui/AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useGetBanksQuery } from '../../feature/banks/banksApiSlice'
+import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 import { describeError } from '../../services/earthApi'
 import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
-
-/** Shown until the API serves the bank list for a country. */
-const BANKS_BY_COUNTRY: Record<string, string[]> = {
-  Nigeria: [
-    'Access Bank',
-    'Guaranty Trust Bank',
-    'Zenith Bank',
-    'First Bank',
-    'UBA',
-    'Fidelity Bank',
-    'Sterling Bank',
-    'Opay',
-    'Moniepoint',
-    'Kuda',
-  ],
-  Ghana: ['GCB Bank', 'Ecobank Ghana', 'Absa Bank Ghana', 'Fidelity Bank Ghana'],
-  Kenya: ['KCB Bank', 'Equity Bank', 'Cooperative Bank', 'NCBA Bank'],
-  default: ['Central Bank', 'Commercial Bank', 'Standard Bank'],
-}
 
 const inputClass =
   'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
@@ -53,16 +34,15 @@ export default function BankDetails() {
     reset()
   }
 
-  const { data: bankList } = useGetBanksQuery({ country: b.country }, { skip: !b.country })
-  const banks = b.country
-    ? (bankList?.map((x) => x.name) ?? BANKS_BY_COUNTRY[countryName(b.country)] ?? BANKS_BY_COUNTRY.default)
-    : ['Select a country first']
+  // The API's bank list for the country; the dropdown stays empty, with a reason, where there is none.
+  const { data: bankList, error: bankError } = useGetBanksQuery({ country: b.country }, { skip: !b.country })
+  const banks = b.country ? (bankList?.map((x) => x.name) ?? []) : []
   const holderName = account ? `${account.firstName} ${account.lastName}` : ''
   const matched = check.status === 'matched' && b.verified
 
   function validate() {
     if (!b.country) return 'Select the bank’s country.'
-    if (!b.bankName || b.bankName === 'Select a country first') return 'Select your bank.'
+    if (!b.bankName) return 'Select your bank.'
     if (b.accountNumber.length !== 10) return 'Enter the 10-digit account number.'
     return ''
   }
@@ -121,6 +101,7 @@ export default function BankDetails() {
           value={b.bankName}
           placeholder="Select bank"
           options={banks}
+          emptyHint={bankListHint(b.country, bankError)}
           onSelect={(bankName) => set({ bankName })}
         />
 
