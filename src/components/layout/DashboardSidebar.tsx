@@ -114,8 +114,17 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         )}
       </div>
 
-      {/* Store card */}
-      <div className="mx-[24px] mb-[40px] bg-[#f7f7f7] flex gap-[8px] items-center px-[16px] py-[12px] rounded-[15px]">
+      {/* Store card: until the store is LIVE it opens onboarding, which picks the draft up where it stopped. */}
+      <button
+        type="button"
+        onClick={() => {
+          if (store?.status !== 'LIVE') navigate('/onboarding/store')
+          else navigate('/dashboard/settings')
+          if (inDrawer) onClose?.()
+        }}
+        className="mx-[24px] mb-[40px] bg-[#f7f7f7] flex gap-[8px] items-center px-[16px] py-[12px] rounded-[15px] text-left hover:bg-[#f2f2f2]"
+        aria-label={store?.status === 'LIVE' ? 'Store settings' : 'Finish your store setup'}
+      >
         <div className="bg-[#f2f8f6] overflow-clip relative rounded-full shrink-0 size-[40px]">
           <img src={avatarImg} alt="" className="absolute inset-0 max-w-none object-cover size-full" />
         </div>
@@ -124,10 +133,10 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
             {store?.storeName ?? 'Your store'}
           </p>
           <p className="text-[#807e7e] text-[12px] leading-[20px] truncate" style={jakarta(500)}>
-            {place || 'Finish your store setup'}
+            {store?.status === 'LIVE' ? place : 'Finish your store setup'}
           </p>
         </div>
-      </div>
+      </button>
 
       {/* Nav items */}
       <nav className="flex flex-col gap-[12px] px-[16px] flex-1">

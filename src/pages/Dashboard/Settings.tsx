@@ -336,10 +336,10 @@ export default function Settings() {
               </h2>
               <div className="flex flex-col gap-[16px]">
                 {[
-                  ['Identity', 'Checked against your identity document and selfie', store?.identity ? 'submitted' : 'missing'],
-                  ['Bank account', 'Matches the information on your ID', store?.bank ? 'submitted' : 'missing'],
-                  ['Business registration', 'Optional. Unlocks higher limits sooner.', 'upload'],
-                ].map(([title, sub, state], i) => (
+                  ['Identity', 'Checked against your identity document and selfie', store?.identity ? 'submitted' : 'missing', '/onboarding/verify-id'],
+                  ['Bank account', 'Checked with your bank; your share is paid here', store?.bank ? 'submitted' : 'missing', '/onboarding/bank'],
+                  ['Business registration', 'Optional. Unlocks higher limits sooner.', 'upload', ''],
+                ].map(([title, sub, state, to], i) => (
                   <div key={title}>
                     {i > 0 && <div className="h-px w-full bg-[#f7f7f7] mb-[16px]" />}
                     <div className="flex items-center justify-between py-[8px] max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
@@ -361,11 +361,17 @@ export default function Settings() {
                           <img src={exportIcon} alt="" className="size-[20px]" />
                           Upload document
                         </button>
+                      ) : state === 'missing' ? (
+                        /* The step lives in onboarding; it picks the draft up where it stopped. */
+                        <button type="button" onClick={() => navigate(to)} className="flex items-center gap-[4px] rounded-[30px] px-[8px] py-[4px] text-[#007c53] text-[14px] leading-[18px]" style={jakarta(500)}>
+                          <img src={exportIcon} alt="" className="size-[20px]" />
+                          {title === 'Identity' ? 'Add your ID' : 'Add bank account'}
+                        </button>
                       ) : (
-                        <span className="flex items-center gap-[4px] rounded-[30px] px-[8px] py-[4px] text-[14px] leading-[18px]" style={{ ...jakarta(500), background: 'rgba(0,124,83,0.05)', color: state === 'submitted' ? '#007c53' : '#a66608' }}>
-                          {state === 'submitted' && <img src={verifiedIcon} alt="" className="size-[20px]" />}
+                        <span className="flex items-center gap-[4px] rounded-[30px] px-[8px] py-[4px] text-[14px] leading-[18px]" style={{ ...jakarta(500), background: 'rgba(0,124,83,0.05)', color: '#007c53' }}>
+                          <img src={verifiedIcon} alt="" className="size-[20px]" />
                           {/* The API only reports UNVERIFIED today, so a submitted document reads "Submitted", never "Verified". */}
-                          {state === 'submitted' ? 'Submitted' : 'Not provided'}
+                          Submitted
                         </span>
                       )}
                     </div>
