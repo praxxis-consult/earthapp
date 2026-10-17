@@ -179,7 +179,7 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 | `npm run lint` | Run oxlint |
 | `npm run test` | Run the Vitest suite once |
 | `npm run test:watch` | Run Vitest in watch mode |
-| `npx tsc --noEmit` | Typecheck (two warnings about node types in `tsconfig.json` are known noise) |
+| `npx tsc --noEmit` | Typecheck the app and its tests (Vite builds without it, so this is the only type gate) |
 
 ## Configuration
 

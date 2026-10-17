@@ -2,10 +2,10 @@ import { apiSlice } from '../../app/api/apiSlice'
 import { countryName } from '../../data/locations'
 
 /** What an empty bank list means: no country yet, still loading, no lookup for that country (501), or a failure. */
-export function bankListHint(country: string, error: { status: number } | undefined): string {
+export function bankListHint(country: string, error: unknown): string {
   if (!country) return 'Select a country first'
   if (!error) return 'Loading banks…'
-  if (error.status === 501) return `Bank lookup is not available in ${countryName(country)} yet.`
+  if ((error as { status?: unknown }).status === 501) return `Bank lookup is not available in ${countryName(country)} yet.`
   return 'The bank list could not be loaded. Try again in a moment.'
 }
 

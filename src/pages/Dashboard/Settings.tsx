@@ -156,6 +156,7 @@ export default function Settings() {
     setUploading(true)
     try {
       const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
+      if (!url) throw new Error('The photo could not be stored. Try again.')
       saveLocal({ cover: url })
     } catch (e) {
       setError(describeError(e))

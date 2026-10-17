@@ -11,10 +11,10 @@ export interface Page<T> {
   nextPage: number | null
 }
 
+type PageResult = { data?: unknown; error?: ApiProblem }
+
 /** Follows page-number pagination to the end, first page to last. */
-export async function allPages<T>(
-  fetchPage: (page: number) => Promise<{ data?: unknown; error?: ApiProblem }>,
-): Promise<{ data: T[] } | { error: ApiProblem }> {
+export async function allPages<T>(fetchPage: (page: number) => PageResult | PromiseLike<PageResult>): Promise<{ data: T[] } | { error: ApiProblem }> {
   const all: T[] = []
   let page = 1
   for (;;) {

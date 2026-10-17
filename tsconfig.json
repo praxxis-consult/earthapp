@@ -1,46 +1,20 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
+  // Typechecks the app and its tests: `npx tsc --noEmit`. Vite builds without tsc, so this is the
+  // only place types are enforced; keep `include` and `types` in step with what runs.
   "compilerOptions": {
-    // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
-
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
     "module": "esnext",
     "target": "es2020",
-    "types": ["node"],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
-    "strict": false,
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
     "jsx": "react-jsx",
+    "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-
     "moduleResolution": "bundler",
-  }
+    "noEmit": true
+  },
+  "include": ["src"]
 }

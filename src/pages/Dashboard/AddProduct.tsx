@@ -194,6 +194,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
         if (!/^image\/(jpeg|png)$/.test(file.type)) throw new Error('Use JPG or PNG photos.')
         if (file.size > MAX_PHOTO_BYTES) throw new Error('Each photo must be under 5 MB.')
         const { url } = await uploadImage({ file, purpose: 'PRODUCT_IMAGE' }).unwrap()
+        if (!url) throw new Error('The photo could not be stored. Try again.')
         setForm((f) => ({ ...f, images: [...f.images, { url, isPrimary: f.images.length === 0 }] }))
       }
     } catch (e) {

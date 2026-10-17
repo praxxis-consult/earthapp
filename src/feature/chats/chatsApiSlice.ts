@@ -1,4 +1,5 @@
 import { apiSlice } from '../../app/api/apiSlice'
+import type { RootState } from '../../app/store'
 import { allPages } from '../stores/storesApiSlice'
 
 /* ---------- what the API sends ---------- */
@@ -136,7 +137,7 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
           const { data } = await queryFulfilled
           if (!data.length) return
           dispatch(chatsApiSlice.util.updateQueryData('getMessages', chatId, (draft) => merge(draft, data)))
-          const me = (getState() as { auth: { account: { id: string } | null } }).auth.account?.id
+          const me = (getState() as RootState).auth.account?.id
           const last = data[data.length - 1]
           const mine = data.filter((m) => m.senderId !== me).length
           dispatch(chatsApiSlice.util.updateQueryData('listChats', undefined, (draft) => bump(draft, chatId, last, (t) => String(Number(t.unreadCount) + mine))))

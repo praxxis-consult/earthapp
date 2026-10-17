@@ -92,6 +92,7 @@ export default function SelfieCaptureModal({ onUploaded, onClose }: SelfieCaptur
     try {
       const file = shot instanceof File ? shot : new File([shot], 'selfie.jpg', { type: 'image/jpeg' })
       const { url } = await uploadImage({ file, purpose: 'SELFIE' }).unwrap()
+      if (!url) throw new Error('The photo could not be stored. Try again.')
       onUploaded(url)
     } catch (err) {
       setError(describeError(err))
