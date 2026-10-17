@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { naira } from '../../lib/productView'
 import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import SignInDialogs from '../../components/ui/SignInDialogs'
 import arrowLeft from '../../assets/icons/po-arrow-left.svg'
 import arrowRight from '../../assets/icons/po-arrow-right.svg'
 import shieldIcon from '../../assets/icons/po-shield.svg'
@@ -22,10 +24,15 @@ const STEP = 1
 export default function PlaceOrder() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { account } = useAuth()
   // undefined while loading, null when the API has no such public listing
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const [activeThumb, setActiveThumb] = useState(0)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [wantsOrder, setWantsOrder] = useState(false)
+  // Ordering needs an account: a visitor signs in first and the checkout opens once they are back.
+  const signInOpen = wantsOrder && !account
+  const modalOpen = wantsOrder && Boolean(account)
   // The quantity starts at the listing's minimum order once it loads.
   const [qtyState, setQtyState] = useState<{ id: string; qty: number } | null>(null)
   const qty = qtyState && qtyState.id === id ? qtyState.qty : (product?.moq ?? 1)
@@ -258,7 +265,7 @@ export default function PlaceOrder() {
 
             {/* Place order button */}
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => setWantsOrder(true)}
               disabled={!inStock}
               className="bg-[#008f63] flex gap-[8px] h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full disabled:opacity-60"
             >
@@ -268,9 +275,12 @@ export default function PlaceOrder() {
               <img src={arrowRight} alt="" className="size-[18px] shrink-0" />
             </button>
 
-            {/* Request a sample button */}
+            {/* Request a sample: nothing on the API takes a sample request yet, so the button says so. */}
             <button
-              className="bg-[#f7f7f7] border border-[#e4dede] flex h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full"
+              type="button"
+              disabled
+              title="Sample requests are coming with the orders API"
+              className="bg-[#f7f7f7] border border-[#e4dede] flex h-[52px] items-center justify-center px-[24px] rounded-[999px] w-full disabled:opacity-60"
             >
               <span className="text-[#0c2310] text-[14px]" style={jakarta(600)}>
                 Request a sample
@@ -296,7 +306,8 @@ export default function PlaceOrder() {
         </div>
       </div>
 
-      {modalOpen && <PlaceOrderModal onClose={() => setModalOpen(false)} />}
+      {modalOpen && <PlaceOrderModal listing={product} quantity={qty} onClose={() => setWantsOrder(false)} />}
+      <SignInDialogs open={signInOpen} onClose={() => setWantsOrder(false)} redirectTo={location.pathname} />
     </div>
   )
 }

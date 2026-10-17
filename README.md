@@ -276,15 +276,17 @@ vite.config.js          dev proxy for /v1
 | authentication | `POST /accounts`, `POST /auth/otp/request`, `POST /auth/otp/resend`, `POST /auth/otp/verify` (intent `ACCOUNT_CONFIRMATION` or `LOGIN`), `GET /accounts/me`, `POST /auth/refresh`, `POST /auth/logout` |
 | stores | `GET /stores/me/onboarding`, `POST /stores/me/onboarding` (draft or live, with `expectedVersion`), `GET /store-categories?page&limit` |
 | banks | `GET /banks?country` (501 where the API has no lookup for that country), `GET /banks/resolve?country&bankCode&bankName&accountNumber` (signed in; answers `matchesIdentity`, the API's own comparison with the holder's name) |
-| products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}`, `DELETE /products/{id}` |
+| products | `POST /products` (create and update, with `expectedVersion`; `price` in kobo), `GET /products/me?page&limit&status`, `GET /products/{id}`, `DELETE /products/{id}`, `GET /products/{id}/reviews`, `POST /products/{id}/views` |
 | uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE`, `PRODUCT_IMAGE`, or `CHAT_MEDIA` with `conversationId`) |
-| chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` |
+| chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` (Message seller) |
+| delivery | `GET`/`PUT /delivery/stores/{storeId}/shipping` (the seller's pickup contact and parcel, in store settings), `POST /delivery/quotes` (the checkout's first step) |
 | notifications | `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/{id}/read` |
-| accounts | `PATCH /accounts/me`, `GET`/`PATCH /accounts/me/notification-preferences` |
-| marketplace | `GET /stores?page&limit` (every LIVE store; `country`, then `region`, narrow it), `GET /stores/{id}`, `GET /stores/{id}/products?page&limit`, `GET /products/{id}` |
+| accounts | `PATCH /accounts/me`, `DELETE /accounts/me`, `GET`/`PATCH /accounts/me/notification-preferences` |
+| overview | `GET /stores/me/overview` (LIVE stores; 503 while the API prepares it) |
+| marketplace | `GET /products?page&limit` (every published listing; `country`, then `region`, narrow it), `GET /stores/{id}` per listing's store, `GET /stores/{id}/products?page&limit` (one store), `GET /products/{id}` |
 | waitlist | `POST /waitlist/entries` (with an `Idempotency-Key`), `POST /waitlist/verification`, `POST /waitlist/verification/claim`, `GET /waitlist/me` (with `x-place-token`) |
 
-**Rules the API enforces that the UI respects**: every list pages by number (`page`, `limit`; the answer carries `hasNext` and `nextPage`) and the app reads lists to the end; country codes are ISO-2 upper case; a product's category must be one the store selected; a LIVE onboarding save must send the whole profile back; `expectedVersion` must match or the save is refused with a version-conflict message.
+**Rules the API enforces that the UI respects**: every amount is an integer string in kobo (the form takes naira and converts at the edge, `src/lib/productView.ts`); a store goes LIVE only with the bank's code from the name lookup; every list pages by number (`page`, `limit`; the answer carries `hasNext` and `nextPage`) and the app reads lists to the end; country codes are ISO-2 upper case; a product's category must be one the store selected; a LIVE onboarding save must send the whole profile back; `expectedVersion` must match or the save is refused with a version-conflict message.
 
 **What runs on the API today**
 
@@ -294,13 +296,14 @@ vite.config.js          dev proxy for /v1
 | Seller onboarding, all four steps and go live | Live |
 | Products: list, add with photo uploads, edit, publish or draft, detail, delete | Live |
 | Account settings: store details, personal details, payout account, notification choices, cover photo | Live (description, opening hours and the cover photo are kept in the browser until the API has fields for them) |
-| Marketplace list, product page, order page | Live catalogue: every store, a country or a region; Place order opens the modal but cannot submit |
+| Marketplace list, product page, order page | Live catalogue: every store, a country or a region. Message seller opens the chat (sign-in first). Place order takes the delivery address and asks the carriers for quotes (`POST /delivery/quotes`); choosing a quote and paying wait for the API to document the quote and order answers, and the QA server's carriers do not answer yet |
 | Waitlist on the landing page | Live |
 | Dashboard shell: store name and area, seller name, share-store link | Live |
 | Messages: threads, text, product and photo messages, read position, unread badge | Live (polled; the API has no live channel yet) |
-| Overview numbers and charts, orders, payouts | Zero state |
+| Overview numbers and charts | Live from the API for a LIVE store (zeros until the API has counted activity) |
+| Orders, payouts, referrals | Zero state (payouts and referrals endpoints exist but their answers are undocumented) |
 | Referrals | Local placeholder |
-| Reviews on the product page | Kept on the buyer's device |
+| Reviews on the product page | Live: read from the API; writing waits for a completed order to review from |
 
 Each zero-state page reads one data module under `src/data/` shaped like the response it expects, so wiring the endpoint later changes that module and nothing else on the page.
 

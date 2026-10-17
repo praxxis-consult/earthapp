@@ -19,7 +19,7 @@ import { describeError } from '../../services/earthApi'
 import { useDeleteProductMutation, useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useStore } from '../../feature/stores/useStore'
-import { listingStatus, naira, pickupHoursLabel, soldAsLabel, unitPlural, weightLabel } from '../../lib/productView'
+import { listingStatus, nairaFromMinor, pickupHoursLabel, soldAsLabel, unitPlural, weightLabel } from '../../lib/productView'
 import type { ProductsToast } from './Products'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
@@ -282,7 +282,7 @@ export default function ProductDetail() {
                         </p>
                         <div className="flex gap-[16px] items-center">
                           <p className="text-[#0c2310] text-[28px]" style={jakarta(700)}>
-                            {product.price ? naira(product.price) : '—'}
+                            {product.price ? nairaFromMinor(product.price) : '—'}
                           </p>
                           <div className="bg-[rgba(0,124,83,0.05)] flex items-center overflow-clip px-[8px] py-[5px] rounded-[999px]">
                             <p className="text-[#007c53] text-[11px] whitespace-nowrap" style={jakarta(500)}>

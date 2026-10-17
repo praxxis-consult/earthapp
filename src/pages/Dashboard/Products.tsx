@@ -9,7 +9,7 @@ import addIcon from '../../assets/icons/db-add.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
 import { describeError } from '../../services/earthApi'
 import { useGetMyProductsQuery } from '../../feature/products/productsApiSlice'
-import { LISTING_STYLE, listingStatus, naira, soldAsLabel } from '../../lib/productView'
+import { LISTING_STYLE, listingStatus, nairaFromMinor, soldAsLabel } from '../../lib/productView'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
 const PAGE_SIZE = 10
@@ -181,7 +181,7 @@ export default function Products() {
                   width: 181,
                   cell: (p) => (
                     <p className="text-[#101928] text-[14px] leading-[24px] whitespace-nowrap" style={jakarta(400)}>
-                      {p.price ? naira(p.price) : '-'}
+                      {p.price ? nairaFromMinor(p.price) : '-'}
                     </p>
                   ),
                 },

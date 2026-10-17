@@ -14,7 +14,7 @@ export interface Draft {
   identityNumber: string
   selfieUrl: string
   /** `verified`: the name came from the bank's own lookup and matched the seller; never sent to the API. */
-  bank: { country: string; bankName: string; accountNumber: string; accountName: string; verified?: boolean }
+  bank: { country: string; bankName: string; bankCode?: string; accountNumber: string; accountName: string; verified?: boolean }
   /** The API's optimistic-concurrency counter; 0 until the store exists. */
   version: number
   status: 'NONE' | 'DRAFT' | 'LIVE' | 'SUSPENDED'
@@ -119,7 +119,7 @@ export function toApiDraft(d: Draft): OnboardingDraft {
   if (d.selfieUrl) out.selfieUrl = d.selfieUrl
   const b = d.bank
   if (b.country && b.bankName && b.accountNumber && b.accountName)
-    out.bank = { country: b.country, bankName: b.bankName, accountNumber: b.accountNumber, accountName: b.accountName }
+    out.bank = { country: b.country, bankName: b.bankName, ...(b.bankCode ? { bankCode: b.bankCode } : {}), accountNumber: b.accountNumber, accountName: b.accountName }
   return out
 }
 
@@ -139,7 +139,8 @@ export function missingForLive(d: Draft): string[] {
   if (!(d.identityType && d.identityNumber)) m.push('identity')
   if (!d.selfieUrl) m.push('selfieUrl')
   const b = d.bank
-  if (!(b.country && b.bankName && b.accountNumber && b.accountName)) m.push('bank')
+  // The API needs the bank's code to go LIVE; it only comes with a successful name lookup.
+  if (!(b.country && b.bankName && b.bankCode && b.accountNumber && b.accountName)) m.push('bank')
   return m
 }
 

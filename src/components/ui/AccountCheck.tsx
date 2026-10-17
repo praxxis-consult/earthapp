@@ -15,8 +15,8 @@ function Spinner() {
 
 /**
  * The 40px status row under the account number (bank details 424:4530, 428:4608): the spinner
- * with "Checking the bank…" while the lookup runs; the verify tick with "Name matched
- * successfully" and the bank's name on the right once it matches; a plain warning otherwise.
+ * with "Checking the bank…" while the lookup runs; the verify tick with "Account found" and the
+ * bank's name on the right once it answers; a plain warning otherwise.
  * Renders nothing while idle.
  */
 export function AccountCheckRow({ check, className = '' }: { check: AccountCheck; className?: string }) {
@@ -36,7 +36,7 @@ export function AccountCheckRow({ check, className = '' }: { check: AccountCheck
         <span className="flex items-center gap-[8px] min-w-0">
           <img src={verifyIcon} alt="" className="size-[20px] shrink-0" />
           <span className="text-[#007c53] text-[14px] leading-[18px] whitespace-nowrap" style={jakarta(500)}>
-            Name matched successfully
+            Account found
           </span>
         </span>
         <span className="text-[#101604] text-[16px] leading-[24px] text-right truncate" style={jakarta(600)}>
@@ -46,11 +46,7 @@ export function AccountCheckRow({ check, className = '' }: { check: AccountCheck
     )
   return (
     <p role="alert" className={`py-[8px] text-[#b13b3b] text-[13px] leading-[20px] ${className}`} style={jakarta(400)}>
-      {check.status === 'mismatch'
-        ? `This account is in another name (${check.accountName}). Use an account in your own name, as it appears on your ID.`
-        : check.status === 'unavailable'
-          ? 'Account lookup is not available right now. Try again in a moment.'
-          : check.message}
+      {check.status === 'unavailable' ? 'Account lookup is not available right now. Try again in a moment.' : check.message}
     </p>
   )
 }

@@ -5,8 +5,7 @@ import arrowDown from '../../assets/icons/arrow-down.svg'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import closeIcon from '../../assets/icons/auth-cancel.svg'
 import Drawer from '../ui/Drawer'
-import LoginModal from '../ui/LoginModal'
-import OtpModal from '../ui/OtpModal'
+import SignInDialogs from '../ui/SignInDialogs'
 import { useAuth } from '../../feature/authentication/useAuth'
 
 const jakartaMedium: React.CSSProperties = {
@@ -24,7 +23,6 @@ export default function Navbar() {
   const redirect = (location.state as { login?: boolean; from?: string } | null) ?? null
   // A guarded page sent an anonymous visitor here: open sign-in and remember where they were going.
   const [loginOpen, setLoginOpen] = useState(() => Boolean(redirect?.login))
-  const [otpEmail, setOtpEmail] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
 
@@ -212,22 +210,7 @@ export default function Navbar() {
         </div>
       </Drawer>
 
-      {loginOpen && (
-        <LoginModal
-          onClose={() => setLoginOpen(false)}
-          onProceed={(email) => {
-            setLoginOpen(false)
-            setOtpEmail(email)
-          }}
-        />
-      )}
-      {otpEmail && (
-        <OtpModal
-          email={otpEmail}
-          redirectTo={(location.state as { from?: string } | null)?.from}
-          onClose={() => setOtpEmail('')}
-        />
-      )}
+      <SignInDialogs open={loginOpen} onClose={() => setLoginOpen(false)} redirectTo={(location.state as { from?: string } | null)?.from} />
     </>
   )
 }

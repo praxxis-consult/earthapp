@@ -1,5 +1,5 @@
 import type { Category, Product as ApiProduct } from '../services/earthApi'
-import { naira } from './productView'
+import { nairaFromMinor } from './productView'
 
 /** A LIVE store as the public endpoints return it. */
 export interface PublicStore {
@@ -43,8 +43,9 @@ export function toListing(p: ApiProduct, store: PublicStore, categories: Categor
   return {
     id: p.id,
     title: p.productName ?? 'Untitled listing',
-    price: naira(p.price ?? '0').replace(/\.00$/, ''),
-    priceNum: Number(p.price ?? 0),
+    price: nairaFromMinor(p.price ?? '0').replace(/\.00$/, ''),
+    // In naira, so quantity × priceNum is a naira total; the API's `price` is kobo.
+    priceNum: Number(p.price ?? 0) / 100,
     unit,
     description: p.description ?? '',
     image: images[0] ?? null,

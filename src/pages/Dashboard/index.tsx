@@ -10,7 +10,10 @@ import tooltipBgIcon from '../../assets/icons/db-tooltip-bg.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import addIcon from '../../assets/icons/db-add.svg'
 import LineChart, { type ChartPoint } from '../../components/ui/LineChart'
-import { DAYS, DAY_X, overview, type ChartSeries } from '../../data/overview'
+import { DAYS, DAY_X, fromApi, zero, type ChartSeries } from '../../data/overview'
+import { useGetOverviewQuery } from '../../feature/overview/overviewApiSlice'
+import { useStore } from '../../feature/stores/useStore'
+import { toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { orderColumns } from './orderColumns'
 
@@ -113,7 +116,11 @@ function ChartCard({
 export default function DashboardOverview() {
   const navigate = useNavigate()
   const { account } = useAuth()
-  const data = overview
+  const { store } = useStore()
+  // The API's seven-day overview needs a LIVE store; until then, and while it answers 503 ("initializing"), the page shows zeros.
+  const overview = useGetOverviewQuery(undefined, { skip: !store || store.status !== 'LIVE', pollingInterval: 60_000 })
+  const data = overview.data ? fromApi(overview.data) : zero
+  const preparing = overview.error ? toApiError(overview.error).status === 503 : false
   const hasOrders = data.recentOrders.length > 0
 
   return (
@@ -121,9 +128,16 @@ export default function DashboardOverview() {
       <div className="px-[24px] pt-[36px] pb-[24px] max-md:px-[16px] max-md:pt-[24px]">
         {/* Header row: greeting + Add product CTA */}
         <div className="flex items-center justify-between max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
-          <p className="text-[#101604] text-[32px] leading-[40px] max-md:text-[24px] max-md:leading-[32px]" style={jakarta(700)}>
-            Welcome, {account?.firstName ?? ''}
-          </p>
+          <div className="flex flex-col gap-[4px]">
+            <p className="text-[#101604] text-[32px] leading-[40px] max-md:text-[24px] max-md:leading-[32px]" style={jakarta(700)}>
+              Welcome, {account?.firstName ?? ''}
+            </p>
+            {(preparing || overview.data?.stale) && (
+              <p className="text-[#807e7e] text-[13px] leading-[20px]" style={jakarta(400)} role="status">
+                {preparing ? 'Your figures are being prepared; they appear here once the first activity is counted.' : 'Figures are catching up with the latest activity.'}
+              </p>
+            )}
+          </div>
 
           <button
             type="button"

@@ -1,13 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useLazyResolveAccountQuery } from './banksApiSlice'
-import { namesMatch, titleCase } from '../../lib/bankMatch'
+import { titleCase } from '../../lib/bankMatch'
 import { toApiError } from '../../services/earthApi'
 
 export type AccountCheck =
   | { status: 'idle' }
   | { status: 'checking' }
-  | { status: 'matched'; accountName: string }
-  | { status: 'mismatch'; accountName: string }
+  | { status: 'matched'; accountName: string; bankCode: string }
   | { status: 'unavailable' }
   | { status: 'failed'; message: string }
 
@@ -16,29 +15,24 @@ interface CheckInput {
   bankName: string
   bankCode?: string
   accountNumber: string
-  /** The seller's name as they signed up; the account must be in it. */
-  holderName: string
 }
 
 /**
- * Asks the API (Paystack behind it) for the name on a bank account and whether it is the
- * signed-in seller's. The API's own verdict (`matchesIdentity`) decides; the local name
- * comparison only stands in if an older API answers without one. `unavailable` means the lookup
- * could not be reached (404, 501 or 503); the seller is told to try again, never to type the name.
+ * Asks the API (Paystack behind it) for the name on a bank account. The name is shown as the
+ * bank holds it and saved as is; the product decision (17 Oct) is that the account need not be
+ * in the seller's own name. `unavailable` means the lookup could not be reached (404, 501 or
+ * 503); the seller is told to try again, never to type the name.
  */
 export function useAccountCheck() {
   const [resolve] = useLazyResolveAccountQuery()
   const [check, setCheck] = useState<AccountCheck>({ status: 'idle' })
   const reset = useCallback(() => setCheck({ status: 'idle' }), [])
   const run = useCallback(
-    async ({ country, bankName, bankCode, accountNumber, holderName }: CheckInput) => {
+    async ({ country, bankName, bankCode, accountNumber }: CheckInput) => {
       setCheck({ status: 'checking' })
       try {
-        const { accountName, matchesIdentity } = await resolve({ country, bankName, bankCode, accountNumber }).unwrap()
-        const matched = typeof matchesIdentity === 'boolean' ? matchesIdentity : namesMatch(accountName, holderName)
-        const next: AccountCheck = matched
-          ? { status: 'matched', accountName: titleCase(accountName) }
-          : { status: 'mismatch', accountName: titleCase(accountName) }
+        const r = await resolve({ country, bankName, bankCode, accountNumber }).unwrap()
+        const next: AccountCheck = { status: 'matched', accountName: titleCase(r.accountName), bankCode: r.bankCode || bankCode || '' }
         setCheck(next)
         return next
       } catch (e) {
