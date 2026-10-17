@@ -14,7 +14,7 @@ import receiptIcon from '../../assets/icons/msg-receipt.svg'
 import paidIcon from '../../assets/icons/msg-paid-check.svg'
 import arrowRightIcon from '../../assets/icons/msg-arrow-right.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
-import { describeError, type Product } from '../../services/earthApi'
+import { describeError, toApiError, type Product } from '../../services/earthApi'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useLazyGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
@@ -143,13 +143,14 @@ export default function Messages() {
     setError('')
   }
 
-  async function deliver(body: Parameters<typeof send>[0]['body']) {
-    if (!activeId) return
+  async function deliver(body: Parameters<typeof send>[0]['body']): Promise<ChatMessage | null> {
+    if (!activeId) return null
     setError('')
     try {
-      await send({ chatId: activeId, body }).unwrap()
+      return await send({ chatId: activeId, body }).unwrap()
     } catch (e) {
       setError(describeError(e))
+      return null
     }
   }
 
@@ -164,20 +165,45 @@ export default function Messages() {
     void deliver({ kind: 'PRODUCT', productId: p.id })
   }
 
-  /** A photo or video goes to the API as private chat media, then a message carries it. */
+  /**
+   * A photo or video goes to the API as private chat media, then a message carries it. The API
+   * reads the bytes and takes JPEG, PNG, WebP (10 MB) and MP4 (50 MB); phones' HEIC photos and
+   * MOV videos are refused, and the message says so before anything is sent.
+   */
   async function sendMedia(file: File | undefined) {
     setAttachOpen(false)
     if (!file || !activeId) return
-    const video = file.type.startsWith('video/')
-    if (!/^image\/(jpeg|png|webp)$|^video\/mp4$/.test(file.type)) return setError('Use a JPG, PNG or WebP photo, or an MP4 video.')
-    if (file.size > (video ? MAX_MEDIA_BYTES.video : MAX_MEDIA_BYTES.image)) return setError(video ? 'Videos must be under 50 MB.' : 'Photos must be under 10 MB.')
+    // Some browsers leave `type` empty; the extension says what the file is then.
+    const ext = file.name.toLowerCase().split('.').pop() ?? ''
+    const kind = /^image\/(jpeg|jpg|png|webp)$/.test(file.type) || (!file.type && /^(jpe?g|png|webp)$/.test(ext)) ? 'image' : file.type === 'video/mp4' || (!file.type && ext === 'mp4') ? 'video' : null
+    if (!kind) {
+      const heic = /heic|heif/.test(file.type) || /^hei[cf]$/.test(ext)
+      const mov = /quicktime/.test(file.type) || ext === 'mov'
+      return setError(
+        heic
+          ? 'That photo is in HEIC, which Earth cannot read yet. On an iPhone, choose "Most compatible" under Settings › Camera › Formats, or send a screenshot of it.'
+          : mov
+            ? 'That video is a MOV file, which Earth cannot read yet. Export it as MP4 first.'
+            : 'Use a JPG, PNG or WebP photo, or an MP4 video.',
+      )
+    }
+    if (file.size > MAX_MEDIA_BYTES[kind]) return setError(kind === 'video' ? 'Videos must be under 50 MB.' : 'Photos must be under 10 MB.')
     setBusy(true)
     setError('')
     try {
       const { id } = await uploadImage({ file, purpose: 'CHAT_MEDIA', conversationId: activeId }).unwrap()
-      await deliver({ kind: 'MEDIA', uploadIds: [id] })
+      const sent = await deliver({ kind: 'MEDIA', uploadIds: [id] })
+      // The acknowledgement has no viewing link; reading the message back brings the signed one.
+      if (sent) poll({ chatId: activeId, afterSequence: String(Number(sent.sequence) - 1) })
     } catch (e) {
-      setError(describeError(e))
+      const problem = toApiError(e)
+      setError(
+        problem.status === 413
+          ? 'That file is too big for the chat. Photos up to 10 MB, videos up to 50 MB.'
+          : problem.status === 400 || problem.status === 422
+            ? 'Earth could not read that file. Use a JPG, PNG or WebP photo, or an MP4 video.'
+            : describeError(e),
+      )
     } finally {
       setBusy(false)
     }
@@ -460,7 +486,7 @@ export default function Messages() {
               </div>
 
               {error && (
-                <p role="alert" className="px-[20px] py-[8px] text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+                <p role="alert" className="mx-[20px] mb-[8px] rounded-[12px] bg-[#fff0f0] px-[16px] py-[10px] text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
                   {error}
                 </p>
               )}

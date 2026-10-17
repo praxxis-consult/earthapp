@@ -87,10 +87,17 @@ export type SendBody =
 
 const bySequence = (a: ChatMessage, b: ChatMessage) => Number(a.sequence) - Number(b.sequence)
 
-/** Adds messages to a history without duplicates (a poll and a send can both deliver one). */
+/**
+ * Adds messages to a history without duplicates; a message already there is replaced, because a
+ * read carries what a send acknowledgement does not (the signed media links).
+ */
 function merge(history: ChatHistory, incoming: ChatMessage[]) {
-  const seen = new Set(history.items.map((m) => m.id))
-  for (const m of incoming) if (!seen.has(m.id)) history.items.push(m)
+  const at = new Map(history.items.map((m, i) => [m.id, i]))
+  for (const m of incoming) {
+    const i = at.get(m.id)
+    if (i === undefined) history.items.push(m)
+    else history.items[i] = m
+  }
   history.items.sort(bySequence)
   history.lastSequence = history.items.length ? history.items[history.items.length - 1].sequence : history.lastSequence
 }
