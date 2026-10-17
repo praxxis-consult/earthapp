@@ -25,7 +25,12 @@ export const productsApiSlice = apiSlice.injectEndpoints({
     getProduct: builder.query<Product, string>({
       query: (id) => `/products/${encodeURIComponent(id)}`,
     }),
+    /** Archives a listing: it leaves the marketplace and the seller's list and cannot come back (204). */
+    deleteProduct: builder.mutation<void, string>({
+      query: (id) => ({ url: `/products/${encodeURIComponent(id)}`, method: 'DELETE' }),
+      invalidatesTags: ['MyProducts', 'Catalog'],
+    }),
   }),
 })
 
-export const { useSaveProductMutation, useGetMyProductsQuery, useLazyGetMyProductsQuery, useGetProductQuery } = productsApiSlice
+export const { useSaveProductMutation, useGetMyProductsQuery, useLazyGetMyProductsQuery, useGetProductQuery, useDeleteProductMutation } = productsApiSlice

@@ -1,6 +1,6 @@
 import { apiSlice } from '../../app/api/apiSlice'
 import { logOut, setAccount, setCredentials, type Credentials } from './authSlice'
-import type { Account, AccountType, OtpIntent } from '../../services/earthApi'
+import type { Account, AccountPatch, AccountType, NotificationPreferences, NotificationPreferencesPatch, OtpIntent } from '../../services/earthApi'
 
 export interface CreateAccountBody {
   accountType: AccountType
@@ -49,6 +49,40 @@ export const authApiSlice = apiSlice.injectEndpoints({
         }
       },
     }),
+    /** Edits the name or phone; the answer is the whole account, which replaces the cached one. */
+    updateMe: builder.mutation<Account, AccountPatch>({
+      query: (body) => ({ url: '/accounts/me', method: 'PATCH', body }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(setAccount(data))
+          dispatch(authApiSlice.util.upsertQueryData('getMe', undefined, data))
+        } catch {
+          /* the caller reports the failure */
+        }
+      },
+    }),
+    getNotificationPreferences: builder.query<NotificationPreferences, void>({
+      query: () => '/accounts/me/notification-preferences',
+      providesTags: ['Preferences'],
+    }),
+    /** One topic's channel at a time; the switch flips at once and flips back if the API refuses. */
+    updateNotificationPreferences: builder.mutation<NotificationPreferences, NotificationPreferencesPatch>({
+      query: (body) => ({ url: '/accounts/me/notification-preferences', method: 'PATCH', body }),
+      async onQueryStarted(patch, { dispatch, queryFulfilled }) {
+        const undo = dispatch(
+          authApiSlice.util.updateQueryData('getNotificationPreferences', undefined, (draft) => {
+            for (const topic of ['orderUpdates', 'chatMessages', 'marketing'] as const) Object.assign(draft[topic], patch[topic])
+          }),
+        )
+        try {
+          const { data } = await queryFulfilled
+          dispatch(authApiSlice.util.upsertQueryData('getNotificationPreferences', undefined, data))
+        } catch {
+          undo.undo()
+        }
+      },
+    }),
     logout: builder.mutation<null, void>({
       query: () => ({ url: '/auth/logout', method: 'POST', body: {} }),
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
@@ -70,5 +104,8 @@ export const {
   useConfirmAccountMutation,
   useLoginMutation,
   useLazyGetMeQuery,
+  useUpdateMeMutation,
+  useGetNotificationPreferencesQuery,
+  useUpdateNotificationPreferencesMutation,
   useLogoutMutation,
 } = authApiSlice

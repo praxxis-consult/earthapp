@@ -24,10 +24,29 @@ export interface Account {
   firstName: string
   lastName: string
   email: string
-  phoneNumber: string
+  phoneNumber: string | null
   status: 'CONFIRMED'
   confirmedAt: string
 }
+/** `PATCH /accounts/me`: the name and the optional phone; the email is the sign-in and stays. */
+export interface AccountPatch {
+  firstName?: string
+  lastName?: string
+  phoneNumber?: string | null
+}
+
+/* ---------- notification preferences ---------- */
+
+export interface NotificationChannels {
+  inApp: boolean
+  email: boolean
+}
+export type NotificationTopic = 'orderUpdates' | 'chatMessages' | 'marketing'
+/** The seller's choices per topic; security notices are always on and the API says so. */
+export interface NotificationPreferences extends Record<NotificationTopic, NotificationChannels> {
+  mandatory: { security: NotificationChannels }
+}
+export type NotificationPreferencesPatch = Partial<Record<NotificationTopic, Partial<NotificationChannels>>>
 
 /* ---------- stores & onboarding ---------- */
 
