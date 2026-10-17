@@ -278,7 +278,8 @@ vite.config.js          dev proxy for /v1
 | banks | `GET /banks?country` (501 where the API has no lookup for that country), `GET /banks/resolve?country&bankCode&bankName&accountNumber` (signed in; answers `matchesIdentity`, the API's own comparison with the holder's name) |
 | products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}`, `DELETE /products/{id}` |
 | uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE`, `PRODUCT_IMAGE`, or `CHAT_MEDIA` with `conversationId`) |
-| chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` |
+| chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` (Message seller) |
+| delivery | `POST /delivery/quotes` (the checkout's first step) |
 | notifications | `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/{id}/read` |
 | accounts | `PATCH /accounts/me`, `GET`/`PATCH /accounts/me/notification-preferences` |
 | marketplace | `GET /stores?page&limit` (every LIVE store; `country`, then `region`, narrow it), `GET /stores/{id}`, `GET /stores/{id}/products?page&limit`, `GET /products/{id}` |
@@ -294,7 +295,7 @@ vite.config.js          dev proxy for /v1
 | Seller onboarding, all four steps and go live | Live |
 | Products: list, add with photo uploads, edit, publish or draft, detail, delete | Live |
 | Account settings: store details, personal details, payout account, notification choices, cover photo | Live (description, opening hours and the cover photo are kept in the browser until the API has fields for them) |
-| Marketplace list, product page, order page | Live catalogue: every store, a country or a region; Place order opens the modal but cannot submit |
+| Marketplace list, product page, order page | Live catalogue: every store, a country or a region. Message seller opens the chat (sign-in first). Place order takes the delivery address and asks the carriers for quotes (`POST /delivery/quotes`); choosing a quote and paying wait for the API to document the quote and order answers, and the QA server's carriers do not answer yet |
 | Waitlist on the landing page | Live |
 | Dashboard shell: store name and area, seller name, share-store link | Live |
 | Messages: threads, text, product and photo messages, read position, unread badge | Live (polled; the API has no live channel yet) |

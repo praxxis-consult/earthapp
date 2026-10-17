@@ -13,11 +13,11 @@ import { useAuth } from '../../feature/authentication/useAuth'
 import { bankListHint, useGetBanksQuery } from '../../feature/banks/banksApiSlice'
 
 const labelClass = 'text-[#101604] text-[14px] leading-[24px]'
-const inputClass =
+export const inputClass =
   'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] text-[14px] leading-[24px] text-[#101604] outline-none border border-transparent focus:border-[#007c53] placeholder:text-[#807e7e]'
 
 /** Figma "store details" (639:24245): 648 wide, radius 20, padding 20, gap 16, title row with close-circle. */
-function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel }: {
+export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel }: {
   title: string
   onClose: () => void
   onSubmit: (e: FormEvent) => void
@@ -73,7 +73,7 @@ function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes',
   )
 }
 
-function Field({ label, htmlFor, children, hint }: { label: string; htmlFor?: string; children: ReactNode; hint?: string }) {
+export function Field({ label, htmlFor, children, hint }: { label: string; htmlFor?: string; children: ReactNode; hint?: string }) {
   return (
     <div className="flex flex-col gap-[8px]">
       <label htmlFor={htmlFor} className={labelClass} style={jakarta(500)}>
@@ -89,7 +89,7 @@ function Field({ label, htmlFor, children, hint }: { label: string; htmlFor?: st
   )
 }
 
-function Select({ id, value, options, onChange, placeholder }: { id: string; value: string; options: string[]; onChange: (v: string) => void; placeholder?: string }) {
+export function Select({ id, value, options, onChange, placeholder }: { id: string; value: string; options: string[]; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div className="relative">
       <select

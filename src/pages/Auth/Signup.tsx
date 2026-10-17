@@ -4,8 +4,7 @@ import AuthLayout from '../../components/layout/AuthLayout'
 import { BackButton } from '../../components/layout/OnboardingHeader'
 import FormDropdown from '../../components/ui/FormDropdown'
 import GradientButton from '../../components/ui/GradientButton'
-import LoginModal from '../../components/ui/LoginModal'
-import OtpModal from '../../components/ui/OtpModal'
+import SignInDialogs from '../../components/ui/SignInDialogs'
 import { MenuItem, MenuList } from '../../components/ui/SelectorMenu'
 import { useMenu } from '../../components/ui/useMenu'
 import farmImg from '../../assets/images/signup-farm.jpeg'
@@ -116,7 +115,6 @@ export default function Signup() {
   const [dial, setDial] = useState(DIAL_CODES[0])
   const [agreed, setAgreed] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
-  const [otpEmail, setOtpEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState('')
@@ -319,17 +317,7 @@ export default function Signup() {
         </div>
       </form>
 
-      {loginOpen && (
-        <LoginModal
-          initialEmail={email}
-          onClose={() => setLoginOpen(false)}
-          onProceed={(to) => {
-            setLoginOpen(false)
-            setOtpEmail(to)
-          }}
-        />
-      )}
-      {otpEmail && <OtpModal email={otpEmail} onClose={() => setOtpEmail('')} />}
+      <SignInDialogs open={loginOpen} initialEmail={email} onClose={() => setLoginOpen(false)} />
     </AuthLayout>
   )
 }

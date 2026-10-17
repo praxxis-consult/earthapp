@@ -1,6 +1,9 @@
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import CheckoutDialog from '../../components/ui/CheckoutDialog'
+import SignInDialogs from '../../components/ui/SignInDialogs'
+import { useStartChatMutation } from '../../feature/chats/chatsApiSlice'
+import { describeError } from '../../services/earthApi'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { addReview, summarise, timeAgo, useReviews } from '../../lib/reviews'
@@ -65,14 +68,39 @@ function Stars({ filled, size }: { filled: number; size: 20 | 16 }) {
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { account } = useAuth()
+  const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   // undefined while loading, null when the API has no such public listing
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const reviews = useReviews(id ?? '')
   const [tab, setTab] = useState<Tab>('details')
   const [more, setMore] = useState(false)
   const [qty, setQty] = useState<{ id: string; qty: number } | null>(null)
-  const [ordering, setOrdering] = useState(false)
+  // Messaging and ordering need an account: a visitor signs in first, then the action carries on.
+  const [wants, setWants] = useState<'message' | 'order' | null>(null)
+  const [actionError, setActionError] = useState('')
+  const signInOpen = wants !== null && !account
+  const ordering = wants === 'order' && Boolean(account)
+
+  // Signed in with a chat pending: open it (the mutation is the external work this effect waits on).
+  useEffect(() => {
+    if (account && wants === 'message') void messageSeller()
+  }, [account, wants]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Opens (or returns to) the buyer's thread with this store, about this listing. */
+  async function messageSeller() {
+    if (!product) return
+    if (!account) return setWants('message')
+    setActionError('')
+    try {
+      const thread = await startChat({ storeId: product.store.id, productId: product.id }).unwrap()
+      navigate(`/dashboard/messages?chat=${thread.id}`)
+    } catch (e) {
+      setWants(null)
+      setActionError(describeError(e))
+    }
+  }
   const [shown, setShown] = useState(3)
   const [draftRating, setDraftRating] = useState(0)
   const [draftText, setDraftText] = useState('')
@@ -240,16 +268,17 @@ export default function ProductDetail() {
             <div className="flex gap-[16px] max-sm:flex-col">
               <button
                 type="button"
-                title="Buyer messaging opens with the messaging API"
-                className="flex h-[48px] flex-1 max-sm:flex-none items-center justify-center gap-[8px] rounded-[30px] bg-[#f7f7f7] px-[24px] text-[#101604] text-[14px] leading-[18px]"
+                onClick={messageSeller}
+                disabled={openingChat}
+                className="flex h-[48px] flex-1 max-sm:flex-none items-center justify-center gap-[8px] rounded-[30px] bg-[#f7f7f7] px-[24px] text-[#101604] text-[14px] leading-[18px] disabled:opacity-60"
                 style={jakarta(500)}
               >
                 <img src={smsIcon} alt="" className="size-[20px]" />
-                Message seller
+                {openingChat ? 'Opening chat…' : 'Message seller'}
               </button>
               <button
                 type="button"
-                onClick={() => setOrdering(true)}
+                onClick={() => setWants('order')}
                 disabled={!inStock}
                 className="flex h-[48px] flex-1 max-sm:flex-none items-center justify-center gap-[8px] rounded-[30px] bg-[#007c53] px-[24px] text-white text-[14px] leading-[18px] disabled:opacity-60"
                 style={jakarta(500)}
@@ -258,6 +287,11 @@ export default function ProductDetail() {
                 <img src={arrowRight} alt="" className="size-[16px]" />
               </button>
             </div>
+            {actionError && (
+              <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+                {actionError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -457,7 +491,8 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {ordering && <PlaceOrderModal onClose={() => setOrdering(false)} />}
+      {ordering && <CheckoutDialog listing={product} quantity={quantity} onClose={() => setWants(null)} />}
+      <SignInDialogs open={signInOpen} onClose={() => setWants(null)} redirectTo={location.pathname} />
     </div>
   )
 }
