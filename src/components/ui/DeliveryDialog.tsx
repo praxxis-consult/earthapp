@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { Field, Select, Shell, inputClass } from './SettingsDialogs'
+import { Field, Shell, inputClass } from './SettingsDialogs'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useSaveShippingProfileMutation, type DeliveryAddress, type Parcel, type ShippingProfile } from '../../feature/delivery/deliveryApiSlice'
-import { regionsOf } from '../../data/locations'
 import { describeError, toApiError, type Onboarding } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
 
@@ -30,20 +29,20 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
   const { account } = useAuth()
   const [save, { isLoading: busy }] = useSaveShippingProfileMutation()
   const a = store.businessAddress
-  const [pickup, setPickup] = useState<DeliveryAddress>(
-    current?.profile.pickup ?? {
-      country: 'NG',
-      region: a.region,
-      area: a.area,
-      street: a.street,
-      landmark: a.landmark,
-      postalCode: '',
-      firstName: account?.firstName ?? '',
-      lastName: account?.lastName ?? '',
-      phone: account?.phoneNumber ?? '',
-      email: account?.email ?? '',
-    },
-  )
+  // The carriers quote from the listings' pickup address, which the API matches to this one letter
+  // for letter, so the address is the store's as saved and only the contact and postal code are typed.
+  const [pickup, setPickup] = useState<DeliveryAddress>({
+    country: 'NG',
+    region: a.region,
+    area: a.area,
+    street: a.street,
+    landmark: a.landmark,
+    postalCode: current?.profile.pickup.postalCode ?? '',
+    firstName: current?.profile.pickup.firstName ?? account?.firstName ?? '',
+    lastName: current?.profile.pickup.lastName ?? account?.lastName ?? '',
+    phone: current?.profile.pickup.phone ?? account?.phoneNumber ?? '',
+    email: current?.profile.pickup.email ?? account?.email ?? '',
+  })
   const p = current?.profile.parcel
   const [parcel, setParcel] = useState({
     lengthCm: p ? String(p.lengthCm) : '',
@@ -71,9 +70,6 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
     if (!pickup.lastName.trim()) problems.lastName = 'Enter the last name.'
     if (!/^\+[1-9]\d{7,14}$/.test(phone)) problems.phone = 'Enter the number with its country code, like +2348012345678.'
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(pickup.email.trim())) problems.email = 'Enter an email for pickup updates.'
-    if (!pickup.region) problems.region = 'Choose the state.'
-    if (!pickup.area.trim()) problems.area = 'Enter the town or district.'
-    if (!pickup.street.trim()) problems.street = 'Enter the street address.'
     if (!/^\d{6}$/.test(pickup.postalCode.trim())) problems.postalCode = 'Nigerian postal codes are six digits, like 100001.'
     const dims: (keyof typeof parcel)[] = ['lengthCm', 'widthCm', 'heightCm', 'emptyWeightGrams', 'maxWeightKg']
     for (const k of dims) if (!(Number(parcel[k]) > 0)) problems[k] = 'Enter a number above zero.'
@@ -144,22 +140,11 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
         Where the carrier collects
       </p>
       <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="State" htmlFor="dl-region">
-          <Select id="dl-region" value={pickup.region} options={regionsOf('NG')} onChange={(v) => set({ region: v })} placeholder="Select state" />
-          {fieldError('region')}
-        </Field>
-        <Field label="Area" htmlFor="dl-area">
-          <input id="dl-area" value={pickup.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} className={inputClass} style={jakarta(400)} />
-          {fieldError('area')}
-        </Field>
-      </div>
-      <Field label="Street address" htmlFor="dl-street">
-        <input id="dl-street" value={pickup.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} className={inputClass} style={jakarta(400)} />
-        {fieldError('street')}
-      </Field>
-      <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="Landmark" htmlFor="dl-landmark" hint="Optional">
-          <input id="dl-landmark" value={pickup.landmark} maxLength={240} onChange={(e) => set({ landmark: e.target.value })} className={inputClass} style={jakarta(400)} />
+        <Field label="Store address" hint="Your store address, as the listings carry it. Change it under Edit store details.">
+          <p className="min-h-[48px] rounded-[30px] bg-[#f7f7f7] px-[16px] py-[12px] text-[#101604] text-[14px] leading-[24px]" style={jakarta(400)}>
+            {a.street}, {a.area}, {a.region}
+            {a.landmark ? ` · ${a.landmark}` : ''}
+          </p>
         </Field>
         <Field label="Postal code" htmlFor="dl-postal">
           <input id="dl-postal" value={pickup.postalCode} maxLength={6} inputMode="numeric" onChange={(e) => set({ postalCode: e.target.value.replace(/\D/g, '') })} placeholder="100001" className={inputClass} style={jakarta(400)} />

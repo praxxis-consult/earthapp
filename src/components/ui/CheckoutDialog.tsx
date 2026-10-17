@@ -97,7 +97,10 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           ? 'This seller has not set up delivery yet, so no carrier can quote the order. Message them to arrange it.'
           : problem.status === 503
             ? 'The carriers are not answering right now. Try again in a moment.'
-            : describeError(err),
+            : problem.status === 409 && problem.code === 'shipping-conflict'
+              ? // The seller's delivery setup does not cover this basket (too heavy, their own goods, or an address that does not match); the API says which.
+                `${problem.detail || problem.title} Message the seller to sort it out.`
+              : describeError(err),
       )
     }
   }
