@@ -276,8 +276,11 @@ vite.config.js          dev proxy for /v1
 | authentication | `POST /accounts`, `POST /auth/otp/request`, `POST /auth/otp/resend`, `POST /auth/otp/verify` (intent `ACCOUNT_CONFIRMATION` or `LOGIN`), `GET /accounts/me`, `POST /auth/refresh`, `POST /auth/logout` |
 | stores | `GET /stores/me/onboarding`, `POST /stores/me/onboarding` (draft or live, with `expectedVersion`), `GET /store-categories?page&limit` |
 | banks | `GET /banks?country` (501 where the API has no lookup for that country), `GET /banks/resolve?country&bankCode&bankName&accountNumber` (signed in; answers `matchesIdentity`, the API's own comparison with the holder's name) |
-| products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}` |
-| uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE` or `PRODUCT_IMAGE`) |
+| products | `POST /products` (create and update, with `expectedVersion`), `GET /products/me?page&limit&status`, `GET /products/{id}`, `DELETE /products/{id}` |
+| uploads | `POST /uploads` (multipart `file` and `purpose`: `SELFIE`, `PRODUCT_IMAGE`, or `CHAT_MEDIA` with `conversationId`) |
+| chats | `GET /chats`, `GET /chats/{id}/messages` (and `?afterSequence=` to catch up), `POST /chats/{id}/messages` (TEXT, PRODUCT, MEDIA with a `clientMessageId`), `POST /chats/{id}/read`, `POST /chats` |
+| notifications | `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/{id}/read` |
+| accounts | `PATCH /accounts/me`, `GET`/`PATCH /accounts/me/notification-preferences` |
 | marketplace | `GET /stores?page&limit` (every LIVE store; `country`, then `region`, narrow it), `GET /stores/{id}`, `GET /stores/{id}/products?page&limit`, `GET /products/{id}` |
 | waitlist | `POST /waitlist/entries` (with an `Idempotency-Key`), `POST /waitlist/verification`, `POST /waitlist/verification/claim`, `GET /waitlist/me` (with `x-place-token`) |
 
@@ -289,12 +292,13 @@ vite.config.js          dev proxy for /v1
 | --- | --- |
 | Sign up, confirmation, sign in, session restore, log out | Live |
 | Seller onboarding, all four steps and go live | Live |
-| Products: list, add with photo uploads, edit, publish or draft, detail | Live (no delete endpoint; Delete is present but inert with a note) |
-| Account settings: store details, payout account, cover photo | Live (personal details, description, hours and notifications are kept in the browser until the API has fields for them) |
+| Products: list, add with photo uploads, edit, publish or draft, detail, delete | Live |
+| Account settings: store details, personal details, payout account, notification choices, cover photo | Live (description, opening hours and the cover photo are kept in the browser until the API has fields for them) |
 | Marketplace list, product page, order page | Live catalogue: every store, a country or a region; Place order opens the modal but cannot submit |
 | Waitlist on the landing page | Live |
 | Dashboard shell: store name and area, seller name, share-store link | Live |
-| Overview numbers and charts, orders, messages, payouts | Zero state |
+| Messages: threads, text, product and photo messages, read position, unread badge | Live (polled; the API has no live channel yet) |
+| Overview numbers and charts, orders, payouts | Zero state |
 | Referrals | Local placeholder |
 | Reviews on the product page | Kept on the buyer's device |
 
@@ -315,13 +319,13 @@ Checked against the API's `/v1/docs-json`, which lists 24 paths today. These are
 
 ## Sample data
 
-The zero-state pages can be viewed with sample rows while developing, so their populated layouts (tables, status badges, chat bubbles, payout rows) can be checked against the frames.
+The zero-state pages can be viewed with sample rows while developing, so their populated layouts (tables, status badges, payout rows) can be checked against the frames.
 
 - **Switch on**: open any dashboard URL with `?sample=1`, for example `http://localhost:5173/dashboard/orders?sample=1`. The samples stay on while you click around in that tab.
 - **Switch off**: open any dashboard URL with `?sample=0`. Closing the tab also switches it off, because the choice is kept in the tab's session only.
 - **Production** never includes the samples: the switch is compiled out and the sample modules are not bundled.
 
-The samples live beside their data modules (`src/data/orders.sample.ts`, `messages.sample.ts`, `payouts.sample.ts`) and are selected by `src/data/sample.ts`. They cover every status and message kind the pages know, which is how the order-detail flows and the chat bubbles are exercised locally.
+The samples live beside their data modules (`src/data/orders.sample.ts`, `payouts.sample.ts`, `referrals.sample.ts`) and are selected by `src/data/sample.ts`. They cover every order status the pages know, which is how the order-detail flows are exercised locally.
 
 ## Design and responsive rules
 

@@ -17,13 +17,13 @@ import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
-import { unreadChats } from '../../data/messages'
+import { useUnreadChats } from '../../feature/chats/useUnreadChats'
 
 const NAV_ITEMS = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
   { label: 'Products',         icon: productsIcon,  href: '/dashboard/products' },
   { label: 'Orders',           icon: ordersIcon,    href: '/dashboard/orders' },
-  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: unreadChats || undefined },
+  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' as const },
   { label: 'Payout',           icon: payoutIcon,    href: '/dashboard/payout' },
   { label: 'Referrals',        icon: referralsIcon, href: '/dashboard/referrals' },
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
@@ -38,6 +38,8 @@ interface DashboardSidebarProps {
 export default function DashboardSidebar({ inDrawer = false, onClose }: DashboardSidebarProps) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
+  // The Messages badge: threads with unread messages, kept fresh while the dashboard is open.
+  const unreadChats = useUnreadChats()
   const { store } = useStore()
   const [copied, setCopied] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
@@ -129,7 +131,9 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
 
       {/* Nav items */}
       <nav className="flex flex-col gap-[12px] px-[16px] flex-1">
-        {NAV_ITEMS.map(({ label, icon, href, badge }) => (
+        {NAV_ITEMS.map(({ label, icon, href, badge: badgeKey }) => {
+          const badge = badgeKey === 'unreadChats' && unreadChats > 0 ? unreadChats : undefined
+          return (
           <NavLink
             key={href}
             to={href}
@@ -162,7 +166,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
               </>
             )}
           </NavLink>
-        ))}
+          )
+        })}
       </nav>
 
       {/* Share my store banner */}

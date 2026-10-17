@@ -1,6 +1,6 @@
 /**
- * Development-only switch for the sample rows (orders, chats) while the API has no endpoints
- * for them: open any dashboard URL with `?sample=1` to see them, `?sample=0` to go back. The
+ * Development-only switch for the sample rows (orders, payouts, referrals) while the API has no
+ * endpoints for them: open any dashboard URL with `?sample=1` to see them, `?sample=0` to go back. The
  * choice lasts for the browser tab. Production builds always return false.
  */
 export function sampleMode(): boolean {
