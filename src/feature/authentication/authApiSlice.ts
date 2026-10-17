@@ -7,7 +7,8 @@ export interface CreateAccountBody {
   firstName: string
   lastName: string
   email: string
-  phoneNumber: string
+  /** Optional on the API and in the design; null when the field is left empty. */
+  phoneNumber: string | null
   termsConsent: true
 }
 
