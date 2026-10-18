@@ -33,8 +33,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'notifications', label: 'Notifications' },
 ]
 
-/** The cover photo has no API field yet and lives in the browser. */
-const LOCAL_KEY = 'earth.settings'
+/** The cover photo has no API field yet and lives in the browser, under the account's own key so another sign-in never sees it. */
+const localKey = (accountId: string) => `earth.settings.${accountId}`
 interface Local {
   cover: string
   /** When the payout account last changed; a second change inside 48 hours is held (689:8948). */
@@ -65,9 +65,9 @@ const CHANNELS = [
   { key: 'email', label: 'Email' },
   { key: 'inApp', label: 'In-app' },
 ] as const
-const readLocal = (): Local => {
+const readLocal = (accountId: string): Local => {
   try {
-    return { ...DEFAULT_LOCAL, ...(JSON.parse(localStorage.getItem(LOCAL_KEY) ?? 'null') ?? {}) }
+    return { ...DEFAULT_LOCAL, ...(JSON.parse(localStorage.getItem(localKey(accountId)) ?? 'null') ?? {}) }
   } catch {
     return DEFAULT_LOCAL
   }
@@ -138,7 +138,7 @@ export default function Settings() {
   const [uploadImage] = useUploadImageMutation()
   const prefs = useGetNotificationPreferencesQuery(undefined, { skip: tab !== 'notifications' })
   const [updatePrefs] = useUpdateNotificationPreferencesMutation()
-  const [local, setLocal] = useState<Local>(readLocal)
+  const [local, setLocal] = useState<Local>(() => readLocal(account?.id ?? ''))
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | 'delete' | null>(null)
   const [deleteMe, { isLoading: deleting }] = useDeleteMeMutation()
@@ -152,7 +152,7 @@ export default function Settings() {
     setLocal((l) => {
       const next = { ...l, ...patch }
       try {
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(next))
+        localStorage.setItem(localKey(account?.id ?? ''), JSON.stringify(next))
       } catch {
         /* storage blocked */
       }

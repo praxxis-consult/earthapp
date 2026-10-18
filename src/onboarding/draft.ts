@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { stores, type Address, type IdentityType, type Onboarding, type OnboardingDraft } from '../services/earthApi'
+import { store } from '../app/store'
 
 /**
  * The seller's onboarding answers, kept in the browser between steps and saved to the API as a
@@ -59,14 +60,25 @@ function write(next: Draft) {
   listeners.forEach((l) => l())
 }
 
-export function updateDraft(patch: Partial<Draft>) {
-  write({ ...draft, ...patch })
+/** A function patch reads the draft as it is now, so quick successive picks never overwrite each other. */
+export function updateDraft(patch: Partial<Draft> | ((current: Draft) => Partial<Draft>)) {
+  write({ ...draft, ...(typeof patch === 'function' ? patch(draft) : patch) })
 }
 
 export function clearDraft() {
   write(EMPTY)
   synced = false
 }
+
+// Signing out, or in as someone else, drops the draft: the next account syncs its own from the API.
+let draftAccount = store.getState().auth.account?.id ?? null
+store.subscribe(() => {
+  const id = store.getState().auth.account?.id ?? null
+  if (id === draftAccount) return
+  const switched = draftAccount !== null
+  draftAccount = id
+  if (switched) clearDraft()
+})
 
 /** What the API already holds wins over stale local answers; local keeps what the API has no field for. */
 function merge(local: Draft, remote: Onboarding): Draft {
@@ -94,7 +106,11 @@ export function syncDraft(): Promise<void> {
     syncing = stores
       .onboarding()
       .then((remote) => {
-        if (remote) write(merge(draft, remote))
+        // The API answers for the signed-in account. A local draft that names a store the API
+        // does not confirm was left by another account in this browser, so it starts afresh.
+        const foreign = Boolean(draft.storeId) && draft.storeId !== (remote?.id ?? '')
+        const base = foreign ? EMPTY : draft
+        write(remote ? merge(base, remote) : base)
         synced = true
       })
       .catch(() => {
@@ -163,7 +179,7 @@ export function useDraft() {
   useEffect(() => {
     syncDraft()
   }, [])
-  const update = useCallback((patch: Partial<Draft>) => updateDraft(patch), [])
+  const update = useCallback((patch: Partial<Draft> | ((current: Draft) => Partial<Draft>)) => updateDraft(patch), [])
   return [d, update] as const
 }
 

@@ -80,6 +80,8 @@ export function describeError(e: unknown, fallback = 'Something went wrong. Plea
   if (err.status === 403) return 'Your account cannot do that yet.'
   if (err.status === 413) return 'That is too large to send.'
   if (err.status === 0 && err.title === 'Network error') return 'We could not reach Earth. Check your connection and try again.'
+  // The API names the dependency it could not reach (`banks/unavailable`, `shipping/unavailable`); say so, not just "trouble".
+  if (err.status === 503 && err.type.includes('/banks/')) return 'Bank verification is briefly unavailable, so your bank account could not be confirmed. Your details are kept; try again in a little while.'
   if (err.status >= 500) return 'Earth is having trouble right now. Please try again shortly.'
   return err.detail || err.title || fallback
 }

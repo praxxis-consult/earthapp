@@ -24,21 +24,18 @@ export default function FormMultiDropdown({ label, values, placeholder, options,
       <div className="relative w-full">
         <SelectTrigger id={id} value={values.join(', ')} placeholder={placeholder} open={open} onToggle={() => setOpen((o) => !o)} />
         {open && (
-          <MenuList className="absolute left-0 top-[52px] z-30" hint={`Select up to ${max === 3 ? 'three' : max} categories`}>
+          <MenuList
+            className="absolute left-0 top-[52px] z-30"
+            hint={
+              values.length >= max
+                ? `That is the most you can pick (${max === 3 ? 'three' : max}). Unpick one to choose another.`
+                : `Select up to ${max === 3 ? 'three' : max} categories`
+            }
+          >
             {options.map((opt) => {
               const on = values.includes(opt)
               const full = !on && values.length >= max
-              return (
-                <MenuItem
-                  key={opt}
-                  label={opt}
-                  selected={on}
-                  checkbox
-                  onSelect={() => {
-                    if (!full) onToggle(opt)
-                  }}
-                />
-              )
+              return <MenuItem key={opt} label={opt} selected={on} checkbox disabled={full} onSelect={() => onToggle(opt)} />
             })}
           </MenuList>
         )}

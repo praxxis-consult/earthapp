@@ -265,7 +265,8 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
     }
     setBusy(status === 'DRAFT' ? 'draft' : 'publish')
     try {
-      // "Available for sale" off keeps a published listing out of the marketplace: it is saved as a draft.
+      // The toggle decides the status, new or edited: off keeps the listing a draft, on asks the API to
+      // publish, and a store that is not LIVE gets the API's 403 back instead of a silent draft.
       const effective = status === 'PUBLISHED' && !form.availableForSale ? 'DRAFT' : status
       const saved = await saveProduct(toInput(effective)).unwrap()
       if (effective === 'PUBLISHED') {
@@ -367,7 +368,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
             )}
             <button
               type="button"
-              onClick={() => save(editing ? (original?.status ?? 'DRAFT') : 'PUBLISHED')}
+              onClick={() => save('PUBLISHED')}
               disabled={busy !== ''}
               className="flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-[168px] disabled:opacity-60 max-md:w-auto max-md:flex-1 max-md:px-[16px]"
               style={{ backgroundImage: CTA_BG }}
@@ -888,7 +889,7 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
             {/* Action buttons */}
             <button
               type="button"
-              onClick={() => save(editing ? (original?.status ?? 'DRAFT') : 'PUBLISHED')}
+              onClick={() => save('PUBLISHED')}
               disabled={busy !== ''}
               className="flex h-[48px] items-center justify-center px-[24px] rounded-[30px] w-full disabled:opacity-60"
               style={{ backgroundImage: CTA_BG }}
