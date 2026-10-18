@@ -1,14 +1,18 @@
 import { useCallback } from 'react'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { selectAuthStatus } from '../authentication/authSlice'
+import { selectAccount, selectAuthStatus } from '../authentication/authSlice'
+import { canSell } from '../authentication/role'
 import { storesApiSlice, useGetOnboardingQuery } from './storesApiSlice'
 import type { Onboarding } from '../../services/earthApi'
 
 /** The signed-in seller's store, cached once for the whole app. */
 export function useStore() {
   const status = useAppSelector(selectAuthStatus)
+  const account = useAppSelector(selectAccount)
   const dispatch = useAppDispatch()
-  const query = useGetOnboardingQuery(undefined, { skip: status !== 'authenticated' })
+  // A buying account has no store and the API refuses the call (403), so it is never made.
+  const seller = status === 'authenticated' && canSell(account)
+  const query = useGetOnboardingQuery(undefined, { skip: !seller })
 
   /** Replace the cached store after a save, so the sidebar and settings agree. */
   const setStore = useCallback(
@@ -24,7 +28,7 @@ export function useStore() {
 
   return {
     store: query.data ?? null,
-    loading: status === 'loading' || (status === 'authenticated' && query.isLoading),
+    loading: status === 'loading' || (seller && query.isLoading),
     setStore,
     refresh,
   }

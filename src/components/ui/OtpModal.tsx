@@ -8,17 +8,18 @@ import { describeError } from '../../services/earthApi'
 import { useResendOtpMutation } from '../../feature/authentication/authApiSlice'
 import { useLazyGetOnboardingQuery } from '../../feature/stores/storesApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
+import { landingFor } from '../../feature/authentication/role'
 import { jakarta } from '../../utils/styles'
 
 interface OtpModalProps {
   /** The address the LOGIN code went to. */
   email: string
   onClose: () => void
-  /** Where to go once signed in; otherwise the dashboard, or onboarding when the store is not live. */
+  /** Where to go once signed in; otherwise the dashboard, or a seller's onboarding when the store is not live. */
   redirectTo?: string
 }
 
-/** Figma "auth log in" (390:2921): signs in with the emailed LOGIN code, then routes by store state. */
+/** Figma "auth log in" (390:2921): signs in with the emailed LOGIN code, then routes by account type and store state. */
 export default function OtpModal({ email, onClose, redirectTo }: OtpModalProps) {
   const navigate = useNavigate()
   const { signIn } = useAuth()
@@ -57,13 +58,9 @@ export default function OtpModal({ email, onClose, redirectTo }: OtpModalProps) 
     setBusy(true)
     setError('')
     try {
-      await signIn(email, otp)
-      // A seller whose store is not live yet picks up where onboarding stopped.
-      let to = redirectTo ?? '/dashboard'
-      if (!redirectTo) {
-        const onboarding = await loadOnboarding().unwrap().catch(() => null)
-        if (!onboarding || onboarding.status === 'DRAFT') to = '/onboarding/store'
-      }
+      const account = await signIn(email, otp)
+      // A buyer goes to their dashboard; a seller whose store is not live yet picks up where onboarding stopped.
+      const to = await landingFor(account, async () => (await loadOnboarding().unwrap())?.status ?? null, redirectTo)
       onClose()
       navigate(to, { replace: true })
     } catch (err) {

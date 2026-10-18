@@ -8,19 +8,22 @@ import OtpField from '../../components/ui/OtpField'
 import { useCountdown } from '../../components/ui/useCountdown'
 import OtpModal from '../../components/ui/OtpModal'
 import otpBg from '../../assets/images/signup-otp-bg.png'
-import { describeError } from '../../services/earthApi'
+import { describeError, type AccountType } from '../../services/earthApi'
 import { useConfirmAccountMutation, useRequestOtpMutation, useResendOtpMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
 /**
  * Figma "create acc auth" (394:3195). Confirms a new account with the ACCOUNT_CONFIRMATION code.
- * The API does not sign the person in on confirmation, so "Setup store" requests a LOGIN code and
- * shows the sign-in code step before onboarding opens.
+ * The API does not sign the person in on confirmation, so the modal's button requests a LOGIN
+ * code and shows the sign-in code step before onboarding (a seller) or the dashboard (a buyer) opens.
  */
 export default function SignupOtp() {
   const navigate = useNavigate()
   const location = useLocation()
-  const email = (location.state as { email?: string } | null)?.email ?? ''
+  const state = location.state as { email?: string; accountType?: AccountType } | null
+  const email = state?.email ?? ''
+  // A buying account has no store to set up: it goes straight to its dashboard.
+  const seller = state?.accountType !== 'BUYING'
 
   const [otp, setOtp] = useState('')
   const [busy, setBusy] = useState(false)
@@ -88,8 +91,8 @@ export default function SignupOtp() {
 
   return (
     <>
-      {showAccountCreated && <AccountCreatedModal onSetupStore={setupStore} onClose={() => setShowAccountCreated(false)} />}
-      {loginOtpOpen && <OtpModal email={email} redirectTo="/onboarding/store" onClose={() => setLoginOtpOpen(false)} />}
+      {showAccountCreated && <AccountCreatedModal seller={seller} onContinue={setupStore} onClose={() => setShowAccountCreated(false)} />}
+      {loginOtpOpen && <OtpModal email={email} redirectTo={seller ? '/onboarding/store' : '/dashboard'} onClose={() => setLoginOtpOpen(false)} />}
       <AuthLayout images={[{ src: otpBg, className: 'object-top' }]}>
         <form onSubmit={submit} noValidate>
           <div className="flex flex-col gap-[24px] items-start">

@@ -36,11 +36,11 @@ export type SaveOnboardingBody =
 /** The seller's own store (onboarding profile) and the selling categories. */
 export const storesApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    /** null when the account has no store yet (the API answers 404). */
+    /** null when the account has no store yet (404), or cannot have one (403: a buying account). */
     getOnboarding: builder.query<Onboarding | null, void>({
       async queryFn(_, __, ___, baseQuery) {
         const res = await baseQuery('/stores/me/onboarding')
-        if (res.error) return res.error.status === 404 ? { data: null } : { error: res.error }
+        if (res.error) return res.error.status === 404 || res.error.status === 403 ? { data: null } : { error: res.error }
         return { data: res.data as Onboarding }
       },
       providesTags: ['Onboarding'],

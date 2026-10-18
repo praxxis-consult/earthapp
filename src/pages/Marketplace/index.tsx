@@ -26,11 +26,12 @@ const sortOptions = ['Most recent', 'Price: Low to High', 'Price: High to Low']
  */
 export default function Marketplace() {
   const [activeCategory, setActiveCategory] = useState(ALL)
-  const [search, setSearch] = useState('')
+  // "Share my store" links land here with ?store=<id>: one store's listings, its place in the picker;
+  // the dashboard's search box lands with ?q=<text>, which starts the search field off.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   // The catalogue narrows by country and region, so the picker is Global, a country, or a region of it.
   const [place, setPlace] = useState<Place>(EVERYWHERE)
-  // "Share my store" links land here with ?store=<id>: one store's listings, its place in the picker.
-  const [searchParams, setSearchParams] = useSearchParams()
   const storeId = searchParams.get('store') ?? ''
   const catalogListing = useListCatalogQuery(place, { skip: Boolean(storeId) })
   const storeListing = useListStoreQuery(storeId, { skip: !storeId })

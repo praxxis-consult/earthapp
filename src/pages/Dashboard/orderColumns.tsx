@@ -13,14 +13,16 @@ interface OrderColumnOptions {
   quantityAlign?: 'left' | 'center'
   /** The overview's recent-orders table has no status column. */
   status?: boolean
+  /** Whose table it is: the seller's shows the buyer, the buyer's shows the store it bought from. */
+  party?: 'buyer' | 'seller'
 }
 
 /**
  * The columns the dashboard's order tables share: order id with the placed time beneath it,
- * buyer, item with its 40px thumbnail, quantity, price (left-aligned, as every price in the
+ * the other party (buyer or seller), item with its 40px thumbnail, quantity, price (left-aligned, as every price in the
  * frames), delivery method (centred) and, where the frame has it, the status badge.
  */
-export function orderColumns({ widths, quantityAlign = 'center', status = true }: OrderColumnOptions): DataColumn<Order>[] {
+export function orderColumns({ widths, quantityAlign = 'center', status = true, party = 'buyer' }: OrderColumnOptions): DataColumn<Order>[] {
   const columns: DataColumn<Order>[] = [
     {
       key: 'order',
@@ -39,12 +41,12 @@ export function orderColumns({ widths, quantityAlign = 'center', status = true }
       ),
     },
     {
-      key: 'buyer',
-      header: 'Buyer',
+      key: party,
+      header: party === 'buyer' ? 'Buyer' : 'Seller',
       width: widths.buyer,
       cell: (o) => (
-        <p className={CELL} style={jakarta(400)}>
-          {o.buyer.name}
+        <p className={`${CELL} truncate`} style={jakarta(400)}>
+          {party === 'buyer' ? o.buyer.name : o.item.soldBy}
         </p>
       ),
     },

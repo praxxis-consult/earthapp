@@ -146,7 +146,7 @@ export default function Signup() {
         phoneNumber: digits ? `${dial.code}${digits.replace(/^0+/, '')}` : null,
         termsConsent: true,
       }).unwrap()
-      navigate('/signup/verify', { state: { email: email.trim().toLowerCase() } })
+      navigate('/signup/verify', { state: { email: email.trim().toLowerCase(), accountType: ACCOUNT_TYPE_API[accountType] } })
     } catch (err) {
       const e = toApiError(err)
       if (e.status === 400 && e.errors.length) {
