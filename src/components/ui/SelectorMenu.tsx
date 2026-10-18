@@ -46,12 +46,15 @@ export function MenuItem({
   label,
   selected,
   checkbox,
+  disabled,
   onSelect,
 }: {
   label: string
   selected: boolean
   /** Show the design's checkbox (multi-select lists). */
   checkbox?: boolean
+  /** Shown but not pickable (a multi-select at its cap); the list's hint says why. */
+  disabled?: boolean
   onSelect: () => void
 }) {
   return (
@@ -59,8 +62,9 @@ export function MenuItem({
       type="button"
       role="option"
       aria-selected={selected}
-      onClick={onSelect}
-      className="flex h-[52px] w-full items-center gap-[8px] px-[16px] text-left hover:bg-[#f7f7f7]"
+      aria-disabled={disabled || undefined}
+      onClick={disabled ? undefined : onSelect}
+      className={`flex h-[52px] w-full items-center gap-[8px] px-[16px] text-left ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#f7f7f7]'}`}
     >
       {checkbox && <img src={selected ? checkboxOn : checkboxOff} alt="" className="size-[20px] shrink-0" />}
       <span

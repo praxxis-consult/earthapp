@@ -23,10 +23,9 @@ export default function StoreName() {
   function toggleCategory(name: string) {
     const cat = categories.find((c) => c.name === name)
     if (!cat) return
-    const ids = draft.categoryIds.includes(cat.id)
-      ? draft.categoryIds.filter((id) => id !== cat.id)
-      : [...draft.categoryIds, cat.id]
-    update({ categoryIds: ids })
+    update((d) => ({
+      categoryIds: d.categoryIds.includes(cat.id) ? d.categoryIds.filter((id) => id !== cat.id) : [...d.categoryIds, cat.id],
+    }))
   }
 
   async function proceed() {
