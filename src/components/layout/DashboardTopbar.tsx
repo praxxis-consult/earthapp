@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
+import { canSell } from '../../feature/authentication/role'
 import { useGetUnreadCountQuery, useListNotificationsQuery, useMarkNotificationReadMutation, type Notification } from '../../feature/notifications/notificationsApiSlice'
 import { initials } from '../../data/orders'
 import { useMenu } from '../ui/useMenu'
@@ -18,13 +19,16 @@ interface DashboardTopbarProps {
 /** How often the bell asks for its unread count while the dashboard is open. */
 const COUNT_POLL_MS = 30_000
 
-/** What a notification reads as, and where it leads, from its category and the thing it is about. */
-function describe(n: Notification): { title: string; body: string; to: string | null } {
+/**
+ * What a notification reads as, and where it leads, from its category and the thing it is
+ * about. A buyer's order opens on their purchases page; a seller's on the orders page.
+ */
+function describe(n: Notification, seller: boolean): { title: string; body: string; to: string | null } {
   switch (n.category) {
     case 'chatMessages':
-      return { title: 'New message', body: 'A buyer wrote to you. Open the chat to reply.', to: `/dashboard/messages?chat=${n.resourceId}` }
+      return { title: 'New message', body: `${seller ? 'A buyer' : 'A seller'} wrote to you. Open the chat to reply.`, to: `/dashboard/messages?chat=${n.resourceId}` }
     case 'orderUpdates':
-      return { title: 'Order update', body: 'One of your orders moved on.', to: `/dashboard/orders/${n.resourceId}` }
+      return { title: 'Order update', body: 'One of your orders moved on.', to: `${seller ? '/dashboard/orders' : '/dashboard/purchases'}/${n.resourceId}` }
     case 'security':
       return { title: 'Security notice', body: 'Something changed on your account.', to: '/dashboard/settings' }
     default:
@@ -42,6 +46,7 @@ function ago(iso: string): string {
 
 export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
   const { account } = useAuth()
+  const seller = canSell(account)
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const name = account ? `${account.firstName} ${account.lastName}` : ''
@@ -53,7 +58,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
   function openNotification(n: Notification) {
     if (!n.readAt) markRead(n.id)
     setOpen(false)
-    const { to } = describe(n)
+    const { to } = describe(n, seller)
     if (to) navigate(to)
   }
 
@@ -77,7 +82,9 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
         onSubmit={(e) => {
           e.preventDefault()
           const q = query.trim()
-          navigate(q ? `/dashboard/products?q=${encodeURIComponent(q)}` : '/dashboard/products')
+          // A seller searches their own products; a buyer searches the marketplace.
+          const base = seller ? '/dashboard/products' : '/marketplace'
+          navigate(q ? `${base}?q=${encodeURIComponent(q)}` : base)
         }}
         className="bg-[#f7f7f7] flex gap-[8px] items-center h-[48px] px-[16px] rounded-[30px] w-[400px] max-lg:w-auto max-lg:flex-1 max-lg:min-w-0 max-lg:h-[44px]"
       >
@@ -88,8 +95,8 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search orders and products ..."
-          aria-label="Search orders and products"
+          placeholder={seller ? 'Search orders and products ...' : 'Search the marketplace ...'}
+          aria-label={seller ? 'Search orders and products' : 'Search the marketplace'}
           className="flex-1 min-w-0 bg-transparent text-[#101604] text-[13px] outline-none placeholder:text-[#807e7e]"
           style={jakarta(400)}
         />
@@ -135,7 +142,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
               ) : (
                 <ul className="max-h-[360px] overflow-y-auto">
                   {(inbox.data ?? []).map((n) => {
-                    const d = describe(n)
+                    const d = describe(n, seller)
                     return (
                       <li key={n.id}>
                         <button
@@ -189,7 +196,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
               </div>
             </div>
             <p className="text-[#807e7e] text-[11px] whitespace-nowrap" style={jakarta(500)}>
-              Store owner
+              {seller ? 'Store owner' : 'Buyer'}
             </p>
           </div>
 

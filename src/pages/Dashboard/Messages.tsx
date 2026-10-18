@@ -18,6 +18,7 @@ import { describeError, toApiError, type Product } from '../../services/earthApi
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useLazyGetMyProductsQuery } from '../../feature/products/productsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
+import { canSell } from '../../feature/authentication/role'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import {
   previewOf,
@@ -79,6 +80,7 @@ export default function Messages() {
   const navigate = useNavigate()
   const { account } = useAuth()
   const { store } = useStore()
+  const seller = canSell(account)
   const me = account?.id ?? ''
   const [searchParams, setSearchParams] = useSearchParams()
   const threads = useListChatsQuery(undefined, { pollingInterval: LIST_POLL_MS })
@@ -337,7 +339,7 @@ export default function Messages() {
   const listEmpty = threads.error
     ? { title: 'Chats could not be loaded', copy: describeError(threads.error) }
     : list.length === 0
-      ? { title: 'No messages yet', copy: 'Chats with your buyers will show up here.' }
+      ? { title: 'No messages yet', copy: seller ? 'Chats with your buyers will show up here.' : 'Chats with sellers will show up here.' }
       : { title: 'No unread messages', copy: 'You are all caught up.' }
 
   return (
@@ -427,7 +429,11 @@ export default function Messages() {
           aria-label={active ? `Chat with ${counterpart(active)}` : 'Messages'}
         >
           {!active ? (
-            <EmptyBlock className="flex-1 justify-center p-[24px]" title="No conversation yet" copy="When a buyer messages you about a listing, the chat opens here." />
+            <EmptyBlock
+              className="flex-1 justify-center p-[24px]"
+              title="No conversation yet"
+              copy={seller ? 'When a buyer messages you about a listing, the chat opens here.' : 'Message a seller from a listing and the chat opens here.'}
+            />
           ) : (
             <>
               <header className="flex items-center justify-between h-[88px] px-[20px] border-b border-[#f7f7f7] shrink-0 max-md:px-[16px] max-md:h-[72px]">

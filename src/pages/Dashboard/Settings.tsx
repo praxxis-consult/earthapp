@@ -21,6 +21,7 @@ import { describeError, type NotificationTopic, type OpeningHours } from '../../
 import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
+import { canSell } from '../../feature/authentication/role'
 import { countryName } from '../../onboarding/draft'
 import { initials } from '../../data/orders'
 import { jakarta, CTA_BG, CTA_TEXT_BG, SCROLL_ROW } from '../../utils/styles'
@@ -32,6 +33,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'payout', label: 'Payout account' },
   { key: 'notifications', label: 'Notifications' },
 ]
+/** A buyer has no store and no payout account: only the person and their notification choices. */
+const BUYER_TABS = TABS.filter((t) => t.key === 'personal' || t.key === 'notifications')
 
 /** The cover photo has no API field yet and lives in the browser, under the account's own key so another sign-in never sees it. */
 const localKey = (accountId: string) => `earth.settings.${accountId}`
@@ -132,7 +135,9 @@ function Toggle({ on, onChange, label, disabled }: { on: boolean; onChange: (v: 
  */
 export default function Settings() {
   const { account } = useAuth()
-  const [tab, setTab] = useState<Tab>('store')
+  const seller = canSell(account)
+  const tabs = seller ? TABS : BUYER_TABS
+  const [tab, setTab] = useState<Tab>(seller ? 'store' : 'personal')
   const { store, setStore } = useStore()
   const { data: categories = [] } = useGetCategoriesQuery()
   const [uploadImage] = useUploadImageMutation()
@@ -193,7 +198,7 @@ export default function Settings() {
               Account settings
             </h1>
             <p className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
-              How buyers see your store, and who can work on it.
+              {seller ? 'How buyers see your store, and who can work on it.' : 'Your details, and how Earth reaches you.'}
             </p>
           </div>
           <div className="pt-[8px] max-md:pt-0">{headerAction}</div>
@@ -201,7 +206,7 @@ export default function Settings() {
 
         {/* Tabs (604:20487): pad 12/16, 12px Medium, the open one outlined #007c53 */}
         <div className={`mt-[38px] flex items-center gap-[12px] max-md:mt-[24px] ${SCROLL_ROW}`} role="tablist">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
@@ -315,7 +320,7 @@ export default function Settings() {
                   {person.firstName} {person.lastName}
                 </p>
                 <p className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
-                  Store owner
+                  {seller ? 'Store owner' : 'Buyer'}
                 </p>
               </div>
             </div>
@@ -329,6 +334,9 @@ export default function Settings() {
                 <Field label="Phone number" value={person.phoneNumber} />
               </div>
             </div>
+            {/* Verification is the seller's: identity, bank and registration belong to the store. */}
+            {seller && (
+              <>
             <div className="h-px w-full bg-[#f7f7f7]" />
             <div className="flex flex-col gap-[24px]">
               <h2 className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
@@ -379,6 +387,8 @@ export default function Settings() {
                 ))}
               </div>
             </div>
+              </>
+            )}
             <div className="h-px w-full bg-[#f7f7f7]" />
             <div className="flex items-center justify-between py-[16px] max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
               <div className="flex items-center gap-[12px]">
@@ -390,7 +400,7 @@ export default function Settings() {
                     Delete account
                   </p>
                   <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
-                    Your store closes and comes off the marketplace. You must finish open orders first.
+                    {seller ? 'Your store closes and comes off the marketplace. You must finish open orders first.' : 'Your account closes. Orders still on the way must be finished first.'}
                   </p>
                 </div>
               </div>
@@ -593,7 +603,7 @@ export default function Settings() {
           icon="danger"
           destructive
           title="Delete your account?"
-          body="Your store closes and comes off the marketplace, and you are signed out at once. Records the law requires are kept; everything else is deleted."
+          body={`${seller ? 'Your store closes and comes off the marketplace, and you' : 'You'} are signed out at once. Records the law requires are kept; everything else is deleted.`}
           primary={{
             label: deleting ? 'Deleting…' : 'Yes, delete my account',
             onClick: async () => {

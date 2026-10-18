@@ -4,7 +4,7 @@ import closeIcon from '../../assets/icons/od-close-circle.svg'
 import uploadIcon from '../../assets/icons/od-document-upload.svg'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
-type Kind = 'evidence' | 'ready' | 'dispatched' | 'decline'
+type Kind = 'evidence' | 'ready' | 'dispatched' | 'decline' | 'cancel'
 
 interface OrderStatusDialogProps {
   kind: Kind
@@ -27,7 +27,8 @@ const SUCCESS: Record<'ready' | 'dispatched', { title: string; body: string }> =
  * The dialogs the order page opens. "evidence" is Figma "Pickup details / Confirm Order Status"
  * (581:8392): 648 wide, a photo drop zone, Mark as ready. "ready" and "dispatched" are the
  * 580-wide "success" frames (581:8645, 581:9220). "decline" has no frame in the file; it reuses
- * the success frame's shape so the seller confirms before an order is refused.
+ * the success frame's shape so the seller confirms before an order is refused; "cancel" is the
+ * buyer's twin of it.
  */
 export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderStatusDialogProps) {
   const [preview, setPreview] = useState('')
@@ -146,7 +147,13 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
           title: 'Decline this order?',
           body: 'The buyer will be refunded automatically and the order closed. This cannot be undone.',
         }
-      : SUCCESS[kind]
+      : kind === 'cancel'
+        ? {
+            title: 'Cancel this order?',
+            body: 'The seller is told, the order is closed and your payment is refunded. This cannot be undone.',
+          }
+        : SUCCESS[kind]
+  const asking = kind === 'decline' || kind === 'cancel'
 
   return shell(
     580,
@@ -174,10 +181,10 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
             className="text-[14px] leading-[18px] bg-clip-text text-transparent"
             style={{ ...jakarta(500), backgroundImage: CTA_TEXT_BG }}
           >
-            {kind === 'decline' ? 'Yes, decline' : 'Proceed'}
+            {kind === 'decline' ? 'Yes, decline' : kind === 'cancel' ? 'Yes, cancel it' : 'Proceed'}
           </span>
         </button>
-        {kind === 'decline' && (
+        {asking && (
           <button
             type="button"
             onClick={onClose}

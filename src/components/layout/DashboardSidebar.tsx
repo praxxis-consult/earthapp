@@ -12,22 +12,50 @@ import referralsIcon from '../../assets/icons/db-referrals.svg'
 import settingsIcon from '../../assets/icons/db-settings.svg'
 import shareIcon from '../../assets/icons/db-share.svg'
 import logoutIcon from '../../assets/icons/db-logout.svg'
+import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import avatarImg from '../../assets/images/db-avatar.png'
 import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
 import { useUnreadChats } from '../../feature/chats/useUnreadChats'
+import { canSell } from '../../feature/authentication/role'
+import { initials } from '../../data/orders'
 
-const NAV_ITEMS = [
+interface NavItem {
+  label: string
+  icon: string
+  href: string
+  badge?: 'unreadChats'
+}
+
+/** The seller's menu, as the dashboard frame lists it. */
+const SELLER_NAV: NavItem[] = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
   { label: 'Products',         icon: productsIcon,  href: '/dashboard/products' },
   { label: 'Orders',           icon: ordersIcon,    href: '/dashboard/orders' },
-  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' as const },
+  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' },
   { label: 'Payout',           icon: payoutIcon,    href: '/dashboard/payout' },
   { label: 'Referrals',        icon: referralsIcon, href: '/dashboard/referrals' },
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
 ]
+
+/** A buyer runs no store: their menu is what they bought, who they talk to, and their account. */
+const BUYER_NAV: NavItem[] = [
+  { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
+  { label: 'My orders',        icon: ordersIcon,    href: '/dashboard/purchases' },
+  { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' },
+  { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
+]
+
+/** An account that buys and sells gets the seller's menu plus its own purchases, after the sales. */
+const BOTH_NAV: NavItem[] = [...SELLER_NAV.slice(0, 3), { label: 'Purchases', icon: ordersIcon, href: '/dashboard/purchases' }, ...SELLER_NAV.slice(3)]
+
+function navFor(accountType: string | undefined): NavItem[] {
+  if (accountType === 'BUYING') return BUYER_NAV
+  if (accountType === 'BOTH') return BOTH_NAV
+  return SELLER_NAV
+}
 
 interface DashboardSidebarProps {
   /** Rendered inside the phone/tablet drawer: fills the panel and shows a close button. */
@@ -37,7 +65,10 @@ interface DashboardSidebarProps {
 
 export default function DashboardSidebar({ inDrawer = false, onClose }: DashboardSidebarProps) {
   const navigate = useNavigate()
-  const { signOut } = useAuth()
+  const { account, signOut } = useAuth()
+  const seller = canSell(account)
+  const navItems = navFor(account?.accountType)
+  const name = account ? `${account.firstName} ${account.lastName}` : ''
   // The Messages badge: threads with unread messages, kept fresh while the dashboard is open.
   const unreadChats = useUnreadChats()
   const { store } = useStore()
@@ -114,33 +145,37 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         )}
       </div>
 
-      {/* Store card: until the store is LIVE it opens onboarding, which picks the draft up where it stopped. */}
+      {/* Store card: until the store is LIVE it opens onboarding, which picks the draft up where it stopped. A buyer has no store, so the card is the person and opens their settings. */}
       <button
         type="button"
         onClick={() => {
-          if (store?.status !== 'LIVE') navigate('/onboarding/store')
+          if (seller && store?.status !== 'LIVE') navigate('/onboarding/store')
           else navigate('/dashboard/settings')
           if (inDrawer) onClose?.()
         }}
         className="mx-[24px] mb-[40px] bg-[#f7f7f7] flex gap-[8px] items-center px-[16px] py-[12px] rounded-[15px] text-left hover:bg-[#f2f2f2]"
-        aria-label={store?.status === 'LIVE' ? 'Store settings' : 'Finish your store setup'}
+        aria-label={!seller ? 'Account settings' : store?.status === 'LIVE' ? 'Store settings' : 'Finish your store setup'}
       >
-        <div className="bg-[#f2f8f6] overflow-clip relative rounded-full shrink-0 size-[40px]">
-          <img src={avatarImg} alt="" className="absolute inset-0 max-w-none object-cover size-full" />
+        <div className="bg-[#f2f8f6] overflow-clip relative rounded-full shrink-0 size-[40px] flex items-center justify-center">
+          {seller ? (
+            <img src={avatarImg} alt="" className="absolute inset-0 max-w-none object-cover size-full" />
+          ) : (
+            <p className="text-[#007c53] text-[14px]" style={jakarta(700)}>{name ? initials(name) : ''}</p>
+          )}
         </div>
         <div className="flex flex-col flex-1 min-w-0">
           <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(700)}>
-            {store?.storeName ?? 'Your store'}
+            {seller ? (store?.storeName ?? 'Your store') : name}
           </p>
           <p className="text-[#807e7e] text-[12px] leading-[20px] truncate" style={jakarta(500)}>
-            {store?.status === 'LIVE' ? place : 'Finish your store setup'}
+            {!seller ? 'Buyer account' : store?.status === 'LIVE' ? place : 'Finish your store setup'}
           </p>
         </div>
       </button>
 
       {/* Nav items */}
       <nav className="flex flex-col gap-[12px] px-[16px] flex-1">
-        {NAV_ITEMS.map(({ label, icon, href, badge: badgeKey }) => {
+        {navItems.map(({ label, icon, href, badge: badgeKey }) => {
           const badge = badgeKey === 'unreadChats' && unreadChats > 0 ? unreadChats : undefined
           return (
           <NavLink
@@ -179,24 +214,40 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         })}
       </nav>
 
-      {/* Share my store banner */}
+      {/* Share my store banner; for a buyer the same banner opens the marketplace instead */}
       <div className="mx-[16px] mb-[40px] relative h-[144px] rounded-[20px] overflow-hidden bg-[#e3e3e3]">
         <img src={sidebarBgImg} alt="" className="absolute inset-0 max-w-none object-cover size-full pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#141414] from-[1%] to-transparent" />
         <div className="absolute top-[16px] left-[16px] w-[235px] flex flex-col gap-[4px]">
-          <p className="text-white text-[16px] leading-[24px]" style={jakarta(700)}>Sell where you are already</p>
+          <p className="text-white text-[16px] leading-[24px]" style={jakarta(700)}>{seller ? 'Sell where you are already' : 'Fresh from the land'}</p>
           <p className="text-[rgba(255,255,255,0.75)] text-[12px] leading-[15px]" style={jakarta(500)}>
-            Share your store link where your customers already are.
+            {seller ? 'Share your store link where your customers already are.' : 'See what farmers and miners listed this week.'}
           </p>
         </div>
-        <button type="button" onClick={share} disabled={!store} className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px] disabled:opacity-60">
-          <div className="relative shrink-0 size-[20px]">
-            <img src={shareIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
-          </div>
-          <p className="text-[#0c2310] text-[14px] leading-[24px] text-center whitespace-nowrap" style={jakarta(600)}>
-            {copied ? 'Link copied' : 'Share my store'}
-          </p>
-        </button>
+        {seller ? (
+          <button type="button" onClick={share} disabled={!store} className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px] disabled:opacity-60">
+            <div className="relative shrink-0 size-[20px]">
+              <img src={shareIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
+            </div>
+            <p className="text-[#0c2310] text-[14px] leading-[24px] text-center whitespace-nowrap" style={jakarta(600)}>
+              {copied ? 'Link copied' : 'Share my store'}
+            </p>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/marketplace')
+              if (inDrawer) onClose?.()
+            }}
+            className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px]"
+          >
+            <p className="text-[#0c2310] text-[14px] leading-[24px] text-center whitespace-nowrap" style={jakarta(600)}>
+              Browse marketplace
+            </p>
+            <img src={arrowDownIcon} alt="" className="block size-[16px] -rotate-90" />
+          </button>
+        )}
       </div>
 
       {toast && createPortal(<Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />, document.body)}

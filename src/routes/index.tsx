@@ -1,7 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
 import Home from '../pages/Home'
 import About from '../pages/About'
-import DashboardOverview from '../pages/Dashboard'
+import DashboardHome from '../pages/Dashboard/Home'
+import Purchases from '../pages/Buyer/Purchases'
+import PurchaseDetail from '../pages/Buyer/PurchaseDetail'
 import Marketplace from '../pages/Marketplace'
 import ProductDetail from '../pages/Marketplace/ProductDetail'
 import PlaceOrder from '../pages/Marketplace/PlaceOrder'
@@ -26,6 +28,7 @@ import Settings from '../pages/Dashboard/Settings'
 import NotFound from '../pages/NotFound'
 import MainLayout from '../components/layout/MainLayout'
 import RequireAuth from '../feature/authentication/RequireAuth'
+import RequireSeller from '../feature/authentication/RequireSeller'
 
 export default function AppRoutes() {
   return (
@@ -37,24 +40,31 @@ export default function AppRoutes() {
 
       {/* Signed-in only: onboarding and the dashboard (no Navbar/Footer) */}
       <Route element={<RequireAuth />}>
-        <Route path="/onboarding/store" element={<StoreName />} />
-        <Route path="/onboarding/location" element={<Location />} />
-        <Route path="/onboarding/verify-id" element={<VerifyId />} />
-        <Route path="/onboarding/bank" element={<BankDetails />} />
-        <Route path="/onboarding/review" element={<ReviewDetails />} />
+        {/* The store and the seller's pages: a buying account has no store and is sent to its own dashboard */}
+        <Route element={<RequireSeller />}>
+          <Route path="/onboarding/store" element={<StoreName />} />
+          <Route path="/onboarding/location" element={<Location />} />
+          <Route path="/onboarding/verify-id" element={<VerifyId />} />
+          <Route path="/onboarding/bank" element={<BankDetails />} />
+          <Route path="/onboarding/review" element={<ReviewDetails />} />
+          <Route path="/dashboard/products" element={<Products />} />
+          <Route path="/dashboard/products/add" element={<AddProduct />} />
+          <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
+          <Route path="/dashboard/products/:id/edit" element={<AddProduct />} />
+          <Route path="/dashboard/products-list" element={<ProductsList />} />
+          <Route path="/dashboard/payout" element={<Payout />} />
+          <Route path="/dashboard/referrals" element={<Referral />} />
+        </Route>
+        <Route element={<RequireSeller to="/dashboard/purchases" />}>
+          <Route path="/dashboard/orders" element={<Orders />} />
+          <Route path="/dashboard/orders/:id" element={<OrderDetail />} />
+        </Route>
 
-        {/* Dashboard (own layout: sidebar + topbar, no Navbar/Footer) */}
-        <Route path="/dashboard" element={<DashboardOverview />} />
-        <Route path="/dashboard/products" element={<Products />} />
-        <Route path="/dashboard/products/add" element={<AddProduct />} />
-        <Route path="/dashboard/products/:id" element={<DashboardProductDetail />} />
-        <Route path="/dashboard/products/:id/edit" element={<AddProduct />} />
-        <Route path="/dashboard/products-list" element={<ProductsList />} />
-        <Route path="/dashboard/orders" element={<Orders />} />
-        <Route path="/dashboard/orders/:id" element={<OrderDetail />} />
+        {/* Dashboard (own layout: sidebar + topbar, no Navbar/Footer); the overview follows the account type */}
+        <Route path="/dashboard" element={<DashboardHome />} />
+        <Route path="/dashboard/purchases" element={<Purchases />} />
+        <Route path="/dashboard/purchases/:id" element={<PurchaseDetail />} />
         <Route path="/dashboard/messages" element={<Messages />} />
-        <Route path="/dashboard/payout" element={<Payout />} />
-        <Route path="/dashboard/referrals" element={<Referral />} />
         <Route path="/dashboard/settings" element={<Settings />} />
       </Route>
 
