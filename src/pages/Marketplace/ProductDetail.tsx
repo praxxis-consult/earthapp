@@ -6,6 +6,8 @@ import { useStartChatMutation } from '../../feature/chats/chatsApiSlice'
 import { describeError } from '../../services/earthApi'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
+import { useSaved } from '../../lib/saved'
+import savedIcon from '../../assets/icons/db-nav-archive.svg'
 import { timeAgo } from '../../lib/reviews'
 import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { naira } from '../../lib/productView'
@@ -78,6 +80,7 @@ export default function ProductDetail() {
   const navigate = useNavigate()
   const location = useLocation()
   const { account } = useAuth()
+  const saved = useSaved(account?.id)
   const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   // undefined while loading, null when the API has no such public listing
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
@@ -285,6 +288,18 @@ export default function ProductDetail() {
                 <img src={arrowRight} alt="" className="size-[16px]" />
               </button>
             </div>
+            {account && (
+              <button
+                type="button"
+                onClick={() => saved.toggle(product)}
+                aria-pressed={saved.isSaved(product.id)}
+                className="flex h-[40px] w-fit items-center gap-[8px] text-[#007c53] text-[14px] leading-[18px]"
+                style={jakarta(500)}
+              >
+                <img src={savedIcon} alt="" className="size-[20px]" />
+                {saved.isSaved(product.id) ? 'Saved · remove' : 'Save for later'}
+              </button>
+            )}
             {actionError && (
               <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
                 {actionError}

@@ -95,7 +95,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={seller ? 'Search orders and products ...' : 'Search the marketplace ...'}
+          placeholder="Search orders and products ..."
           aria-label={seller ? 'Search orders and products' : 'Search the marketplace'}
           className="flex-1 min-w-0 bg-transparent text-[#101604] text-[13px] outline-none placeholder:text-[#807e7e]"
           style={jakarta(400)}

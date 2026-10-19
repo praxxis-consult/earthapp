@@ -4,6 +4,7 @@ import About from '../pages/About'
 import DashboardHome from '../pages/Dashboard/Home'
 import Purchases from '../pages/Buyer/Purchases'
 import PurchaseDetail from '../pages/Buyer/PurchaseDetail'
+import Saved from '../pages/Buyer/Saved'
 import Marketplace from '../pages/Marketplace'
 import ProductDetail from '../pages/Marketplace/ProductDetail'
 import PlaceOrder from '../pages/Marketplace/PlaceOrder'
@@ -54,7 +55,6 @@ export default function AppRoutes() {
           <Route path="/dashboard/products/:id/edit" element={<AddProduct />} />
           <Route path="/dashboard/products-list" element={<ProductsList />} />
           <Route path="/dashboard/payout" element={<Payout />} />
-          <Route path="/dashboard/referrals" element={<Referral />} />
         </Route>
         <Route element={<RequireSeller to="/dashboard/purchases" />}>
           <Route path="/dashboard/orders" element={<Orders />} />
@@ -65,6 +65,8 @@ export default function AppRoutes() {
         <Route path="/dashboard" element={<DashboardHome />} />
         <Route path="/dashboard/purchases" element={<Purchases />} />
         <Route path="/dashboard/purchases/:id" element={<PurchaseDetail />} />
+        <Route path="/dashboard/saved" element={<Saved />} />
+        <Route path="/dashboard/referrals" element={<Referral />} />
         {/* Paystack sends the buyer back here; the API confirms the payment, the URL proves nothing */}
         <Route path="/payment-return" element={<PaymentReturn />} />
         <Route path="/dashboard/messages" element={<Messages />} />

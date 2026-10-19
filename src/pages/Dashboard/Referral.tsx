@@ -9,6 +9,7 @@ import copyIcon from '../../assets/icons/ref-copy.svg'
 import exportIcon from '../../assets/icons/ref-export.svg'
 import EmptyBlock from '../../components/ui/EmptyBlock'
 import { useStore } from '../../feature/stores/useStore'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { referralLink, referrals } from '../../data/referrals'
 import { jakarta } from '../../utils/styles'
 
@@ -26,9 +27,11 @@ const ROLE_STYLE = {
  */
 export default function Referral() {
   const { store } = useStore()
+  const { account } = useAuth()
   const [page, setPage] = useState(1)
   const [copied, setCopied] = useState(false)
-  const link = referralLink(store?.storeName)
+  // A seller shares their store; a buyer, with no store, shares under their own name.
+  const link = referralLink(store?.storeName ?? (account ? `${account.firstName} ${account.lastName}` : undefined))
   const pageCount = Math.max(1, Math.ceil(referrals.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = referrals.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
