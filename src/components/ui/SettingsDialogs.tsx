@@ -7,6 +7,7 @@ import { toOpeningHours } from '../../lib/hours'
 import { useSaveOnboardingMutation, type SaveOnboardingBody } from '../../feature/stores/storesApiSlice'
 import { useUpdateMeMutation } from '../../feature/authentication/authApiSlice'
 import { COUNTRY_NAMES, countryCode, countryName } from '../../onboarding/draft'
+import { areaProblem, streetProblem } from '../../lib/address'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 import { AccountCheckRow } from './AccountCheck'
 import { useAccountCheck } from '../../feature/banks/useAccountCheck'
@@ -162,6 +163,9 @@ export function EditStoreDialog({
     e.preventDefault()
     if (!name.trim()) return setError('Enter your store name.')
     if (!ids.length) return setError('Pick at least one thing you sell.')
+    // Carriers deliver within Nigeria and resolve the address as typed, so a Nigerian store's street must be one they can place.
+    const addressIssue = country === 'NG' ? (streetProblem(street) ?? areaProblem(store.businessAddress.area)) : null
+    if (addressIssue) return setError(addressIssue)
     setBusy(true)
     setError('')
     try {

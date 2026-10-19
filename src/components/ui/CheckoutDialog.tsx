@@ -5,6 +5,7 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { regionsOf } from '../../data/locations'
+import { areaProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
 import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
@@ -79,17 +80,21 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
   async function submit(e: FormEvent) {
     e.preventDefault()
     const a = address
-    const phone = a.phone.replace(/[\s-]/g, '')
-    // The API's own rules (its OpenAPI patterns), checked here so the buyer hears them before the round trip.
+    // The carrier resolves the address as typed and the API passes it through, so the carrier's rules are checked here.
+    const phone = nigerianPhone(a.phone) ?? ''
     const problems: Record<string, string> = {}
     if (!a.firstName.trim()) problems.firstName = 'Enter the first name of who receives the goods.'
     if (!a.lastName.trim()) problems.lastName = 'Enter the last name.'
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) problems.phone = 'Enter the number with its country code, like +2348012345678.'
+    const phoneIssue = phoneProblem(a.phone)
+    if (phoneIssue) problems.phone = phoneIssue
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(a.email.trim())) problems.email = 'Enter an email for the delivery updates.'
     if (!a.region) problems.region = 'Choose the state the goods go to.'
-    if (!a.area.trim()) problems.area = 'Enter the town or district.'
-    if (!a.street.trim()) problems.street = 'Enter the street address.'
-    if (!/^\d{6}$/.test(a.postalCode.trim())) problems.postalCode = 'Nigerian postal codes are six digits, like 100001.'
+    const areaIssue = areaProblem(a.area)
+    if (areaIssue) problems.area = areaIssue
+    const streetIssue = streetProblem(a.street)
+    if (streetIssue) problems.street = streetIssue
+    const postalIssue = postalCodeProblem(a.postalCode)
+    if (postalIssue) problems.postalCode = postalIssue
     if (!pickupDate || pickupDate < lagosDay(0) || pickupDate > lagosDay(7)) problems.pickupDate = 'Pick a day from today to a week ahead.'
     setFieldErrors(problems)
     if (Object.keys(problems).length) return setError('Check the highlighted details.')
@@ -234,7 +239,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
       </div>
       <div className="flex gap-[16px] max-md:flex-col">
         <Field label="Phone" htmlFor="co-phone">
-          <input id="co-phone" type="tel" value={address.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+234…" className={inputClass} style={jakarta(400)} />
+          <input id="co-phone" type="tel" value={address.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0803 123 4567" className={inputClass} style={jakarta(400)} />
           {fieldError('phone')}
         </Field>
         <Field label="Email" htmlFor="co-email">
@@ -249,12 +254,12 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           {fieldError('region')}
         </Field>
         <Field label="Area" htmlFor="co-area">
-          <input id="co-area" value={address.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} placeholder="Town or district" className={inputClass} style={jakarta(400)} />
+          <input id="co-area" value={address.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} placeholder="Lekki Phase 1" className={inputClass} style={jakarta(400)} />
           {fieldError('area')}
         </Field>
       </div>
-      <Field label="Street address" htmlFor="co-street">
-        <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} className={inputClass} style={jakarta(400)} />
+      <Field label="Street address" htmlFor="co-street" hint="House or plot number, then the road name">
+        <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} placeholder="12 Admiralty Way" className={inputClass} style={jakarta(400)} />
           {fieldError('street')}
       </Field>
       <div className="flex gap-[16px] max-md:flex-col">
@@ -262,7 +267,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           <input id="co-landmark" value={address.landmark} maxLength={240} onChange={(e) => set({ landmark: e.target.value })} className={inputClass} style={jakarta(400)} />
         </Field>
         <Field label="Postal code" htmlFor="co-postal">
-          <input id="co-postal" value={address.postalCode} maxLength={12} onChange={(e) => set({ postalCode: e.target.value })} className={inputClass} style={jakarta(400)} />
+          <input id="co-postal" value={address.postalCode} maxLength={6} inputMode="numeric" onChange={(e) => set({ postalCode: e.target.value.replace(/\D/g, '') })} placeholder="106104" className={inputClass} style={jakarta(400)} />
           {fieldError('postalCode')}
         </Field>
       </div>
