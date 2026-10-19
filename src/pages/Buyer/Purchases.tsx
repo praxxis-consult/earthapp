@@ -49,7 +49,7 @@ export default function Purchases() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:min-h-full max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Orders
@@ -66,7 +66,7 @@ export default function Purchases() {
           <StatCard label="Delivered" value={stats.completed} />
         </div>
 
-        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 md:min-h-0 max-md:p-[16px]">
+        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -148,8 +148,7 @@ export default function Purchases() {
                 head="tinted"
                 radius={10}
                 designWidth={1043}
-                scroll
-                className="mt-[24px] md:min-h-0 md:flex-1 max-md:mt-[16px]"
+                className="mt-[24px] max-md:mt-[16px]"
                 columns={COLUMNS}
               />
               <div className="mt-[16px] max-md:mt-[16px]">

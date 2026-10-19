@@ -110,8 +110,8 @@ export default function Orders() {
 
   return (
     <DashboardLayout>
-      {/* The page fills the dashboard viewport: the list scrolls inside its panel and the pager stays on screen */}
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
+      {/* The page scrolls as the orders frame does (1300 tall): every row of the page shows, and the panel still reaches the bottom when it holds little */}
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:min-h-full max-md:px-[16px] max-md:pt-[24px]">
         {/* Heading (561:3641): title 24/32 SemiBold, intro 16/24 Regular, gap 8 */}
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
@@ -130,7 +130,7 @@ export default function Orders() {
         </div>
 
         {/* All orders panel (561:3651): white, radius 20, padding 24 */}
-        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 md:min-h-0 max-md:p-[16px]">
+        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -271,8 +271,7 @@ export default function Orders() {
                 head="tinted"
                 radius={10}
                 designWidth={1043}
-                scroll
-                className="mt-[24px] md:min-h-0 md:flex-1 max-md:mt-[16px]"
+                className="mt-[24px] max-md:mt-[16px]"
                 columns={ORDER_COLUMNS}
               />
 
