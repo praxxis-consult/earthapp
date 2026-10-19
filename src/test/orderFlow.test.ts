@@ -56,16 +56,19 @@ describe('lenient readers', () => {
     expect(trackingView({})).toBeNull()
     expect(trackingView({ trackingUrl: 'https://t/1', trackingNumber: 'SB1', courier: { name: 'GIG' } })).toEqual({ url: 'https://t/1', number: 'SB1', courier: 'GIG' })
   })
-  it('reads a quote: id, a name, kobo total and expiry; and degrades to the id', () => {
-    const q = quoteView({ id: 'q1', courierName: 'Kwik', total: '150000', expiresAt: '2026-10-19T12:02:00Z', eta: '1–2 days' }, 0)
-    expect(q).toEqual({ id: 'q1', name: 'Kwik', total: '₦1,500.00', expiresAt: '2026-10-19T12:02:00Z', eta: '1–2 days' })
-    expect(secondsLeft(q, T0, T0 + 30_000)).toBe(90)
+  it('reads a quote as the API answers it: carrier, estimate, delivery = carrier + markup, buyer total', () => {
+    const real = { id: '01a15641', provider: 'shipbubble', carrierName: 'Bubble Express', service: 'test_1_courier', deliveryEstimate: 'Within 21 hrs', expiresAt: '2026-10-19T22:24:06.574Z', acceptance: { minutes: 60, basis: 'ELAPSED_NO_SCHEDULE', openingHours: null }, policyId: 'earth-ngn-2026-10-16', currency: 'NGN', goods: '2500000', carrier: '372360', commission: '187500', deliveryMarkup: '37236', tax: '0', buyerTotal: '2909596', sellerAllocation: '2312500', carrierAllocation: '372360', earthAllocation: '224736' }
+    const q = quoteView(real, 0)
+    expect(q).toEqual({ id: '01a15641', name: 'Bubble Express', delivery: '₦4,095.96', total: '₦29,095.96', goods: '₦25,000.00', expiresAt: '2026-10-19T22:24:06.574Z', eta: 'Within 21 hrs', acceptMinutes: 60 })
+    expect(secondsLeft(q, Date.parse('2026-10-19T22:22:00Z'), Date.parse('2026-10-19T22:23:36.574Z'))).toBe(30)
+    // the commission is the seller's, not the buyer's: goods + delivery = the buyer total
+    expect(2500000 + 372360 + 37236).toBe(2909596)
+  })
+  it('degrades to the id when an offer names nothing, with two minutes from arrival', () => {
     const bare = quoteView({ id: 'q2' }, 1)
-    expect(bare).toEqual({ id: 'q2', name: 'Carrier option 2', total: '', expiresAt: null, eta: '' })
-    // no expiry on the offer: two minutes from when it arrived
+    expect(bare).toEqual({ id: 'q2', name: 'Carrier option 2', delivery: '', total: '', goods: '', expiresAt: null, eta: '', acceptMinutes: null })
     expect(secondsLeft(bare, T0, T0 + 100_000)).toBe(20)
     expect(secondsLeft(bare, T0, T0 + 130_000)).toBe(0)
-    expect(quoteView({ id: 'q3', total: { amountMinor: '250000', currency: 'NGN' }, courier: { name: 'DHL' } }, 2).total).toBe('₦2,500.00')
   })
   it('reads the confirm answer on the API’s word only', () => {
     expect(confirmOutcome({ status: 'PAID', orderStatus: 'PENDING', refundRequired: false }).paid).toBe(true)

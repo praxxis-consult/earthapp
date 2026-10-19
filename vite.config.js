@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => {
         '/v1': {
           target,
           changeOrigin: false,
-          headers: { host },
+          // The ngrok header skips the tunnel's browser warning page when the API is reached through one.
+          headers: { host, 'ngrok-skip-browser-warning': '1' },
           // The API refuses "cross-site" credentials by comparing Origin with its own host, which a
           // proxy can never satisfy; dropping the header here is what the production proxy also needs.
           configure: (proxy) => {
