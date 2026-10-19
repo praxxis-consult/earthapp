@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
+import Thumb from '../../components/ui/Thumb'
 import OrderStatusDialog from '../../components/ui/OrderStatusDialog'
 import ReceiptModal, { type ReceiptData } from '../../components/ui/ReceiptModal'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
@@ -23,7 +24,7 @@ import { usePayment } from '../../feature/orders/usePayment'
 import { usePostReviewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { purchaseFromApi } from '../../data/purchases'
 import { awaitingPayment, buyerMoney, cancelMeaning, canCancel, isPaid, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
-import { initials, naira, type OrderStatus } from '../../data/orders'
+import { initials, naira, type OrderStatus, shortOrderId } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
@@ -260,13 +261,16 @@ export default function PurchaseDetail() {
             <div className="flex flex-col gap-[8px]">
               <div className="flex items-center gap-[8px] max-md:flex-wrap">
                 <h1 className="text-[#101604] text-[24px] leading-[32px] truncate" style={jakarta(600)}>
-                  Order {o.id}
+                  Order {shortOrderId(o.id)}
                 </h1>
                 <OrderStatusBadge status={status} />
               </div>
               <p className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
                 Placed {placed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
                 {placed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {summary.itemCount} {summary.itemCount === 1 ? 'item' : 'items'}
+              </p>
+              <p className="text-[#807e7e] text-[11px] leading-[14px] select-all" style={jakarta(400)}>
+                Reference {o.id}
               </p>
             </div>
           </div>
@@ -374,7 +378,7 @@ export default function PurchaseDetail() {
             <Card title="Items in this order">
               <div className="flex items-center gap-[14px]">
                 {o.item.image ? (
-                  <img src={o.item.image} alt="" className="size-[76px] rounded-[12px] object-cover shrink-0" />
+                  <Thumb src={o.item.image} className="size-[76px] rounded-[12px] shrink-0" />
                 ) : (
                   <div className="size-[76px] rounded-[12px] bg-[#f7f7f7] shrink-0" />
                 )}

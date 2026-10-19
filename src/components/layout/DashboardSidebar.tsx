@@ -183,6 +183,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         </div>
       </button>
 
+      {/* The menu and the banner scroll when the column is shorter than they are (nine entries on a buying-and-selling account), so the banner and Log out are never cut off */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto [scrollbar-width:thin]">
       {/* Nav items */}
       <nav className="flex flex-col gap-[12px] px-[16px] flex-1">
         {navItems.map(({ label, icon, href, badge: badgeKey }) => {
@@ -263,6 +265,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       {toast && createPortal(<Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />, document.body)}
 
       {/* Logout */}
+      </div>
       <button type="button" onClick={logout} className="bg-[#f2f8f6] flex items-center justify-between px-[24px] py-[12px] h-[64px] shrink-0 w-full text-left">
         <p className="text-[#007c53] text-[16px] leading-[24px]" style={jakarta(600)}>Log out</p>
         <div className="relative shrink-0 size-[24px]">

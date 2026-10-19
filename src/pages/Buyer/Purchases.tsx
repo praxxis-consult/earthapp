@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { shortOrderId } from '../../data/orders'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
 import EmptyBlock from '../../components/ui/EmptyBlock'
@@ -143,7 +144,7 @@ export default function Purchases() {
                 rows={rows}
                 rowKey={(o) => o.id}
                 onRowClick={(o) => navigate(`/dashboard/purchases/${o.id}`)}
-                rowLabel={(o) => `Order ${o.id}, ${o.item.soldBy}`}
+                rowLabel={(o) => `Order ${shortOrderId(o.id)}, ${o.item.soldBy}`}
                 head="tinted"
                 radius={10}
                 designWidth={1043}

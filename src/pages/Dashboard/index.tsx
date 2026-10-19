@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { shortOrderId } from '../../data/orders'
 import DataTable from '../../components/ui/DataTable'
 import EmptyBlock from '../../components/ui/EmptyBlock'
 import StatCard from '../../components/ui/StatCard'
@@ -198,7 +199,7 @@ export default function DashboardOverview() {
               rows={data.recentOrders}
               rowKey={(o) => o.id}
               onRowClick={(o) => navigate(`/dashboard/orders/${o.id}`)}
-              rowLabel={(o) => `Order ${o.id}, ${o.buyer.name}`}
+              rowLabel={(o) => `Order ${shortOrderId(o.id)}, ${o.buyer.name}`}
               head="tinted"
               radius={10}
               designWidth={1041}

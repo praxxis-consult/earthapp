@@ -65,8 +65,14 @@ function toProblem(error: { status: unknown; data?: unknown }, meta: { response?
   }
 }
 
-/** The bearer header, a refresh just before expiry, one retry after a 401, and problem+json errors. */
+/** While the API says "too many requests", nothing is sent until its Retry-After has passed (capped at a minute), so polling stops hammering it. */
+let rateLimitedUntil = 0
+let lastRateLimit: ApiProblem | null = null
+const RATE_LIMIT_CAP_MS = 60_000
+
+/** The bearer header, a refresh just before expiry, one retry after a 401, a pause after a 429, and problem+json errors. */
 export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, ApiProblem> = async (args, api, extraOptions) => {
+  if (Date.now() < rateLimitedUntil && lastRateLimit) return { error: lastRateLimit }
   const auth = (api.getState() as RootState).auth
   if (auth.accessToken && expiringSoon(auth.expiresAt)) await refreshOnce(api.dispatch)
 
@@ -74,7 +80,14 @@ export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, ApiProblem> = a
   if (result.error?.status === 401 && (api.getState() as RootState).auth.accessToken) {
     if (await refreshOnce(api.dispatch)) result = await rawBaseQuery(args, api, extraOptions)
   }
-  if (result.error) return { error: toProblem(result.error, result.meta as { response?: Response } | undefined) }
+  if (result.error) {
+    const problem = toProblem(result.error, result.meta as { response?: Response } | undefined)
+    if (problem.status === 429) {
+      rateLimitedUntil = Date.now() + Math.min((problem.retryAfter ?? 30) * 1000, RATE_LIMIT_CAP_MS)
+      lastRateLimit = problem
+    }
+    return { error: problem }
+  }
   return { data: result.data }
 }
 
