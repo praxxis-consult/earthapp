@@ -5,7 +5,7 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { regionsOf } from '../../data/locations'
-import { areaProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
+import { areaProblem, earliestPickupDay, fullNameProblem, lagosDay, lagosHour, latestPickupDay, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem, CARRIER_CUTOFF_HOUR } from '../../lib/address'
 import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
@@ -19,10 +19,6 @@ interface CheckoutDialogProps {
   onClose: () => void
 }
 
-/** A calendar day in Lagos, `days` from today, as the date input wants it; the carriers' pickup window is today to seven days ahead there. */
-function lagosDay(days: number): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + days * 86_400_000))
-}
 const tomorrow = () => lagosDay(1)
 
 /** A page that ticks once a second, for the countdowns. */
@@ -83,8 +79,8 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
     // The carrier resolves the address as typed and the API passes it through, so the carrier's rules are checked here.
     const phone = nigerianPhone(a.phone) ?? ''
     const problems: Record<string, string> = {}
-    if (!a.firstName.trim()) problems.firstName = 'Enter the first name of who receives the goods.'
-    if (!a.lastName.trim()) problems.lastName = 'Enter the last name.'
+    const nameIssue = fullNameProblem(a.firstName, a.lastName)
+    if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
     const phoneIssue = phoneProblem(a.phone)
     if (phoneIssue) problems.phone = phoneIssue
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(a.email.trim())) problems.email = 'Enter an email for the delivery updates.'
@@ -95,7 +91,8 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
     if (streetIssue) problems.street = streetIssue
     const postalIssue = postalCodeProblem(a.postalCode)
     if (postalIssue) problems.postalCode = postalIssue
-    if (!pickupDate || pickupDate < lagosDay(0) || pickupDate > lagosDay(7)) problems.pickupDate = 'Pick a day from today to a week ahead.'
+    if (!pickupDate || pickupDate < earliestPickupDay() || pickupDate > latestPickupDay())
+      problems.pickupDate = lagosHour() >= CARRIER_CUTOFF_HOUR ? 'Carriers take requests until 6 PM Lagos time, so the earliest pickup is tomorrow; pick a day up to a week ahead.' : 'Pick a day from today to a week ahead.'
     setFieldErrors(problems)
     if (Object.keys(problems).length) return setError('Check the highlighted details.')
     setError('')
@@ -271,8 +268,8 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           {fieldError('postalCode')}
         </Field>
       </div>
-      <Field label="Earliest pickup day" htmlFor="co-pickup" hint="When the carrier may collect from the seller: today to a week ahead">
-        <input id="co-pickup" type="date" value={pickupDate} min={lagosDay(0)} max={lagosDay(7)} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} style={jakarta(400)} />
+      <Field label="Earliest pickup day" htmlFor="co-pickup" hint="When the carrier may collect from the seller: up to a week ahead, from today before 6 PM Lagos time, else from tomorrow">
+        <input id="co-pickup" type="date" value={pickupDate} min={earliestPickupDay()} max={latestPickupDay()} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} style={jakarta(400)} />
           {fieldError('pickupDate')}
       </Field>
       {error && (

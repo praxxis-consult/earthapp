@@ -45,3 +45,29 @@ export function nigerianPhone(input: string): string | null {
 }
 
 export const phoneProblem = (input: string): string | null => (nigerianPhone(input) ? null : 'Enter a Nigerian mobile number, like 0803 123 4567 or +2348031234567.')
+
+/** A calendar day in Lagos, `days` from `now`, as a date input wants it. */
+export function lagosDay(days: number, now = Date.now()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now + days * 86_400_000))
+}
+
+/** The hour of the day in Lagos, 0 to 23. */
+export function lagosHour(now = Date.now()): number {
+  return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Lagos', hour: '2-digit', hourCycle: 'h23' }).format(new Date(now)))
+}
+
+/**
+ * The carrier's pickup window: rate requests after 6 PM Lagos time are processed the next day,
+ * and a shipment can be requested at most seven days ahead. So the earliest pickup is today
+ * before six and tomorrow after it; the latest is a week from today.
+ */
+export const CARRIER_CUTOFF_HOUR = 18
+export const earliestPickupDay = (now = Date.now()): string => lagosDay(lagosHour(now) >= CARRIER_CUTOFF_HOUR ? 1 : 0, now)
+export const latestPickupDay = (now = Date.now()): string => lagosDay(7, now)
+
+/** The carrier wants the address holder's full name: both parts, letters in each. */
+export function fullNameProblem(first: string, last: string): string | null {
+  if (!/[a-z]{2,}/i.test(first.trim())) return 'Enter the first name of who receives the goods.'
+  if (!/[a-z]{2,}/i.test(last.trim())) return 'Enter the last name; the carrier wants the full name.'
+  return null
+}

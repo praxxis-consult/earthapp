@@ -4,7 +4,7 @@ import { useAuth } from '../../feature/authentication/useAuth'
 import { useGetShipbubbleCategoriesQuery, useSaveShippingProfileMutation, type DeliveryAddress, type Parcel, type ShippingProfile } from '../../feature/delivery/deliveryApiSlice'
 import { describeError, toApiError, type Onboarding } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
-import { areaProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
+import { areaProblem, fullNameProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
 
 interface DeliveryDialogProps {
   store: Onboarding
@@ -64,8 +64,8 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
     e.preventDefault()
     const phone = nigerianPhone(pickup.phone) ?? ''
     const problems: Record<string, string> = {}
-    if (!pickup.firstName.trim()) problems.firstName = 'Who does the carrier ask for?'
-    if (!pickup.lastName.trim()) problems.lastName = 'Enter the last name.'
+    const nameIssue = fullNameProblem(pickup.firstName, pickup.lastName)
+    if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
     const phoneIssue = phoneProblem(pickup.phone)
     if (phoneIssue) problems.phone = phoneIssue
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(pickup.email.trim())) problems.email = 'Enter an email for pickup updates.'

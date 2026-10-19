@@ -252,6 +252,8 @@ function ProductForm({ original, categories, storeCountry }: { original: Product
       if (!form.categoryId) missing.categoryId = 'Choose a category.'
       if (!form.description.trim()) missing.description = 'Describe the product.'
       if (!(Number(form.price) > 0)) missing.price = 'Enter a price.'
+      // Carriers quote by weight: every package item needs a weight above zero.
+      if (!(Number(form.weightKg) > 0)) missing.approximateWeightGrams = 'Enter the weight per unit; carriers price the delivery by it.'
       if (!form.soldAs.trim()) missing.soldAs = 'Say how it is sold.'
       if (!form.images.length) missing.images = 'Add at least one photo.'
       if (form.availableQuantity === '') missing.availableQuantity = 'Enter the quantity available.'

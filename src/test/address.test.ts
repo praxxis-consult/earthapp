@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { areaProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../lib/address'
+import { areaProblem, earliestPickupDay, fullNameProblem, lagosHour, latestPickupDay, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../lib/address'
 
 describe('what the carrier can place', () => {
   it('wants a street that starts with its number and names the road', () => {
@@ -36,5 +36,24 @@ describe('what the carrier can place', () => {
     expect(nigerianPhone('803123')).toBeNull()
     expect(phoneProblem('0803 123 4567')).toBeNull()
     expect(phoneProblem('+44 7700 900123')).toMatch(/Nigerian/)
+  })
+})
+
+describe('the carrier’s pickup window', () => {
+  it('starts today before 6 PM Lagos time and tomorrow after, and ends a week out', () => {
+    const noon = Date.parse('2026-10-19T11:00:00Z') // 12:00 in Lagos (UTC+1)
+    const evening = Date.parse('2026-10-19T17:30:00Z') // 18:30 in Lagos
+    expect(lagosHour(noon)).toBe(12)
+    expect(lagosHour(evening)).toBe(18)
+    expect(earliestPickupDay(noon)).toBe('2026-10-19')
+    expect(earliestPickupDay(evening)).toBe('2026-10-20')
+    expect(latestPickupDay(noon)).toBe('2026-10-26')
+    // 23:30 UTC is 00:30 the next day in Lagos: that day, before the cutoff
+    expect(earliestPickupDay(Date.parse('2026-10-19T23:30:00Z'))).toBe('2026-10-20')
+  })
+  it('wants both parts of the name', () => {
+    expect(fullNameProblem('Ogagaoghene', 'Akpolo')).toBeNull()
+    expect(fullNameProblem('', 'Akpolo')).toMatch(/first name/)
+    expect(fullNameProblem('Ogagaoghene', ' ')).toMatch(/last name/)
   })
 })
