@@ -214,7 +214,9 @@ export default function OrderDetail() {
       const problem = toApiError(e)
       setError(
         problem.status === 409
-          ? `${problem.detail || 'This order changed just now.'} Reload the page to see its latest state.`
+          ? /version|changed|stale/i.test(problem.code + problem.detail) || !problem.detail
+            ? `${problem.detail || 'This order changed just now.'} Reload the page to see its latest state.`
+            : problem.detail
           : problem.status === 422
             ? problem.detail || problem.title || 'The API refused this step.'
             : describeError(e),

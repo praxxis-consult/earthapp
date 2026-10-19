@@ -44,7 +44,7 @@ const inRange = (o: Order, range: Range, now: Date) => {
   return true
 }
 
-const ORDER_COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 } })
+const ORDER_COLUMNS = orderColumns({ widths: { order: 174, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 118 } })
 
 /**
  * The store's orders, from `GET /orders/me` (the same rows the overview's latest-orders table

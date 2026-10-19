@@ -88,10 +88,11 @@ export default function DataTable<Row>({
 
   return (
     <div
-      className={`border border-[#f7f7f7] bg-white ${scroll ? 'overflow-y-auto' : 'overflow-hidden'} ${className}`}
-      style={{ borderRadius: radius }}
+      className={`border border-[#f7f7f7] bg-white ${scroll ? 'overflow-y-auto' : 'overflow-hidden'} max-xl:overflow-x-auto ${className}`}
+      style={{ borderRadius: radius, ['--design-w' as string]: `${designWidth}px` }}
     >
-      <table className="w-full table-fixed border-collapse max-md:hidden">
+      {/* Between md and xl the columns would collide, so the table keeps its design width and the panel scrolls sideways */}
+      <table className="w-full table-fixed border-collapse max-md:hidden max-xl:min-w-(--design-w)">
         <colgroup>
           {columns.map((c) => (
             <col key={c.key} style={c.width ? { width: `${(c.width / designWidth) * 100}%` } : undefined} />

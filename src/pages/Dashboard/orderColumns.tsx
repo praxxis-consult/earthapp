@@ -106,7 +106,7 @@ export function orderColumns({ widths, quantityAlign = 'center', status = true, 
       width: widths.status,
       align: 'center',
       card: 'badge',
-      cell: (o) => <OrderStatusBadge status={o.status} maxWidth={92} />,
+      cell: (o) => <OrderStatusBadge status={o.status} maxWidth={(widths.status ?? 118) - 8} />,
     })
   }
   return columns

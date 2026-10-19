@@ -15,7 +15,7 @@ import { jakarta, SCROLL_ROW } from '../../utils/styles'
 
 const PAGE_SIZE = 7
 
-const COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 }, party: 'seller' })
+const COLUMNS = orderColumns({ widths: { order: 174, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 118 }, party: 'seller' })
 
 /**
  * The buyer's orders. No frame exists for it; it is the seller's orders page (561:3325) with the
