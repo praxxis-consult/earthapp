@@ -177,12 +177,13 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
 
   if (quotes) {
     const views = quotes.items.map(quoteView)
+    const picked = views.find((v) => v.id === chosen)
     const left = Math.min(...views.map((v) => secondsLeft(v, quotes.receivedAt, now)))
     const expired = left <= 0
     return (
       <Shell title="Choose a carrier" onClose={onClose} onSubmit={expired ? submit : place} busy={placing} cta={expired ? 'Get fresh quotes' : 'Place order and pay'} busyLabel="Placing your order…" cancel>
         <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-          {quantity} {listing.unit}{quantity === 1 ? '' : 's'} of {listing.title} · {total} for the goods, plus the delivery you choose. {expired ? 'These offers have expired.' : `Offers expire in ${mmss(left)}.`}
+          {quantity} {listing.unit}{quantity === 1 ? '' : 's'} of {listing.title} · {total} for the goods. Pick who delivers it; the price and total are per offer. {expired ? 'These offers have expired.' : `Offers expire in ${mmss(left)}.`}
         </p>
         <div role="radiogroup" aria-label="Carrier offers" className="flex flex-col gap-[8px]">
           {views.map((v) => {
@@ -194,19 +195,56 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
                   <span className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
                     {v.name}
                   </span>
-                  {v.eta && (
+                  <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
+                    {v.eta ? `Delivers ${v.eta.replace(/^within\s+/i, 'within ')}` : 'Delivery time not given'}
+                  </span>
+                </span>
+                <span className="flex flex-col items-end gap-[2px] shrink-0">
+                  <span className="text-[#101604] text-[14px] leading-[20px]" style={jakarta(600)}>
+                    {v.delivery ? `${v.delivery} delivery` : 'Priced at payment'}
+                  </span>
+                  {v.total && (
                     <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                      {v.eta}
+                      {v.total} in all
                     </span>
                   )}
-                </span>
-                <span className="text-[#101604] text-[14px] leading-[20px] shrink-0" style={jakarta(600)}>
-                  {v.total || 'Shown at payment'}
                 </span>
               </label>
             )
           })}
         </div>
+        {picked && (picked.total || picked.goods) && (
+          /* The chosen offer's breakdown, on the payment-summary lines the order pages use */
+          <div className="flex flex-col gap-[8px] rounded-[16px] bg-[#f7f7f7] px-[16px] py-[12px]">
+            {[
+              ['Goods', picked.goods || total],
+              ['Delivery', picked.delivery || 'Priced at payment'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between">
+                <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
+                  {k}
+                </span>
+                <span className="text-[#101604] text-[13px] leading-[16px]" style={jakarta(500)}>
+                  {v}
+                </span>
+              </div>
+            ))}
+            <div className="h-px w-full bg-[#e4dede]" />
+            <div className="flex items-center justify-between">
+              <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
+                Total to pay
+              </span>
+              <span className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
+                {picked.total || 'Shown at payment'}
+              </span>
+            </div>
+            {picked.acceptMinutes !== null && (
+              <p className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
+                Once you pay, the seller has {picked.acceptMinutes} minutes to accept the order.
+              </p>
+            )}
+          </div>
+        )}
         <Field label="Note for the seller" htmlFor="co-note" hint="Optional">
           <textarea id="co-note" value={note} maxLength={500} rows={2} onChange={(e) => setNote(e.target.value)} className={`${inputClass} h-auto rounded-[20px] py-[12px]`} style={jakarta(400)} />
         </Field>

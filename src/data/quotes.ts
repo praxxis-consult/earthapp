@@ -4,14 +4,20 @@ import { naira } from './orders'
 /** A carrier offer as the checkout draws it. */
 export interface QuoteView {
   id: string
-  /** The courier or service, or "Carrier option N" until the answer names one. */
+  /** The courier ("Bubble Express"). */
   name: string
-  /** "₦1,200.00", or '' when the offer carries no total the page recognises. */
+  /** What the buyer pays for the delivery: the carrier's charge plus Earth's delivery markup, as "₦4,095.96"; '' when unknown. */
+  delivery: string
+  /** Everything the buyer pays with this offer, goods included; '' when unknown. */
   total: string
-  /** The offer's expiry, if it says; quotes last two minutes. */
+  /** The goods alone, as the quote prices them; '' when unknown. */
+  goods: string
+  /** The offer's expiry; quotes last two minutes. */
   expiresAt: string | null
-  /** The carrier's delivery estimate, if it says. */
+  /** The carrier's delivery estimate ("Within 21 hrs"). */
   eta: string
+  /** How long the seller has to accept once paid, in minutes, when the quote says. */
+  acceptMinutes: number | null
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
@@ -19,26 +25,34 @@ const first = (q: Record<string, unknown>, keys: string[]): unknown => {
   for (const k of keys) if (q[k] !== undefined && q[k] !== null && q[k] !== '') return q[k]
   return undefined
 }
+const minor = (v: unknown): number | null => (/^\d+$/.test(str(v)) ? Number(str(v)) : null)
+const money = (kobo: number | null): string => (kobo === null ? '' : naira(kobo / 100))
 
 /**
- * Reads a quote leniently. The walkthrough says each returned item has an id, a total and an
- * expiry, and stands for one courier or service; it does not name those fields and QA cannot
- * produce a quote yet, so the likely names are tried and the page degrades to the id.
+ * Reads a quote as the API answers it (seen on 19 October): `carrierName`, `service`,
+ * `deliveryEstimate`, `expiresAt`, `acceptance.minutes`, and kobo strings `goods`, `carrier`,
+ * `commission`, `deliveryMarkup`, `tax`, `buyerTotal`. The buyer's delivery price is the carrier's
+ * charge plus the markup; `buyerTotal` is goods plus that. Older names are still read as a fallback.
  */
 export function quoteView(q: Quote, index: number): QuoteView {
-  const named = first(q, ['courierName', 'carrierName', 'serviceName', 'courier', 'carrier', 'service', 'name'])
+  const named = first(q, ['carrierName', 'courierName', 'serviceName', 'courier', 'carrier', 'name'])
   const name = typeof named === 'object' && named !== null ? str((named as Record<string, unknown>).name) : str(named)
-  // Amounts on this API are kobo; a nested money object carries `amountMinor`.
-  const money = first(q, ['total', 'totalMinor', 'amountMinor', 'amount', 'priceMinor', 'price', 'fee'])
-  const minor = typeof money === 'object' && money !== null ? str((money as Record<string, unknown>).amountMinor) : str(money)
-  const expires = str(first(q, ['expiresAt', 'expiry', 'validUntil']))
-  const eta = str(first(q, ['estimatedDelivery', 'deliveryEta', 'eta', 'estimatedDeliveryDate']))
+  const carrierFee = minor(q.carrier)
+  const markup = minor(q.deliveryMarkup) ?? 0
+  const delivery = carrierFee !== null ? carrierFee + markup : minor(first(q, ['deliveryMinor', 'deliveryFee', 'fee']))
+  const total = minor(first(q, ['buyerTotal', 'totalMinor', 'total']))
+  const goods = minor(first(q, ['goods', 'goodsMinor', 'subtotal']))
+  const acceptance = q.acceptance as { minutes?: unknown } | undefined
+  const acceptMinutes = typeof acceptance?.minutes === 'number' ? acceptance.minutes : null
   return {
     id: q.id,
-    name: name || `Carrier option ${index + 1}`,
-    total: /^\d+$/.test(minor) ? naira(Number(minor) / 100) : '',
-    expiresAt: expires || null,
-    eta,
+    name: name && !/^\d+$/.test(name) ? name : `Carrier option ${index + 1}`,
+    delivery: money(delivery),
+    total: money(total),
+    goods: money(goods),
+    expiresAt: str(first(q, ['expiresAt', 'expiry', 'validUntil'])) || null,
+    eta: str(first(q, ['deliveryEstimate', 'estimatedDelivery', 'deliveryEta', 'eta'])),
+    acceptMinutes,
   }
 }
 
