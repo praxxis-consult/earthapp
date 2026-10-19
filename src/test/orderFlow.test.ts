@@ -78,8 +78,10 @@ describe('lenient readers', () => {
 describe('a refused quote', () => {
   it('names whose address the carrier refused and marks only the buyer’s fields', () => {
     const both = quoteRefusal([{ path: 'pickup', code: 'provider_address_rejected' }, { path: 'address', code: 'provider_address_rejected' }])
-    expect(both.message).toMatch(/both/)
-    expect(Object.keys(both.fields)).toEqual(['street', 'area', 'postalCode'])
+    expect(both.message).toMatch(/not about your address/)
+    expect(both.fields).toEqual({})
+    const mine = quoteRefusal([{ path: 'address', code: 'provider_address_rejected' }])
+    expect(Object.keys(mine.fields)).toEqual(['street', 'area', 'postalCode'])
     const pickup = quoteRefusal([{ path: 'pickup' }])
     expect(pickup.message).toMatch(/seller’s pickup address/)
     expect(pickup.fields).toEqual({})

@@ -65,9 +65,10 @@ const ADDRESS_HINT = 'The carrier could not find this address. Use the street nu
 export function quoteRefusal(errors: { path?: string; code?: string }[]): QuoteRefusal {
   const pickup = errors.some((e) => e.path === 'pickup')
   const address = errors.some((e) => e.path === 'address' || e.path?.startsWith('address.'))
-  const fields: Record<string, string> = address ? { street: ADDRESS_HINT, area: 'Check the area.', postalCode: 'Check the postal code.' } : {}
+  // Both refused at once means the carrier call itself is failing on the seller's side; the buyer's fields are not the problem.
   if (pickup && address)
-    return { fields, message: 'The carrier refused both the seller’s pickup address and this delivery address, so no quote is possible right now. Check your address, or try again later; the seller has been told.' }
+    return { fields: {}, message: 'The carrier refused the seller’s pickup address as well as yours, so this is not about your address: this store’s delivery is not working yet. Try again later, or message the seller.' }
+  const fields: Record<string, string> = address ? { street: ADDRESS_HINT, area: 'Check the area.', postalCode: 'Check the postal code.' } : {}
   if (pickup) return { fields, message: 'The carrier does not accept this seller’s pickup address yet, so the store cannot be delivered from. Message the seller so they can fix their delivery setup.' }
   if (address) return { fields, message: 'The carrier could not accept this delivery address. Check the highlighted fields.' }
   return { fields, message: 'The carrier could not quote this order. Check the details and try again.' }
