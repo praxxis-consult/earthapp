@@ -33,7 +33,7 @@ import {
   type OrderSummary,
 } from '../../feature/orders/ordersApiSlice'
 import { orderFromOverview } from '../../data/overview'
-import { isPaid, paymentExpired, stepTime, trackingView } from '../../data/orderFlow'
+import { isPaid, paymentExpired, sellerMoney, stepTime, trackingView } from '../../data/orderFlow'
 import { findOrder, initials, naira, orderTotal, type Order, type OrderStatus } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -41,7 +41,7 @@ import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 /** The seven steps on the timeline card, with the timeline words that mark each as reached; a status sits at an index on it. */
 const STEPS: { label: string; words: string[] }[] = [
   { label: 'Order placed', words: ['placed', 'created'] },
-  { label: 'Payment confirmed', words: ['paid', 'payment'] },
+  { label: 'Payment confirmed', words: ['verified', 'paid'] },
   { label: 'Order accepted', words: ['accept'] },
   { label: 'Packed and ready', words: ['ready'] },
   { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
@@ -198,7 +198,10 @@ export default function OrderDetail() {
   const closed = status === 'cancelled' || status === 'declined'
   const placed = new Date(o.placedAt)
   const tracking = trackingView(summary?.fulfillmentDelivery)
-  const events = timeline.data ?? []
+  const events = timeline.data ?? summary?.timeline?.items ?? []
+  const money = sellerMoney(summary?.pricing, summary?.total ?? '0')
+  const acceptBy = summary?.acceptanceDeadline ? new Date(summary.acceptanceDeadline).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''
+  const addressLine = (a: OrderSummary['address']) => (a ? `${a.street}, ${a.area}, ${a.region}` : '')
 
   async function run(action: (a: { id: string; expectedVersion: number }) => { unwrap: () => Promise<unknown> }, after?: () => void) {
     if (!summary) return
@@ -222,7 +225,7 @@ export default function OrderDetail() {
     new: paid
       ? {
           title: 'Accept this order',
-          body: `Payment from ${buyer} is verified. Accept it to start packing, or decline and the buyer is refunded.`,
+          body: `Payment from ${buyer} is verified. Accept it${acceptBy ? ` by ${acceptBy}` : ''} to start packing, or decline and the buyer is refunded.`,
           actions: {
             label: 'Accept order',
             icon: checksIcon,
@@ -240,7 +243,7 @@ export default function OrderDetail() {
       actions: { label: 'Mark as ready', icon: truckIcon, busy, onClick: () => setDialog('evidence') },
     },
     ready: {
-      title: tracking ? 'The carrier is booked' : 'Booking the carrier',
+      title: tracking ? 'The carrier is booked' : summary?.delivery?.carrier ? `Booking ${summary.delivery.carrier}` : 'Booking the carrier',
       body: tracking
         ? `${tracking.courier || 'The carrier'} collects from your pickup address${tracking.number ? ` (tracking ${tracking.number})` : ''}. Mark the order dispatched once the carrier has collected the package.`
         : 'The delivery is being booked with the carrier now that the order is paid and ready; the tracking appears here. Mark it dispatched only once the carrier has collected the package.',
@@ -270,9 +273,11 @@ export default function OrderDetail() {
     },
   }
   const banner = banners[status]
+  const carrierName = tracking?.courier || summary?.delivery?.carrier || o.delivery.courier
   const deliveryRows = [
-    o.delivery.courier || tracking?.courier ? { icon: truckFastIcon, label: tracking?.courier || o.delivery.courier, value: o.delivery.method === 'Motorbike' ? 'Motorcycle' : o.delivery.method, swap: true } : { icon: truckFastIcon, label: 'Method', value: o.delivery.method },
-    o.delivery.address ? { icon: locationIcon, label: 'Delivery Address', value: o.delivery.address } : null,
+    carrierName ? { icon: truckFastIcon, label: summary?.delivery?.estimate ? `Carrier · ${summary.delivery.estimate.toLowerCase()}` : 'Carrier', value: carrierName } : { icon: truckFastIcon, label: 'Method', value: o.delivery.method },
+    summary?.pickup ? { icon: locationIcon, label: 'Collected from', value: addressLine(summary.pickup) } : null,
+    summary?.address ? { icon: locationIcon, label: 'Delivered to', value: addressLine(summary.address) } : o.delivery.address ? { icon: locationIcon, label: 'Delivery Address', value: o.delivery.address } : null,
     tracking?.number ? { icon: routingIcon, label: 'Tracking number', value: tracking.number, href: tracking.url || undefined } : null,
     { icon: cardPosIcon, label: paid ? 'Amount paid' : 'Amount due', value: naira(summary ? Number(summary.total) / 100 : o.delivery.amountPaid).replace(/\.00$/, '') },
   ]
@@ -458,11 +463,18 @@ export default function OrderDetail() {
 
             <Card title="Payment summary" className="min-h-[261px]">
               <div className="flex flex-col gap-[16px]">
-                {[
-                  ['Items subtotal', naira(summary ? (Number(summary.item.priceMinor) / 100) * summary.item.quantity : o.payment.subtotal)],
-                  ['Delivery fee', naira(summary ? Math.max(0, Number(summary.total) / 100 - (Number(summary.item.priceMinor) / 100) * summary.item.quantity) : o.payment.fee)],
-                  ...(summary ? [] : [['Discount', naira(o.payment.discount)]]),
-                ].map(([k, v]) => (
+                {(summary
+                  ? [
+                      ['Goods', naira(money.goods)],
+                      ['Earth’s commission', `− ${naira(money.commission)}`],
+                      ['Buyer paid, delivery included', naira(Number(summary.total) / 100)],
+                    ]
+                  : [
+                      ['Items subtotal', naira(o.payment.subtotal)],
+                      ['Delivery fee', naira(o.payment.fee)],
+                      ['Discount', naira(o.payment.discount)],
+                    ]
+                ).map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
                       {k}
@@ -475,15 +487,15 @@ export default function OrderDetail() {
                 <div className="h-px w-full bg-[#f7f7f7]" />
                 <div className="flex items-center justify-between">
                   <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
-                    {paid ? 'Total paid' : 'Total due'}
+                    {summary ? 'Your share' : paid ? 'Total paid' : 'Total due'}
                   </span>
                   <span className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
-                    {naira(summary ? Number(summary.total) / 100 : orderTotal(o))}
+                    {naira(summary ? money.share : orderTotal(o))}
                   </span>
                 </div>
                 {summary && (
                   <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                    Payment {summary.paymentStatus.toLowerCase().replace(/_/g, ' ')}
+                    Payment {String(summary.paymentStatus).toLowerCase().replace(/_/g, ' ')}
                     {summary.paidAt ? ` on ${new Date(summary.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}. The buyer’s payment is split at source: your share goes to your bank, the commission and delivery to Earth.
                   </p>
                 )}
@@ -493,8 +505,12 @@ export default function OrderDetail() {
 
           <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Buyer">
-              <Detail text={initials(o.buyer.name)} label={o.buyer.since || 'Buyer'} value={o.buyer.name} swap />
-              {o.buyer.address && <Detail icon={locationIcon} label="Address" value={o.buyer.address} />}
+              <Detail text={initials(o.buyer.name)} label={summary?.customerSince ? `Customer since ${new Date(summary.customerSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : o.buyer.since || 'Buyer'} value={o.buyer.name} swap />
+              {summary?.address ? (
+                <Detail icon={locationIcon} label={`Delivery address · ${summary.address.phone}`} value={addressLine(summary.address)} />
+              ) : (
+                o.buyer.address && <Detail icon={locationIcon} label="Address" value={o.buyer.address} />
+              )}
               <MessageButton name={buyer} className="w-full" />
             </Card>
 

@@ -18,11 +18,11 @@ import bagHappyLg from '../../assets/icons/od-bag-happy-lg.svg'
 import bagHappySm from '../../assets/icons/od-bag-happy-sm.svg'
 import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
 import bagCrossSm from '../../assets/icons/od-bag-cross-sm.svg'
-import { useCancelOrderMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary } from '../../feature/orders/ordersApiSlice'
+import { useCancelOrderMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary, type Receipt } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { usePostReviewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { purchaseFromApi } from '../../data/purchases'
-import { awaitingPayment, cancelMeaning, canCancel, isPaid, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
+import { awaitingPayment, buyerMoney, cancelMeaning, canCancel, isPaid, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
 import { initials, naira, type OrderStatus } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -30,7 +30,7 @@ import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 /** The seller page's seven steps, read from the buyer's side, with the timeline words that mark each as reached. */
 const STEPS: { label: string; words: string[] }[] = [
   { label: 'Order placed', words: ['placed', 'created'] },
-  { label: 'Payment confirmed', words: ['paid', 'payment'] },
+  { label: 'Payment confirmed', words: ['verified', 'paid'] },
   { label: 'Seller accepted', words: ['accept'] },
   { label: 'Packed and ready', words: ['ready'] },
   { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
@@ -106,30 +106,30 @@ function useTicking(on: boolean): number {
   return now
 }
 
-const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
+const clock = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '')
+const addressLine = (a: OrderSummary['address']) => (a ? `${a.street}, ${a.area}, ${a.region}` : '')
 
-/** The receipt dialog's rows, from the order and whatever the frozen receipt record names. */
-function receiptData(o: OrderSummary, receipt: Record<string, unknown> | undefined, status: OrderStatus): ReceiptData {
-  const r = receipt ?? {}
-  const total = Number(o.total) / 100
+/** The receipt dialog's rows, from the order and the frozen receipt record (`GET /orders/{id}/receipt`). */
+function receiptData(o: OrderSummary, receipt: Receipt | undefined, status: OrderStatus): ReceiptData {
+  const money = buyerMoney(o.pricing, o.total)
   const etaBy: Record<OrderStatus, string> = {
-    new: 'Once the seller accepts',
+    new: o.delivery?.estimate ? `${o.delivery.estimate} once accepted` : 'Once the seller accepts',
     processing: 'Being packed',
     ready: 'Awaiting the carrier',
-    dispatched: 'With the carrier',
+    dispatched: o.delivery?.estimate ?? 'With the carrier',
     completed: 'Delivered',
     cancelled: 'Cancelled',
     declined: 'Declined',
   }
   return {
-    invoiceNumber: str(r.invoiceNumber ?? r.invoiceId) || o.id,
-    receiptNumber: str(r.receiptNumber ?? r.number ?? r.id) || o.id,
+    invoiceNumber: receipt?.invoiceNumber ?? o.id,
+    receiptNumber: receipt?.providerTransactionId ?? o.id,
     paidAt: o.paidAt ? when(o.paidAt) : '',
-    amount: total,
+    amount: receipt ? Number(receipt.amount) / 100 : money.total,
     product: { title: o.item.name, detail: `${o.item.quantity} × ${naira(Number(o.item.priceMinor) / 100)} · ${o.storeName}`, image: o.item.thumbnail ?? '' },
-    paidWith: 'Paystack',
-    reference: str(r.reference ?? r.paymentReference ?? r.transactionReference) || o.id,
-    deliveryTitle: status === 'completed' ? 'Delivered' : 'Delivery',
+    paidWith: receipt?.provider ? `${receipt.provider[0]}${receipt.provider.slice(1).toLowerCase()}${receipt.environment === 'test' ? ' (test)' : ''}` : 'Paystack',
+    reference: receipt?.paymentReference ?? o.id,
+    deliveryTitle: o.delivery?.carrier ? `${o.delivery.carrier} delivery` : status === 'completed' ? 'Delivered' : 'Delivery',
     deliveryEta: etaBy[status],
     nextSteps: ['The seller accepts and packs the order.', 'A carrier is booked once it is ready; you will see the tracking here.', 'Once delivered, you can review the goods.'],
   }
@@ -190,16 +190,18 @@ export default function PurchaseDetail() {
   const expired = paymentExpired(summary, now)
   const reached = paid ? REACHED[status] : 1
   const placed = new Date(o.placedAt)
-  const subtotal = o.item.price * o.item.qty
-  const total = o.payment.subtotal
-  const delivery = Math.max(0, total - subtotal)
+  const money = buyerMoney(summary.pricing, summary.total)
+  const subtotal = money.goods || o.item.price * o.item.qty
+  const delivery = money.delivery
+  const total = money.total
   const tracking = trackingView(summary.fulfillmentDelivery)
-  const events = timeline.data ?? []
+  const events = timeline.data ?? summary.timeline?.items ?? []
+  const acceptBy = summary.acceptanceDeadline ? clock(summary.acceptanceDeadline) : ''
   const productId = summary.items?.find((i) => typeof i.productId === 'string')?.productId
   const paying = payment.state.phase === 'preparing' || payment.state.phase === 'redirecting'
 
   const banners: Record<OrderStatus, Banner> = {
-    new: { title: `Waiting for ${store} to accept`, body: 'Your payment is confirmed. The seller reviews the order next, and you will hear as soon as it is accepted. You can still cancel until then.' },
+    new: { title: `Waiting for ${store} to accept`, body: `Your payment is verified. The seller has until ${acceptBy || 'the acceptance deadline'} to accept, and you will hear as soon as they do. You can still cancel until then.` },
     processing: { title: `${store} is preparing your order`, body: 'The seller accepted and is packing it. A carrier is booked as soon as it is marked ready.' },
     ready: { title: 'Packed and waiting for the carrier', body: 'The seller has it ready. The carrier is booked and collects it next; you will see the tracking here.' },
     dispatched: { title: 'On its way to you', body: 'The carrier has collected the package. Keep your phone close for the delivery.', art: [truckTimeLg, truckTimeSm] },
@@ -423,8 +425,8 @@ export default function PurchaseDetail() {
                   </span>
                 </div>
                 <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                  Payment {summary.paymentStatus.toLowerCase().replace(/_/g, ' ')}
-                  {summary.paidAt ? ` on ${new Date(summary.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  Payment {String(summary.paymentStatus).toLowerCase().replace(/_/g, ' ')}
+                  {summary.paidAt ? ` on ${when(summary.paidAt)}` : ''}
                   {summary.refundRequired ? ' · refund due' : ''}.
                 </p>
               </div>
@@ -473,6 +475,7 @@ export default function PurchaseDetail() {
           <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Seller">
               <Detail text={initials(store)} label="Store" value={store} />
+              {summary.pickup && <Detail icon={truckFastIcon} label="Ships from" value={addressLine(summary.pickup)} />}
             </Card>
             <Card
               title="Delivery"
@@ -485,7 +488,8 @@ export default function PurchaseDetail() {
                 ) : null
               }
             >
-              <Detail icon={truckFastIcon} label={tracking?.courier ? 'Carrier' : 'Method'} value={tracking?.courier || o.delivery.method} />
+              <Detail icon={truckFastIcon} label={summary.delivery?.estimate ? `Carrier · ${summary.delivery.estimate.toLowerCase()}` : 'Carrier'} value={tracking?.courier || summary.delivery?.carrier || o.delivery.method} />
+              {summary.address && <Detail icon={routingIcon} label={`Delivering to ${summary.address.firstName} ${summary.address.lastName} · ${summary.address.phone}`} value={addressLine(summary.address)} />}
               {tracking?.number && <Detail icon={routingIcon} label="Tracking number" value={tracking.number} href={tracking.url || undefined} />}
               <Detail icon={cardPosIcon} label={paid ? 'Amount paid' : 'Amount due'} value={naira(total)} />
             </Card>

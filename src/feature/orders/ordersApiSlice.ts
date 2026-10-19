@@ -2,32 +2,117 @@ import { apiSlice } from '../../app/api/apiSlice'
 import { allPages, type Page } from '../stores/storesApiSlice'
 import type { OverviewOrder } from '../overview/overviewApiSlice'
 import type { ApiProblem } from '../../services/earthApi'
+import { normalizeOrder } from '../../data/orderFlow'
+
+/** A party's address on an order, as the API records it. */
+export interface OrderAddress {
+  country: string
+  region: string
+  area: string
+  street: string
+  landmark: string
+  postalCode: string
+  firstName: string
+  lastName: string
+  phone: string
+  email: string
+}
+
+/** One line of an order. */
+export interface OrderItem {
+  productId: string
+  name: string
+  thumbnail: string | null
+  priceMinor: string
+  quantity: number
+  weightGrams: number
+  perishable: boolean | null
+}
+
+/** The money on an order, kobo strings: what the buyer pays and how it splits (seen 19 October). */
+export interface OrderPricing {
+  policyId: string
+  currency: string
+  goods: string
+  carrier: string
+  commission: string
+  deliveryMarkup: string
+  tax: string
+  buyerTotal: string
+  sellerAllocation: string
+  carrierAllocation: string
+  earthAllocation: string
+}
+
+/** One recorded event on an order (`GET /orders/{id}/timeline` and the order's own `timeline.items`). */
+export interface TimelineEvent {
+  sequence: number
+  /** "order.created", "payment.initializing", "payment.pending", "payment.verified", … */
+  kind: string
+  actor_id: string | null
+  actor_kind?: string
+  reason: string | null
+  created_at: string
+}
 
 /**
- * What an order carries beyond the overview's summary, as the seller-and-buyer walkthrough names
- * it: the payment window (`expiresAt`, fifteen minutes from creation), the buyer's note, and the
- * flags the cancel and confirm steps return. The spec has no schema for an order, so each is
- * optional and read only when present.
+ * What `GET /orders/{id}` carries beyond the list summary, as seen on 19 October: the lines,
+ * both addresses, the chosen carrier, the money split, the recorded events, the payment window
+ * (`expiresAt`, fifteen minutes) and the seller's acceptance deadline.
  */
 export interface OrderExtras {
+  buyerId?: string
+  sellerId?: string
   expiresAt?: string | null
-  note?: string | null
+  acceptanceDeadline?: string | null
+  acceptancePolicy?: { minutes: number; basis: string; openingHours: unknown } | null
+  paymentReviewReason?: string | null
   reservationStatus?: string
   cancellationRequested?: boolean
   refundRequired?: boolean
-  /** The carrier booking the delivery worker records after payment and READY: label, tracking. */
-  fulfillmentDelivery?: Record<string, unknown> | null
-  items?: { productId?: string; [key: string]: unknown }[]
+  refundedMinor?: string
+  refundOutstandingMinor?: string
+  customerSince?: string
+  note?: string | null
+  items?: OrderItem[]
+  address?: OrderAddress
+  pickup?: OrderAddress
+  delivery?: { provider: string; carrier: string; service: string; estimate: string } | null
+  pricing?: OrderPricing
+  timeline?: { items: TimelineEvent[] }
+  /** The carrier booking after payment and READY: `{ status, tracking, confirmedPickup, checkedAt }`. */
+  fulfillmentDelivery?: { status?: string; tracking?: Record<string, unknown> | null; confirmedPickup?: unknown; checkedAt?: string } | null
 }
 
-/** An order as `GET /orders/me` and `GET /orders/{id}` list it: the overview's summary, plus what the order itself carries. */
+/** An order as the pages use it: the list summary every endpoint shares, plus whatever the detail added. */
 export type OrderSummary = OverviewOrder & OrderExtras
 
-/** `GET /orders/{id}/payment`: 202 from the POST means "preparing"; the hosted link appears here once the worker has it. */
+/** `GET /orders/{id}` as the API answers it: no `item`/`total` summary, but `items`, `amountPaid` and the rest. */
+export type OrderDetailRaw = Omit<OverviewOrder, 'item' | 'itemCount' | 'firstItem' | 'total' | 'currency'> & OrderExtras & { amountPaid: string; items: OrderItem[] }
+
+/** `GET /orders/{id}/payment`: 202 from the POST means "preparing"; the hosted link appears here once the worker has it, and `status` reads PAID after. */
 export interface PaymentStatus {
+  orderId?: string
   status?: string
+  reference?: string
   authorizationUrl?: string | null
   [key: string]: unknown
+}
+
+/** `GET /orders/{id}/receipt`, after verified payment. */
+export interface Receipt {
+  orderId: string
+  invoiceNumber: string
+  paymentReference: string
+  providerTransactionId: string
+  provider: string
+  environment: string
+  amount: string
+  currency: string
+  paidAt: string
+  refundedMinor: string
+  refundOutstandingMinor: string
+  version: number
 }
 
 /** `POST /orders/{id}/payment/confirm`: the server verifies with Paystack itself and reports what it found. */
@@ -38,9 +123,6 @@ export interface PaymentConfirmation {
   refundRequired?: boolean
   [key: string]: unknown
 }
-
-/** One recorded event on an order (`GET /orders/{id}/timeline`); its field names are read leniently in `data/orderFlow.ts`. */
-export type TimelineEvent = Record<string, unknown>
 
 /** Every write on an order sends the version the caller last read; a stale one is refused (409). */
 export interface OrderAction {
@@ -70,6 +152,7 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
     }),
     getOrder: builder.query<OrderSummary, string>({
       query: (id) => `/orders/${encodeURIComponent(id)}`,
+      transformResponse: (raw: OrderDetailRaw) => normalizeOrder(raw),
       providesTags: (_r, _e, id) => [{ type: 'Orders', id }],
     }),
     getTimeline: builder.query<TimelineEvent[], string>({
@@ -78,12 +161,12 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: 'Orders', id }],
     }),
     /** The frozen record of what was paid; only after verified payment. */
-    getReceipt: builder.query<Record<string, unknown>, string>({
+    getReceipt: builder.query<Receipt, string>({
       query: (id) => `/orders/${encodeURIComponent(id)}/receipt`,
       providesTags: (_r, _e, id) => [{ type: 'Orders', id }],
     }),
     /** No client idempotency key: the same buyer and quote return the same order. */
-    createOrder: builder.mutation<OrderSummary, { quoteId: string; note?: string }>({
+    createOrder: builder.mutation<OrderDetailRaw, { quoteId: string; note?: string }>({
       query: (body) => ({ url: '/orders', method: 'POST', body }),
       invalidatesTags: ['Orders'],
     }),
@@ -99,12 +182,12 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
       query: (id) => ({ url: `/orders/${encodeURIComponent(id)}/payment/confirm`, method: 'POST', body: {} }),
       invalidatesTags: (_r, _e, id) => ['Orders', { type: 'Orders', id }],
     }),
-    cancelOrder: builder.mutation<OrderSummary, OrderAction>(transition('cancel')),
-    acceptOrder: builder.mutation<OrderSummary, OrderAction>(transition('accept')),
-    declineOrder: builder.mutation<OrderSummary, OrderAction>(transition('decline')),
-    readyOrder: builder.mutation<OrderSummary, OrderAction>(transition('ready')),
-    dispatchOrder: builder.mutation<OrderSummary, OrderAction>(transition('dispatch')),
-    completeOrder: builder.mutation<OrderSummary, OrderAction>(transition('complete')),
+    cancelOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('cancel')),
+    acceptOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('accept')),
+    declineOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('decline')),
+    readyOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('ready')),
+    dispatchOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('dispatch')),
+    completeOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('complete')),
   }),
 })
 
