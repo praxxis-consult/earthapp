@@ -4,6 +4,7 @@ import { useAuth } from '../../feature/authentication/useAuth'
 import { useGetShipbubbleCategoriesQuery, useSaveShippingProfileMutation, type DeliveryAddress, type Parcel, type ShippingProfile } from '../../feature/delivery/deliveryApiSlice'
 import { describeError, toApiError, type Onboarding } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
+import { areaProblem, fullNameProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
 
 interface DeliveryDialogProps {
   store: Onboarding
@@ -61,13 +62,18 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const phone = pickup.phone.replace(/[\s-]/g, '')
+    const phone = nigerianPhone(pickup.phone) ?? ''
     const problems: Record<string, string> = {}
-    if (!pickup.firstName.trim()) problems.firstName = 'Who does the carrier ask for?'
-    if (!pickup.lastName.trim()) problems.lastName = 'Enter the last name.'
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) problems.phone = 'Enter the number with its country code, like +2348012345678.'
+    const nameIssue = fullNameProblem(pickup.firstName, pickup.lastName)
+    if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
+    const phoneIssue = phoneProblem(pickup.phone)
+    if (phoneIssue) problems.phone = phoneIssue
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(pickup.email.trim())) problems.email = 'Enter an email for pickup updates.'
-    if (!/^\d{6}$/.test(pickup.postalCode.trim())) problems.postalCode = 'Nigerian postal codes are six digits, like 100001.'
+    const postalIssue = postalCodeProblem(pickup.postalCode)
+    if (postalIssue) problems.postalCode = postalIssue
+    // The street and area are the store's; the carrier must be able to place them, so a bad one is fixed under Edit store details.
+    const storeIssue = streetProblem(a.street) ?? areaProblem(a.area)
+    if (storeIssue) problems.address = `${storeIssue} Change it under Edit store details.`
     const dims: (keyof typeof parcel)[] = ['lengthCm', 'widthCm', 'heightCm', 'emptyWeightGrams', 'maxWeightKg']
     for (const k of dims) if (!(Number(parcel[k]) > 0)) problems[k] = 'Enter a number above zero.'
     if (!problems.maxWeightKg && !problems.emptyWeightGrams && numberField(parcel.maxWeightKg) * 1000 <= numberField(parcel.emptyWeightGrams))
@@ -103,6 +109,10 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
         setFieldErrors(fe)
         return setError('The API could not accept some of these details. Check the highlighted fields.')
       }
+      if (problem.status === 422 && problem.errors.some((e) => e.path === 'pickup' || e.path?.startsWith('pickup'))) {
+        setFieldErrors({ postalCode: 'Check the postal code for this address.' })
+        return setError('The carrier could not find this pickup address. It needs the street number and road name, the area as the carrier knows it, and the right postal code; the street and area are changed under Edit store details.')
+      }
       setError(problem.status === 409 ? 'Someone saved newer delivery details. Reload and try again.' : describeError(err))
     }
   }
@@ -127,7 +137,7 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
       </div>
       <div className="flex gap-[16px] max-md:flex-col">
         <Field label="Phone" htmlFor="dl-phone">
-          <input id="dl-phone" type="tel" value={pickup.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+234…" className={inputClass} style={jakarta(400)} />
+          <input id="dl-phone" type="tel" value={pickup.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0803 123 4567" className={inputClass} style={jakarta(400)} />
           {fieldError('phone')}
         </Field>
         <Field label="Email" htmlFor="dl-email">
@@ -144,6 +154,7 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
             {a.street}, {a.area}, {a.region}
             {a.landmark ? ` · ${a.landmark}` : ''}
           </p>
+          {fieldError('address')}
         </Field>
         <Field label="Postal code" htmlFor="dl-postal">
           <input id="dl-postal" value={pickup.postalCode} maxLength={6} inputMode="numeric" onChange={(e) => set({ postalCode: e.target.value.replace(/\D/g, '') })} placeholder="100001" className={inputClass} style={jakarta(400)} />

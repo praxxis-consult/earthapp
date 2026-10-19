@@ -5,7 +5,8 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { regionsOf } from '../../data/locations'
-import { quoteView, secondsLeft } from '../../data/quotes'
+import { areaProblem, earliestPickupDay, fullNameProblem, lagosDay, lagosHour, latestPickupDay, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem, CARRIER_CUTOFF_HOUR } from '../../lib/address'
+import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
 import { naira } from '../../lib/productView'
@@ -18,10 +19,6 @@ interface CheckoutDialogProps {
   onClose: () => void
 }
 
-/** A calendar day in Lagos, `days` from today, as the date input wants it; the carriers' pickup window is today to seven days ahead there. */
-function lagosDay(days: number): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + days * 86_400_000))
-}
 const tomorrow = () => lagosDay(1)
 
 /** A page that ticks once a second, for the countdowns. */
@@ -79,18 +76,23 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
   async function submit(e: FormEvent) {
     e.preventDefault()
     const a = address
-    const phone = a.phone.replace(/[\s-]/g, '')
-    // The API's own rules (its OpenAPI patterns), checked here so the buyer hears them before the round trip.
+    // The carrier resolves the address as typed and the API passes it through, so the carrier's rules are checked here.
+    const phone = nigerianPhone(a.phone) ?? ''
     const problems: Record<string, string> = {}
-    if (!a.firstName.trim()) problems.firstName = 'Enter the first name of who receives the goods.'
-    if (!a.lastName.trim()) problems.lastName = 'Enter the last name.'
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) problems.phone = 'Enter the number with its country code, like +2348012345678.'
+    const nameIssue = fullNameProblem(a.firstName, a.lastName)
+    if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
+    const phoneIssue = phoneProblem(a.phone)
+    if (phoneIssue) problems.phone = phoneIssue
     if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(a.email.trim())) problems.email = 'Enter an email for the delivery updates.'
     if (!a.region) problems.region = 'Choose the state the goods go to.'
-    if (!a.area.trim()) problems.area = 'Enter the town or district.'
-    if (!a.street.trim()) problems.street = 'Enter the street address.'
-    if (!/^\d{6}$/.test(a.postalCode.trim())) problems.postalCode = 'Nigerian postal codes are six digits, like 100001.'
-    if (!pickupDate || pickupDate < lagosDay(0) || pickupDate > lagosDay(7)) problems.pickupDate = 'Pick a day from today to a week ahead.'
+    const areaIssue = areaProblem(a.area)
+    if (areaIssue) problems.area = areaIssue
+    const streetIssue = streetProblem(a.street)
+    if (streetIssue) problems.street = streetIssue
+    const postalIssue = postalCodeProblem(a.postalCode)
+    if (postalIssue) problems.postalCode = postalIssue
+    if (!pickupDate || pickupDate < earliestPickupDay() || pickupDate > latestPickupDay())
+      problems.pickupDate = lagosHour() >= CARRIER_CUTOFF_HOUR ? 'Carriers take requests until 6 PM Lagos time, so the earliest pickup is tomorrow; pick a day up to a week ahead.' : 'Pick a day from today to a week ahead.'
     setFieldErrors(problems)
     if (Object.keys(problems).length) return setError('Check the highlighted details.')
     setError('')
@@ -113,6 +115,12 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
         for (const e of problem.errors) fe[(e.path ?? '').replace(/^address\./, '')] = e.code === 'invalid_format' ? 'Not in the form the carriers accept.' : `Check this (${e.code ?? 'invalid'}).`
         setFieldErrors(fe)
         return setError('The carriers could not accept some of these details. Check the highlighted fields.')
+      }
+      if (problem.status === 422) {
+        // The carrier refused an address: `pickup` is the seller's, `address` the buyer's.
+        const refusal = quoteRefusal(problem.errors)
+        setFieldErrors(refusal.fields)
+        return setError(refusal.message)
       }
       // The API's own words, with what a buyer can do about the ones that are the seller's to fix.
       setError(
@@ -228,7 +236,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
       </div>
       <div className="flex gap-[16px] max-md:flex-col">
         <Field label="Phone" htmlFor="co-phone">
-          <input id="co-phone" type="tel" value={address.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+234…" className={inputClass} style={jakarta(400)} />
+          <input id="co-phone" type="tel" value={address.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0803 123 4567" className={inputClass} style={jakarta(400)} />
           {fieldError('phone')}
         </Field>
         <Field label="Email" htmlFor="co-email">
@@ -243,12 +251,12 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           {fieldError('region')}
         </Field>
         <Field label="Area" htmlFor="co-area">
-          <input id="co-area" value={address.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} placeholder="Town or district" className={inputClass} style={jakarta(400)} />
+          <input id="co-area" value={address.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} placeholder="Lekki Phase 1" className={inputClass} style={jakarta(400)} />
           {fieldError('area')}
         </Field>
       </div>
-      <Field label="Street address" htmlFor="co-street">
-        <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} className={inputClass} style={jakarta(400)} />
+      <Field label="Street address" htmlFor="co-street" hint="House or plot number and the road, or a well-known building">
+        <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} placeholder="12 Admiralty Way" className={inputClass} style={jakarta(400)} />
           {fieldError('street')}
       </Field>
       <div className="flex gap-[16px] max-md:flex-col">
@@ -256,12 +264,12 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           <input id="co-landmark" value={address.landmark} maxLength={240} onChange={(e) => set({ landmark: e.target.value })} className={inputClass} style={jakarta(400)} />
         </Field>
         <Field label="Postal code" htmlFor="co-postal">
-          <input id="co-postal" value={address.postalCode} maxLength={12} onChange={(e) => set({ postalCode: e.target.value })} className={inputClass} style={jakarta(400)} />
+          <input id="co-postal" value={address.postalCode} maxLength={6} inputMode="numeric" onChange={(e) => set({ postalCode: e.target.value.replace(/\D/g, '') })} placeholder="106104" className={inputClass} style={jakarta(400)} />
           {fieldError('postalCode')}
         </Field>
       </div>
-      <Field label="Earliest pickup day" htmlFor="co-pickup" hint="When the carrier may collect from the seller: today to a week ahead">
-        <input id="co-pickup" type="date" value={pickupDate} min={lagosDay(0)} max={lagosDay(7)} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} style={jakarta(400)} />
+      <Field label="Earliest pickup day" htmlFor="co-pickup" hint="When the carrier may collect from the seller: up to a week ahead, from today before 6 PM Lagos time, else from tomorrow">
+        <input id="co-pickup" type="date" value={pickupDate} min={earliestPickupDay()} max={latestPickupDay()} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} style={jakarta(400)} />
           {fieldError('pickupDate')}
       </Field>
       {error && (

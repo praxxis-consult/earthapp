@@ -28,7 +28,8 @@ export default function RecipientStatus({ store }: { store: Onboarding | null })
     }
   }
 
-  const status = str(recipient.data?.status).toLowerCase().replace(/_/g, ' ')
+  // Seen on QA: `{ state: 'READY', environment: 'test', verifiedUntil }`.
+  const status = str(recipient.data?.state ?? recipient.data?.status).toLowerCase().replace(/_/g, ' ')
   const text = !live
     ? 'Payouts start once your store is live with a checked bank account.'
     : recipient.isLoading

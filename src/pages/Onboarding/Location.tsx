@@ -9,6 +9,7 @@ import { describeError } from '../../services/earthApi'
 import { COUNTRY_NAMES, countryCode, countryName, saveDraft, useDraft } from '../../onboarding/draft'
 import { regionsOf } from '../../data/locations'
 import { jakarta } from '../../utils/styles'
+import { areaProblem, streetProblem } from '../../lib/address'
 
 const inputClass =
   'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] outline-none border border-transparent focus:border-[#007c53] transition-colors placeholder:text-[#807e7e]'
@@ -31,6 +32,9 @@ export default function Location() {
     if (!a.region.trim()) return setError('Select your region or state.')
     if (!a.area.trim()) return setError('Enter your area or town.')
     if (!a.street.trim()) return setError('Enter your street address.')
+    // Carriers resolve a Nigerian address as typed: the street starts with its number and names the road.
+    const carrierIssue = a.country === 'NG' ? (streetProblem(a.street) ?? areaProblem(a.area)) : null
+    if (carrierIssue) return setError(carrierIssue)
     setBusy(true)
     setError('')
     try {
