@@ -35,6 +35,7 @@ const STEPS: { label: string; words: string[] }[] = [
   { label: 'Seller accepted', words: ['accept'] },
   { label: 'Packed and ready', words: ['ready'] },
   { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
+  // The timeline records no delivery event; the carrier's delivery is on the booking (`fulfillmentDelivery.status`), read below
   { label: 'Delivered', words: ['deliver'] },
   { label: 'Completed', words: ['complet'] },
 ]
@@ -340,7 +341,7 @@ export default function PurchaseDetail() {
               </span>
             </button>
           )}
-          {banner.art && (
+          {banner.art && !banner.action && (
             <>
               <img src={banner.art[0]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: -20, top: -27, width: 181, height: 181 }} />
               <img src={banner.art[1]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: 61, top: -5, width: 136, height: 136 }} />
@@ -354,7 +355,7 @@ export default function PurchaseDetail() {
               {STEPS.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
-                const at = i === 0 ? o.placedAt : i === 1 ? summary.paidAt : stepTime(events, ...words)
+                const at = i === 0 ? o.placedAt : i === 1 ? summary.paidAt : i === 5 ? (stepTime(events, ...words) ?? (summary.fulfillmentDelivery?.status === 'DELIVERED' ? (summary.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />

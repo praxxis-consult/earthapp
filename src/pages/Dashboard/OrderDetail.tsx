@@ -17,8 +17,6 @@ import truckFastIcon from '../../assets/icons/od-truck-fast.svg'
 import cardPosIcon from '../../assets/icons/od-card-pos.svg'
 import stepDoneIcon from '../../assets/icons/od-step-done.svg'
 import stepTodoIcon from '../../assets/icons/od-step-todo.svg'
-import truckTimeLg from '../../assets/icons/od-truck-time-lg.svg'
-import truckTimeSm from '../../assets/icons/od-truck-time-sm.svg'
 import bagHappyLg from '../../assets/icons/od-bag-happy-lg.svg'
 import bagHappySm from '../../assets/icons/od-bag-happy-sm.svg'
 import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
@@ -46,6 +44,7 @@ const STEPS: { label: string; words: string[] }[] = [
   { label: 'Order accepted', words: ['accept'] },
   { label: 'Packed and ready', words: ['ready'] },
   { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
+  // The timeline records no delivery event; the carrier's delivery is on the booking (`fulfillmentDelivery.status`), read below
   { label: 'Delivered', words: ['deliver'] },
   { label: 'Completed', words: ['complet'] },
 ]
@@ -255,8 +254,8 @@ export default function OrderDetail() {
     dispatched: {
       title: `On its way to ${buyer}`,
       body: 'The carrier has the package. Once it has delivered, mark the order completed; the delivery record is checked.',
+      // The frame's truck glyphs sit where the button goes, so the dispatched banner shows the button alone
       actions: { label: 'Mark as completed', icon: checksIcon, busy, onClick: () => void run(complete) },
-      art: [truckTimeLg, truckTimeSm],
     },
     completed: {
       title: 'Order delivered successfully',
@@ -379,9 +378,9 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-          {banner.art && (
+          {banner.art && !banner.actions && (
             <>
-              {/* Two layered glyphs, as placed in the frame (the large one at 7% sits behind). */}
+              {/* Two layered glyphs, as placed in the frame (the large one at 7% sits behind); never beside a button, which stands where they do */}
               <img src={banner.art[0]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: -20, top: -27, width: 181, height: 181 }} />
               <img src={banner.art[1]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: 61, top: -5, width: 136, height: 136 }} />
             </>
@@ -396,7 +395,7 @@ export default function OrderDetail() {
               {STEPS.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
-                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : stepTime(events, ...words)
+                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : i === 5 ? (stepTime(events, ...words) ?? (summary?.fulfillmentDelivery?.status === 'DELIVERED' ? (summary?.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />
