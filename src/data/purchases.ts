@@ -52,5 +52,4 @@ export function filterPurchases(orders: Order[], tab: PurchaseTab, query: string
   )
 }
 
-/** Only an order the seller has not started on can be cancelled by the buyer. */
-export const canCancel = (status: OrderStatus): boolean => status === 'new'
+export { canCancel } from './orderFlow'

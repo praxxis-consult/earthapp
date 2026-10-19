@@ -3,6 +3,8 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
 import EmptyBlock from '../../components/ui/EmptyBlock'
+import RecipientStatus from '../../components/ui/RecipientStatus'
+import { useStore } from '../../feature/stores/useStore'
 import { naira } from '../../data/orders'
 import { orderLimit, paid, payouts, pending, received, type Payout } from '../../data/payouts'
 import { jakarta } from '../../utils/styles'
@@ -15,6 +17,7 @@ const PAGE_SIZE = 10
  * Figures are local until the payouts API exists.
  */
 export default function Payout() {
+  const { store } = useStore()
   const [page, setPage] = useState(1)
   const pageCount = Math.max(1, Math.ceil(payouts.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
@@ -33,6 +36,7 @@ export default function Payout() {
           <p className="text-[#807e7e] text-[16px] leading-[24px] max-w-[800px]" style={jakarta(400)}>
             Your share of every order goes straight to your bank account the moment the buyer receives their package.
           </p>
+          <RecipientStatus store={store} />
         </div>
 
         {/* Paid / Pending (594:15599, 594:15603): 136 tall, radius 20, label 14/24, figure 32/48 Bold, note 12/15 */}

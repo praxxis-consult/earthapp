@@ -8,7 +8,7 @@ import SetupDoneModal from '../../components/ui/SetupDoneModal'
 import editIcon from '../../assets/icons/onboarding-edit.svg'
 import verifyIcon from '../../assets/icons/onboarding-verify.svg'
 import { describeError, toApiError } from '../../services/earthApi'
-import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { useGetCategoriesQuery, useProvisionPaymentRecipientMutation } from '../../feature/stores/storesApiSlice'
 import { countryName, goLive, idTypeLabel, missingForLive, useDraft } from '../../onboarding/draft'
 import { jakarta } from '../../utils/styles'
 
@@ -58,6 +58,7 @@ export default function ReviewDetails() {
   const [draft] = useDraft()
   const [showSetupDone, setShowSetupDone] = useState(false)
   const { data: categories = [] } = useGetCategoriesQuery()
+  const [provisionRecipient] = useProvisionPaymentRecipientMutation()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -74,7 +75,9 @@ export default function ReviewDetails() {
     setBusy(true)
     setError('')
     try {
-      await goLive()
+      const live = await goLive()
+      // The Paystack recipient is built from the checked bank now the store is live; the payout page shows how it went.
+      provisionRecipient(live.id).unwrap().catch(() => undefined)
       setShowSetupDone(true)
     } catch (err) {
       const e = toApiError(err)

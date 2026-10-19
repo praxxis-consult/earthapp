@@ -10,6 +10,10 @@ interface OrderStatusDialogProps {
   kind: Kind
   onClose: () => void
   onConfirm: () => void
+  /** Replaces the kind's own explanation (the cancel dialog says what cancelling means at this stage). */
+  body?: string
+  /** Disables the confirm button while the write is in flight. */
+  busy?: boolean
 }
 
 const SUCCESS: Record<'ready' | 'dispatched', { title: string; body: string }> = {
@@ -30,7 +34,7 @@ const SUCCESS: Record<'ready' | 'dispatched', { title: string; body: string }> =
  * the success frame's shape so the seller confirms before an order is refused; "cancel" is the
  * buyer's twin of it.
  */
-export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderStatusDialogProps) {
+export default function OrderStatusDialog({ kind, onClose, onConfirm, body, busy }: OrderStatusDialogProps) {
   const [preview, setPreview] = useState('')
   const [error, setError] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
@@ -127,7 +131,8 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
         <button
           type="button"
           onClick={() => (preview ? onConfirm() : setError('Add a photo of the packed order first.'))}
-          className="flex h-[48px] w-full items-center justify-center rounded-[30px]"
+          disabled={busy}
+          className="flex h-[48px] w-full items-center justify-center rounded-[30px] disabled:opacity-70"
           style={{ backgroundImage: CTA_BG }}
         >
           <span
@@ -141,7 +146,7 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
     )
   }
 
-  const copy =
+  let copy =
     kind === 'decline'
       ? {
           title: 'Decline this order?',
@@ -153,6 +158,7 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
             body: 'The seller is told, the order is closed and your payment is refunded. This cannot be undone.',
           }
         : SUCCESS[kind]
+  if (body) copy = { ...copy, body }
   const asking = kind === 'decline' || kind === 'cancel'
 
   return shell(
@@ -174,7 +180,8 @@ export default function OrderStatusDialog({ kind, onClose, onConfirm }: OrderSta
         <button
           type="button"
           onClick={onConfirm}
-          className="flex h-[48px] w-full items-center justify-center rounded-[30px] border border-[#789ebb]"
+          disabled={busy}
+          className="flex h-[48px] w-full items-center justify-center rounded-[30px] border border-[#789ebb] disabled:opacity-70"
           style={{ backgroundImage: CTA_BG }}
         >
           <span

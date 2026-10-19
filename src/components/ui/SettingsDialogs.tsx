@@ -17,7 +17,7 @@ export const inputClass =
   'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] text-[14px] leading-[24px] text-[#101604] outline-none border border-transparent focus:border-[#007c53] placeholder:text-[#807e7e]'
 
 /** Figma "store details" (639:24245): 648 wide, radius 20, padding 20, gap 16, title row with close-circle. */
-export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel }: {
+export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel, busyLabel = 'Saving…' }: {
   title: string
   onClose: () => void
   onSubmit: (e: FormEvent) => void
@@ -25,6 +25,8 @@ export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save ch
   busy: boolean
   cta?: string
   cancel?: boolean
+  /** What the button says while `busy`. */
+  busyLabel?: string
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -60,7 +62,7 @@ export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save ch
           style={{ backgroundImage: CTA_BG }}
         >
           <span className="text-[14px] leading-[18px] bg-clip-text text-transparent" style={{ ...jakarta(500), backgroundImage: CTA_TEXT_BG }}>
-            {busy ? 'Saving…' : cta}
+            {busy ? busyLabel : cta}
           </span>
         </button>
         {cancel && (
