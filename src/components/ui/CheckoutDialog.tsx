@@ -129,8 +129,10 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           : problem.status === 503
             ? 'The carriers are not answering right now. Try again in a moment.'
             : problem.status === 409 && problem.code === 'shipping-conflict'
-              ? // The seller's delivery setup does not cover this basket (too heavy, their own goods, or an address that does not match); the API says which.
-                `${problem.detail || problem.title} Message the seller to sort it out.`
+              ? // The seller's delivery setup does not cover this basket: too heavy for their package, their own goods, or a pickup that does not match. The weight one is the buyer's to change.
+                /parcel|capacity|weight|heav/i.test(problem.detail + problem.title)
+                ? `${quantity} ${listing.unit}${quantity === 1 ? '' : 's'}${listing.weightGrams ? ` (about ${Math.round((quantity * listing.weightGrams) / 1000)} kg)` : ''} is more than this seller’s packaging takes in one order. Order fewer, or message the seller about a larger one.`
+                : `${problem.detail || problem.title} Message the seller to sort it out.`
               : describeError(err),
       )
     }

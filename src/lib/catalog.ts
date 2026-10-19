@@ -27,6 +27,8 @@ export interface Listing {
   quantity: string
   available: number
   moq: number
+  /** Approximate weight of one unit, grams; 0 when the seller gave none. */
+  weightGrams: number
   listed: string
   listedAt: string
   categoryId: string
@@ -56,6 +58,7 @@ export function toListing(p: ApiProduct, store: PublicStore, categories: Categor
     quantity: `${available} ${unit}${available === 1 ? '' : 's'}`,
     available,
     moq: p.moq ?? 1,
+    weightGrams: p.approximateWeightGrams ?? 0,
     listed: monthYear(p.createdAt),
     listedAt: p.createdAt,
     categoryId: p.categoryId ?? '',
