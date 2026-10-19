@@ -65,6 +65,13 @@ export const STATUS_STYLE: Record<OrderStatus, { bg: string; color: string }> = 
   declined: { bg: '#fff0f0', color: '#b13b3b' },
 }
 
+/**
+ * The order number people see and say: the last eight characters of the API's id, upper-case,
+ * behind a hash ("#42120E26"). The ids share their first half (they are time-ordered), so the
+ * tail is what tells orders apart; the full id stays on the page for support.
+ */
+export const shortOrderId = (id: string): string => (/^[0-9a-f-]{20,}$/i.test(id) ? `#${id.replace(/-/g, '').slice(-8).toUpperCase()}` : id)
+
 export const naira = (n: number) =>
   '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 

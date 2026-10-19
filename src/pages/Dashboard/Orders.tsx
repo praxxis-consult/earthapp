@@ -9,7 +9,7 @@ import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
-import { orders as sampleRows, type Order, type OrderStatus } from '../../data/orders'
+import { orders as sampleRows, type Order, type OrderStatus, shortOrderId } from '../../data/orders'
 import { orderFromOverview } from '../../data/overview'
 import { useListMyOrdersQuery } from '../../feature/orders/ordersApiSlice'
 import { describeError } from '../../services/earthApi'
@@ -267,7 +267,7 @@ export default function Orders() {
                 rows={rows}
                 rowKey={(o) => o.id}
                 onRowClick={(o) => navigate(`/dashboard/orders/${o.id}`)}
-                rowLabel={(o) => `Order ${o.id}, ${o.buyer.name}`}
+                rowLabel={(o) => `Order ${shortOrderId(o.id)}, ${o.buyer.name}`}
                 head="tinted"
                 radius={10}
                 designWidth={1043}
