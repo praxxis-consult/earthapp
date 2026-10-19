@@ -258,7 +258,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
           {fieldError('area')}
         </Field>
       </div>
-      <Field label="Street address" htmlFor="co-street" hint="House or plot number, then the road name">
+      <Field label="Street address" htmlFor="co-street" hint="House or plot number and the road, or a well-known building">
         <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} placeholder="12 Admiralty Way" className={inputClass} style={jakarta(400)} />
           {fieldError('street')}
       </Field>

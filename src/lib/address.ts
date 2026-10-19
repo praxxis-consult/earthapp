@@ -7,12 +7,16 @@
 
 const NUMBER_PREFIX = /^\s*(?:no\.?\s*|plot\s*|block\s*|house\s*)?\d+[a-z]?/i
 
-/** "12 Admiralty Way", "No. 4B Ogunlana Drive", "Plot 7, Block C, Lekki Epe Expressway". */
+/**
+ * "12 Admiralty Way", "Plot 7, Block C, Lekki Epe Expressway", or a building the carrier knows,
+ * "Landmark Towers" (the carrier's own example). A bare number, or no road or building name, is refused.
+ */
 export function streetProblem(street: string): string | null {
   const s = street.trim()
   if (!s) return 'Enter the street address.'
-  if (!NUMBER_PREFIX.test(s)) return 'Start with the house or plot number, then the road name, like 12 Admiralty Way.'
-  if (!/[a-z]{3,}/i.test(s.replace(NUMBER_PREFIX, ''))) return 'Add the road name after the number, like 12 Admiralty Way.'
+  const rest = s.replace(NUMBER_PREFIX, '')
+  if (!/[a-z]{3,}/i.test(rest)) return 'Add the road name after the number, like 12 Admiralty Way.'
+  if (!NUMBER_PREFIX.test(s) && !/\b[a-z]{3,}\b.*\b[a-z]{2,}\b/i.test(s)) return 'Give the house or plot number and the road, like 12 Admiralty Way, or a well-known building.'
   return null
 }
 
