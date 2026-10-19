@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { awaitingPayment, canCancel, cancelMeaning, confirmOutcome, isPaid, mmss, paymentExpired, paymentSecondsLeft, sellerStep, stepTime, timelineView, trackingView } from '../data/orderFlow'
-import { quoteView, secondsLeft } from '../data/quotes'
+import { quoteRefusal, quoteView, secondsLeft } from '../data/quotes'
 
 const T0 = Date.parse('2026-10-19T12:00:00Z')
 
@@ -72,5 +72,18 @@ describe('lenient readers', () => {
     expect(confirmOutcome({ status: 'PAID', refundRequired: true }).title).toBe('Paid, but too late')
     expect(confirmOutcome({ status: 'PREPARING' }).paid).toBe(false)
     expect(confirmOutcome({}).paid).toBe(false)
+  })
+})
+
+describe('a refused quote', () => {
+  it('names whose address the carrier refused and marks only the buyer’s fields', () => {
+    const both = quoteRefusal([{ path: 'pickup', code: 'provider_address_rejected' }, { path: 'address', code: 'provider_address_rejected' }])
+    expect(both.message).toMatch(/both/)
+    expect(Object.keys(both.fields)).toEqual(['street', 'area', 'postalCode'])
+    const pickup = quoteRefusal([{ path: 'pickup' }])
+    expect(pickup.message).toMatch(/seller’s pickup address/)
+    expect(pickup.fields).toEqual({})
+    expect(quoteRefusal([{ path: 'address.postalCode' }]).fields.postalCode).toBeTruthy()
+    expect(quoteRefusal([]).message).toMatch(/could not quote/)
   })
 })

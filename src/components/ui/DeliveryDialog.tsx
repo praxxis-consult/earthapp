@@ -103,6 +103,10 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
         setFieldErrors(fe)
         return setError('The API could not accept some of these details. Check the highlighted fields.')
       }
+      if (problem.status === 422 && problem.errors.some((e) => e.path === 'pickup' || e.path?.startsWith('pickup'))) {
+        setFieldErrors({ postalCode: 'Check the postal code for this address.' })
+        return setError('The carrier could not find this pickup address. It needs the street number and road name, the area as the carrier knows it, and the right postal code; the street and area are changed under Edit store details.')
+      }
       setError(problem.status === 409 ? 'Someone saved newer delivery details. Reload and try again.' : describeError(err))
     }
   }

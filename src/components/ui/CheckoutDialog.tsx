@@ -5,7 +5,7 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { regionsOf } from '../../data/locations'
-import { quoteView, secondsLeft } from '../../data/quotes'
+import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
 import { naira } from '../../lib/productView'
@@ -113,6 +113,12 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
         for (const e of problem.errors) fe[(e.path ?? '').replace(/^address\./, '')] = e.code === 'invalid_format' ? 'Not in the form the carriers accept.' : `Check this (${e.code ?? 'invalid'}).`
         setFieldErrors(fe)
         return setError('The carriers could not accept some of these details. Check the highlighted fields.')
+      }
+      if (problem.status === 422) {
+        // The carrier refused an address: `pickup` is the seller's, `address` the buyer's.
+        const refusal = quoteRefusal(problem.errors)
+        setFieldErrors(refusal.fields)
+        return setError(refusal.message)
       }
       // The API's own words, with what a buyer can do about the ones that are the seller's to fix.
       setError(

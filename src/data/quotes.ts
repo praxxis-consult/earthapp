@@ -47,3 +47,28 @@ export function secondsLeft(view: QuoteView, receivedAt: number, now = Date.now(
   const end = view.expiresAt ? new Date(view.expiresAt).getTime() : receivedAt + 120_000
   return Math.max(0, Math.ceil((end - now) / 1000))
 }
+
+/** The carrier's answer to a quote that it refused (422): which address it would not accept, and what to say. */
+export interface QuoteRefusal {
+  /** The buyer's own fields to mark, when the delivery address was refused. */
+  fields: Record<string, string>
+  message: string
+}
+
+const ADDRESS_HINT = 'The carrier could not find this address. Use the street number and road name, the area as the carrier knows it, and the right postal code.'
+
+/**
+ * Reads a refused quote by the paths the API names: `pickup` is the seller's collection
+ * address, `address` the buyer's delivery address. Neither is something the buyer can fix
+ * from here when the pickup is refused; only the buyer's own fields get marked.
+ */
+export function quoteRefusal(errors: { path?: string; code?: string }[]): QuoteRefusal {
+  const pickup = errors.some((e) => e.path === 'pickup')
+  const address = errors.some((e) => e.path === 'address' || e.path?.startsWith('address.'))
+  const fields: Record<string, string> = address ? { street: ADDRESS_HINT, area: 'Check the area.', postalCode: 'Check the postal code.' } : {}
+  if (pickup && address)
+    return { fields, message: 'The carrier refused both the seller’s pickup address and this delivery address, so no quote is possible right now. Check your address, or try again later; the seller has been told.' }
+  if (pickup) return { fields, message: 'The carrier does not accept this seller’s pickup address yet, so the store cannot be delivered from. Message the seller so they can fix their delivery setup.' }
+  if (address) return { fields, message: 'The carrier could not accept this delivery address. Check the highlighted fields.' }
+  return { fields, message: 'The carrier could not quote this order. Check the details and try again.' }
+}
