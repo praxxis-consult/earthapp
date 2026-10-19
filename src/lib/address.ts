@@ -5,25 +5,25 @@
  * and a Nigerian phone in +234 form without the domestic leading zero.
  */
 
-const NUMBER_PREFIX = /^\s*(?:no\.?\s*|plot\s*|block\s*|house\s*)?\d+[a-z]?/i
+const NUMBER_PREFIX = /^\s*(?:no\.?\s*|plot\s*|block\s*|house\s*|flat\s*\d+[a-z]?,?\s*|suite\s*\d+[a-z]?,?\s*|km\s*)?\d+[a-z]?/i
 
 /**
- * "12 Admiralty Way", "Plot 7, Block C, Lekki Epe Expressway", or a building the carrier knows,
- * "Landmark Towers" (the carrier's own example). A bare number, or no road or building name, is refused.
+ * "12 Admiralty Way", "Plot 7, Block C, Lekki Epe Expressway", "Flat 3, 15 Bode Thomas Street",
+ * or a place the carrier knows, "Landmark Towers", "Behind Shoprite". Only what cannot be a
+ * street is refused: nothing, or a number with no name after it. The carrier judges the rest.
  */
 export function streetProblem(street: string): string | null {
   const s = street.trim()
   if (!s) return 'Enter the street address.'
   const rest = s.replace(NUMBER_PREFIX, '')
-  if (!/[a-z]{3,}/i.test(rest)) return 'Add the road name after the number, like 12 Admiralty Way.'
-  if (!NUMBER_PREFIX.test(s) && !/\b[a-z]{3,}\b.*\b[a-z]{2,}\b/i.test(s)) return 'Give the house or plot number and the road, like 12 Admiralty Way, or a well-known building.'
+  if (!/[a-z]{2,}/i.test(rest)) return 'Add the road name after the number, like 12 Admiralty Way.'
   return null
 }
 
 export function areaProblem(area: string): string | null {
   const a = area.trim()
   if (!a) return 'Enter the area or town, as the carrier knows it (Lekki Phase 1, Ikeja GRA).'
-  if (!/[a-z]{3,}/i.test(a)) return 'Enter the area by its name, like Lekki Phase 1.'
+  if (!/[a-z]{2,}/i.test(a)) return 'Enter the area by its name, like Lekki Phase 1.'
   return null
 }
 
