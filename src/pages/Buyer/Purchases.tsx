@@ -51,7 +51,7 @@ export default function Purchases() {
       <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
-            My orders
+            Orders
           </h1>
           <p className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(400)}>
             Track everything you ordered, from the seller’s acceptance to the day it arrives.

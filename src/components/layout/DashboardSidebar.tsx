@@ -10,6 +10,8 @@ import messagesIcon from '../../assets/icons/db-messages.svg'
 import payoutIcon from '../../assets/icons/db-payout.svg'
 import referralsIcon from '../../assets/icons/db-referrals.svg'
 import settingsIcon from '../../assets/icons/db-settings.svg'
+import shopIcon from '../../assets/icons/db-nav-shop.svg'
+import savedIcon from '../../assets/icons/db-nav-archive.svg'
 import shareIcon from '../../assets/icons/db-share.svg'
 import logoutIcon from '../../assets/icons/db-logout.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
@@ -40,16 +42,24 @@ const SELLER_NAV: NavItem[] = [
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
 ]
 
-/** A buyer runs no store: their menu is what they bought, who they talk to, and their account. */
+/** The buyer's menu, as the buyer dashboard frame (806:7584) lists it: Marketplace is the public catalogue. */
 const BUYER_NAV: NavItem[] = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
-  { label: 'My orders',        icon: ordersIcon,    href: '/dashboard/purchases' },
+  { label: 'Marketplace',      icon: shopIcon,      href: '/marketplace' },
+  { label: 'Orders',           icon: ordersIcon,    href: '/dashboard/purchases' },
   { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' },
+  { label: 'Saved products',   icon: savedIcon,     href: '/dashboard/saved' },
+  { label: 'Referrals',        icon: referralsIcon, href: '/dashboard/referrals' },
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
 ]
 
-/** An account that buys and sells gets the seller's menu plus its own purchases, after the sales. */
-const BOTH_NAV: NavItem[] = [...SELLER_NAV.slice(0, 3), { label: 'Purchases', icon: ordersIcon, href: '/dashboard/purchases' }, ...SELLER_NAV.slice(3)]
+/** An account that buys and sells gets the seller's menu plus its purchases and saved listings, after the sales. */
+const BOTH_NAV: NavItem[] = [
+  ...SELLER_NAV.slice(0, 3),
+  { label: 'Purchases', icon: ordersIcon, href: '/dashboard/purchases' },
+  { label: 'Saved products', icon: savedIcon, href: '/dashboard/saved' },
+  ...SELLER_NAV.slice(3),
+]
 
 function navFor(accountType: string | undefined): NavItem[] {
   if (accountType === 'BUYING') return BUYER_NAV

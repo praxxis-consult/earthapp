@@ -16,8 +16,9 @@ import { describeError, toApiError, type AccountType } from '../../services/eart
 import { useCreateAccountMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
-const ACCOUNT_TYPES = ['Buyer', 'Seller', 'Both']
-const ACCOUNT_TYPE_API: Record<string, AccountType> = { Buyer: 'BUYING', Seller: 'SELLING', Both: 'BOTH' }
+/** The account-type menu (805:7532): Buyer or Seller. An account that does both is a seller who buys. */
+const ACCOUNT_TYPES = ['Buyer', 'Seller']
+const ACCOUNT_TYPE_API: Record<string, AccountType> = { Buyer: 'BUYING', Seller: 'SELLING' }
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 /** The API's field paths, mapped to sentences a person can act on. */

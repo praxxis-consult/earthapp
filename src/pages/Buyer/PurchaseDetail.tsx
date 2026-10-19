@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
 import OrderStatusDialog from '../../components/ui/OrderStatusDialog'
+import ReceiptModal, { type ReceiptData } from '../../components/ui/ReceiptModal'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import smsIcon from '../../assets/icons/od-sms.svg'
-import truckFastIcon from '../../assets/icons/od-truck-fast.svg'
+import receiptIcon from '../../assets/icons/od-receipt.svg'
 import cardPosIcon from '../../assets/icons/od-card-pos.svg'
+import truckFastIcon from '../../assets/icons/od-truck-fast.svg'
+import routingIcon from '../../assets/icons/rc-routing.svg'
 import stepDoneIcon from '../../assets/icons/od-step-done.svg'
 import stepTodoIcon from '../../assets/icons/od-step-todo.svg'
 import truckTimeLg from '../../assets/icons/od-truck-time-lg.svg'
@@ -15,24 +18,39 @@ import bagHappyLg from '../../assets/icons/od-bag-happy-lg.svg'
 import bagHappySm from '../../assets/icons/od-bag-happy-sm.svg'
 import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
 import bagCrossSm from '../../assets/icons/od-bag-cross-sm.svg'
-import { useCancelOrderMutation, useGetOrderQuery } from '../../feature/orders/ordersApiSlice'
-import { canCancel, purchaseFromApi } from '../../data/purchases'
+import { useCancelOrderMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary } from '../../feature/orders/ordersApiSlice'
+import { usePayment } from '../../feature/orders/usePayment'
+import { usePostReviewMutation } from '../../feature/reviews/reviewsApiSlice'
+import { purchaseFromApi } from '../../data/purchases'
+import { awaitingPayment, cancelMeaning, canCancel, isPaid, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
 import { initials, naira, type OrderStatus } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
-/** The seller page's seven steps, read from the buyer's side. */
-const STEPS = ['Order placed', 'Payment confirmed', 'Seller accepted', 'Packed and ready', 'On the way', 'Delivered', 'Completed']
+/** The seller page's seven steps, read from the buyer's side, with the timeline words that mark each as reached. */
+const STEPS: { label: string; words: string[] }[] = [
+  { label: 'Order placed', words: ['placed', 'created'] },
+  { label: 'Payment confirmed', words: ['paid', 'payment'] },
+  { label: 'Seller accepted', words: ['accept'] },
+  { label: 'Packed and ready', words: ['ready'] },
+  { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
+  { label: 'Delivered', words: ['deliver'] },
+  { label: 'Completed', words: ['complet'] },
+]
 const REACHED: Record<OrderStatus, number> = { new: 2, processing: 3, ready: 4, dispatched: 5, completed: 7, cancelled: 0, declined: 0 }
+
+const when = (iso: string | null) =>
+  iso ? `${new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : 'Done'
 
 interface Banner {
   title: string
   body: string
   art?: [string, string]
+  action?: { label: string; onClick: () => void; busy?: boolean }
 }
 
 /** The order page's detail row (Figma "Fulfillment detail"): 36px icon disc, label 11/14, value 12/20 Medium. */
-function Detail({ icon, text, label, value }: { icon?: string; text?: string; label: string; value: string }) {
+function Detail({ icon, text, label, value, href }: { icon?: string; text?: string; label: string; value: string; href?: string }) {
   return (
     <div className="flex items-center gap-[12px] w-full">
       <div className="flex items-center justify-center size-[36px] rounded-full bg-[#f2f8f6] shrink-0">
@@ -48,39 +66,99 @@ function Detail({ icon, text, label, value }: { icon?: string; text?: string; la
         <p className="text-[#807e7e] text-[11px] leading-[14px]" style={jakarta(400)}>
           {label}
         </p>
-        <p className="text-[#101604] text-[12px] leading-[20px] truncate" style={jakarta(500)}>
-          {value}
-        </p>
+        {href ? (
+          <a href={href} target="_blank" rel="noreferrer" className="text-[#007c53] text-[12px] leading-[20px] truncate underline" style={jakarta(500)}>
+            {value}
+          </a>
+        ) : (
+          <p className="text-[#101604] text-[12px] leading-[20px] truncate" style={jakarta(500)}>
+            {value}
+          </p>
+        )}
       </div>
     </div>
   )
 }
 
-function Card({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({ title, action, children, className = '' }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <section className={`bg-white rounded-[20px] p-[20px] flex flex-col gap-[16px] ${className}`}>
-      <h2 className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
-        {title}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(600)}>
+          {title}
+        </h2>
+        {action}
+      </div>
       <div className="h-px w-full bg-[#f7f7f7]" />
       {children}
     </section>
   )
 }
 
+/** A second-by-second clock, only while something on the page counts down. */
+function useTicking(on: boolean): number {
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    if (!on) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [on])
+  return now
+}
+
+const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
+
+/** The receipt dialog's rows, from the order and whatever the frozen receipt record names. */
+function receiptData(o: OrderSummary, receipt: Record<string, unknown> | undefined, status: OrderStatus): ReceiptData {
+  const r = receipt ?? {}
+  const total = Number(o.total) / 100
+  const etaBy: Record<OrderStatus, string> = {
+    new: 'Once the seller accepts',
+    processing: 'Being packed',
+    ready: 'Awaiting the carrier',
+    dispatched: 'With the carrier',
+    completed: 'Delivered',
+    cancelled: 'Cancelled',
+    declined: 'Declined',
+  }
+  return {
+    invoiceNumber: str(r.invoiceNumber ?? r.invoiceId) || o.id,
+    receiptNumber: str(r.receiptNumber ?? r.number ?? r.id) || o.id,
+    paidAt: o.paidAt ? when(o.paidAt) : '',
+    amount: total,
+    product: { title: o.item.name, detail: `${o.item.quantity} × ${naira(Number(o.item.priceMinor) / 100)} · ${o.storeName}`, image: o.item.thumbnail ?? '' },
+    paidWith: 'Paystack',
+    reference: str(r.reference ?? r.paymentReference ?? r.transactionReference) || o.id,
+    deliveryTitle: status === 'completed' ? 'Delivered' : 'Delivery',
+    deliveryEta: etaBy[status],
+    nextSteps: ['The seller accepts and packs the order.', 'A carrier is booked once it is ready; you will see the tracking here.', 'Once delivered, you can review the goods.'],
+  }
+}
+
 /**
  * One of the buyer's orders, on the seller's order-detail layout (561:5317 and siblings): the
  * header with the status badge, the status banner, the seven-step timeline, items and payment on
- * the left, the seller and the delivery on the right. The order comes from `GET /orders/{id}`;
- * the only write a buyer has is to cancel before the seller starts on it.
+ * the left, the seller and the delivery on the right. The order comes from `GET /orders/{id}`.
+ * An unpaid order can be paid within its fifteen minutes; a paid one can be cancelled until the
+ * carrier has collected it, and reviewed once delivered.
  */
 export default function PurchaseDetail() {
   const navigate = useNavigate()
   const { id = '' } = useParams()
   const order = useGetOrderQuery(id, { skip: !id })
+  const summary = order.data
+  const closed = summary ? ['CANCELLED', 'DECLINED'].includes(summary.status) : true
+  const timeline = useGetTimelineQuery(id, { skip: !id || !summary || closed })
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const receipt = useGetReceiptQuery(id, { skip: !receiptOpen || !summary || !isPaid(summary) })
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation()
+  const payment = usePayment()
   const [confirm, setConfirm] = useState(false)
   const [error, setError] = useState('')
+  const [postReview, { isLoading: reviewing }] = usePostReviewMutation()
+  const [review, setReview] = useState({ rating: 0, text: '', done: false, error: '' })
+  const unpaid = summary ? awaitingPayment(summary) : false
+  const now = useTicking(unpaid)
 
   if (order.isLoading) {
     return (
@@ -89,8 +167,8 @@ export default function PurchaseDetail() {
       </DashboardLayout>
     )
   }
-  if (!order.data) {
-    const missing = order.error && toApiError(order.error).status === 404
+  if (!summary) {
+    const missing = order.error && [400, 404].includes(toApiError(order.error).status)
     return (
       <DashboardLayout>
         <div className="px-[24px] pt-[40px] flex flex-col gap-[16px]">
@@ -105,34 +183,64 @@ export default function PurchaseDetail() {
     )
   }
 
-  const o = purchaseFromApi(order.data)
+  const o = purchaseFromApi(summary)
   const store = o.item.soldBy
   const status = o.status
-  const reached = REACHED[status]
-  const closed = status === 'cancelled' || status === 'declined'
+  const paid = isPaid(summary)
+  const expired = paymentExpired(summary, now)
+  const reached = paid ? REACHED[status] : 1
   const placed = new Date(o.placedAt)
   const subtotal = o.item.price * o.item.qty
   const total = o.payment.subtotal
   const delivery = Math.max(0, total - subtotal)
+  const tracking = trackingView(summary.fulfillmentDelivery)
+  const events = timeline.data ?? []
+  const productId = summary.items?.find((i) => typeof i.productId === 'string')?.productId
+  const paying = payment.state.phase === 'preparing' || payment.state.phase === 'redirecting'
 
   const banners: Record<OrderStatus, Banner> = {
     new: { title: `Waiting for ${store} to accept`, body: 'Your payment is confirmed. The seller reviews the order next, and you will hear as soon as it is accepted. You can still cancel until then.' },
-    processing: { title: `${store} is preparing your order`, body: 'The seller accepted and is packing it. A carrier is booked as soon as it is ready.' },
-    ready: { title: 'Packed and waiting for the carrier', body: 'The seller has it ready for pickup. You will be told the moment it is on the way.' },
-    dispatched: { title: 'On its way to you', body: 'The carrier has the package. Keep your phone close for the delivery.', art: [truckTimeLg, truckTimeSm] },
+    processing: { title: `${store} is preparing your order`, body: 'The seller accepted and is packing it. A carrier is booked as soon as it is marked ready.' },
+    ready: { title: 'Packed and waiting for the carrier', body: 'The seller has it ready. The carrier is booked and collects it next; you will see the tracking here.' },
+    dispatched: { title: 'On its way to you', body: 'The carrier has collected the package. Keep your phone close for the delivery.', art: [truckTimeLg, truckTimeSm] },
     completed: { title: 'Delivered', body: 'This order is complete. If something is not right, message the seller from here.', art: [bagHappyLg, bagHappySm] },
-    cancelled: { title: 'Order cancelled', body: 'This order was cancelled and the refund is being processed.', art: [bagCrossLg, bagCrossSm] },
-    declined: { title: 'The seller declined this order', body: 'You were refunded automatically. The listing may be out of stock; try another store.', art: [bagCrossLg, bagCrossSm] },
+    cancelled: { title: 'Order cancelled', body: summary.refundRequired ? 'This order was cancelled and the refund is being processed.' : 'This order was cancelled.', art: [bagCrossLg, bagCrossSm] },
+    declined: { title: 'The seller declined this order', body: 'Your payment is refunded. The listing may be out of stock; try another store.', art: [bagCrossLg, bagCrossSm] },
   }
-  const banner = banners[status]
+  let banner = banners[status]
+  if (!paid && !closed) {
+    banner = expired
+      ? { title: 'This order expired before payment', body: 'An order has fifteen minutes to be paid. Nothing was charged; place it again from the listing to buy.', art: [bagCrossLg, bagCrossSm] }
+      : {
+          title: 'Finish paying for this order',
+          body: `${summary.expiresAt ? `${mmss(paymentSecondsLeft(summary, now))} left to pay. ` : ''}Paystack’s secure page opens when you continue; the seller is told once the payment is confirmed.`,
+          action: { label: paying ? 'Opening payment…' : 'Pay now', onClick: () => void payment.pay(id), busy: paying },
+        }
+  } else if (summary.cancellationRequested && !closed) {
+    banner = { title: 'Cancellation requested', body: 'The carrier is being asked to cancel the pickup. The order closes and the refund follows once the carrier confirms.' }
+  }
 
   async function cancel() {
     setConfirm(false)
     setError('')
     try {
-      await cancelOrder({ id, expectedVersion: order.data!.version }).unwrap()
+      await cancelOrder({ id, expectedVersion: summary!.version }).unwrap()
     } catch (e) {
-      setError(describeError(e))
+      const problem = toApiError(e)
+      setError(problem.status === 409 ? 'This order changed just now. Reload the page and try again.' : describeError(e))
+    }
+  }
+
+  async function submitReview() {
+    if (!productId) return
+    if (!review.rating) return setReview((r) => ({ ...r, error: 'Pick a star rating.' }))
+    setReview((r) => ({ ...r, error: '' }))
+    try {
+      await postReview({ productId, orderId: id, rating: review.rating, text: review.text.trim() }).unwrap()
+      setReview((r) => ({ ...r, done: true }))
+    } catch (e) {
+      const problem = toApiError(e)
+      setReview((r) => ({ ...r, error: problem.status === 409 ? 'You have already reviewed this purchase.' : describeError(e) }))
     }
   }
 
@@ -156,12 +264,20 @@ export default function PurchaseDetail() {
               </div>
               <p className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
                 Placed {placed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
-                {placed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {order.data.itemCount} {order.data.itemCount === 1 ? 'item' : 'items'}
+                {placed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {summary.itemCount} {summary.itemCount === 1 ? 'item' : 'items'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-[16px] pt-[56px] max-lg:pt-0 max-md:w-full max-md:gap-[12px]">
-            {canCancel(status) && (
+            {paid && (
+              <button type="button" onClick={() => setReceiptOpen(true)} className="flex h-[48px] w-[168px] items-center justify-center gap-[8px] rounded-[30px] bg-white max-md:w-auto max-md:flex-1">
+                <img src={receiptIcon} alt="" className="size-[20px]" />
+                <span className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(500)}>
+                  Receipt
+                </span>
+              </button>
+            )}
+            {paid && canCancel(status) && !summary.cancellationRequested && (
               <button
                 type="button"
                 onClick={() => setConfirm(true)}
@@ -186,15 +302,15 @@ export default function PurchaseDetail() {
           </div>
         </div>
 
-        {error && (
+        {(error || payment.state.phase === 'error') && (
           <p role="alert" className="text-[#b13b3b] text-[14px] leading-[24px]" style={jakarta(400)}>
-            {error}
+            {error || (payment.state.phase === 'error' ? payment.state.message : '')}
           </p>
         )}
 
-        {/* Banner, as the seller's (561:6611): lime-to-green, radius 20, copy at 24/24, art at the right */}
+        {/* Banner, as the seller's (561:6611): lime-to-green, radius 20, copy at 24/24, art or the action at the right */}
         <div
-          className="relative mt-[16px] overflow-hidden rounded-[20px] px-[24px] py-[24px] flex items-center justify-between lg:h-[126px] max-lg:min-h-[126px] max-md:px-[16px]"
+          className="relative mt-[16px] overflow-hidden rounded-[20px] px-[24px] py-[24px] flex items-center justify-between lg:h-[126px] max-lg:min-h-[126px] max-md:flex-col max-md:items-stretch max-md:gap-[16px] max-md:px-[16px]"
           style={{ backgroundImage: 'linear-gradient(100deg, #aee74a -20%, #007c53 72%)' }}
         >
           <div className="flex flex-col gap-[8px] max-w-[515px]">
@@ -205,6 +321,19 @@ export default function PurchaseDetail() {
               {banner.body}
             </p>
           </div>
+          {banner.action && (
+            <button
+              type="button"
+              onClick={banner.action.onClick}
+              disabled={banner.action.busy}
+              className="flex h-[48px] shrink-0 items-center justify-center rounded-[30px] bg-[#aee74a] px-[24px] whitespace-nowrap disabled:opacity-70 max-md:px-[16px]"
+              style={{ minWidth: 168 }}
+            >
+              <span className="text-[#0c2310] text-[14px] leading-[18px]" style={jakarta(500)}>
+                {banner.action.label}
+              </span>
+            </button>
+          )}
           {banner.art && (
             <>
               <img src={banner.art[0]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: -20, top: -27, width: 181, height: 181 }} />
@@ -213,12 +342,13 @@ export default function PurchaseDetail() {
           )}
         </div>
 
-        {!closed && (
+        {!closed && !expired && (
           <div className="relative bg-white rounded-[20px] h-[155px] px-[24px] pt-[24px] max-md:h-auto max-md:px-[16px] max-md:py-[16px]">
             <ol className="relative flex items-start justify-between before:absolute before:left-[49px] before:right-[50px] before:top-[16px] before:h-[2px] before:rounded-full before:bg-[rgba(0,124,83,0.1)] before:content-[''] max-md:flex-col max-md:gap-[16px] max-md:before:hidden">
-              {STEPS.map((label, i) => {
+              {STEPS.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
+                const at = i === 0 ? o.placedAt : i === 1 ? summary.paidAt : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />
@@ -227,7 +357,7 @@ export default function PurchaseDetail() {
                         {label}
                       </p>
                       <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
-                        {done ? 'Done' : next ? 'Next' : 'Not yet'}
+                        {done ? when(at) : next ? 'Next' : 'Not yet'}
                       </p>
                     </div>
                   </li>
@@ -261,6 +391,11 @@ export default function PurchaseDetail() {
                   {naira(subtotal)}
                 </p>
               </div>
+              {summary.note && (
+                <p className="text-[#007c53] text-[12px] leading-[24px] italic" style={jakarta(400)}>
+                  Your note to the seller: “{summary.note}”
+                </p>
+              )}
             </Card>
 
             <Card title="Payment summary">
@@ -281,32 +416,92 @@ export default function PurchaseDetail() {
                 <div className="h-px w-full bg-[#f7f7f7]" />
                 <div className="flex items-center justify-between">
                   <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
-                    Total paid
+                    {paid ? 'Total paid' : 'Total to pay'}
                   </span>
                   <span className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
                     {naira(total)}
                   </span>
                 </div>
                 <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                  Payment {order.data.paymentStatus.toLowerCase()}{order.data.paidAt ? ` on ${new Date(order.data.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}.
+                  Payment {summary.paymentStatus.toLowerCase().replace(/_/g, ' ')}
+                  {summary.paidAt ? ` on ${new Date(summary.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  {summary.refundRequired ? ' · refund due' : ''}.
                 </p>
               </div>
             </Card>
+
+            {status === 'completed' && productId && (
+              <Card title="Review your purchase">
+                {review.done ? (
+                  <p className="text-[#007c53] text-[14px] leading-[24px]" style={jakarta(500)}>
+                    Thank you. Your review is on the listing.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-[12px]">
+                    <div className="flex items-center gap-[4px]" role="radiogroup" aria-label="Rating">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} type="button" role="radio" aria-checked={review.rating === n} aria-label={`${n} star${n === 1 ? '' : 's'}`} onClick={() => setReview((r) => ({ ...r, rating: n }))} className="text-[24px] leading-none" style={{ color: n <= review.rating ? '#f5b301' : '#e4dede' }}>
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={review.text}
+                      maxLength={1000}
+                      rows={3}
+                      onChange={(e) => setReview((r) => ({ ...r, text: e.target.value }))}
+                      placeholder="How were the goods and the delivery?"
+                      className="w-full rounded-[20px] bg-[#f7f7f7] px-[16px] py-[12px] text-[14px] leading-[24px] text-[#101604] outline-none border border-transparent focus:border-[#007c53] placeholder:text-[#807e7e]"
+                      style={jakarta(400)}
+                    />
+                    {review.error && (
+                      <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+                        {review.error}
+                      </p>
+                    )}
+                    <button type="button" onClick={submitReview} disabled={reviewing} className="flex h-[48px] w-[168px] items-center justify-center rounded-[30px] disabled:opacity-70 max-md:w-full" style={{ backgroundImage: CTA_BG }}>
+                      <span className="text-[14px] leading-[18px] bg-clip-text text-transparent" style={{ ...jakarta(500), backgroundImage: CTA_TEXT_BG }}>
+                        {reviewing ? 'Sending…' : 'Post review'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
 
           <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Seller">
               <Detail text={initials(store)} label="Store" value={store} />
             </Card>
-            <Card title="Delivery">
-              <Detail icon={truckFastIcon} label="Method" value={o.delivery.method} />
-              <Detail icon={cardPosIcon} label="Amount paid" value={naira(total)} />
+            <Card
+              title="Delivery"
+              action={
+                tracking?.url ? (
+                  <a href={tracking.url} target="_blank" rel="noreferrer" className="flex items-center gap-[8px] text-[#007c53] text-[12px] leading-[24px]" style={jakarta(500)}>
+                    <img src={routingIcon} alt="" className="size-[16px]" />
+                    Track delivery
+                  </a>
+                ) : null
+              }
+            >
+              <Detail icon={truckFastIcon} label={tracking?.courier ? 'Carrier' : 'Method'} value={tracking?.courier || o.delivery.method} />
+              {tracking?.number && <Detail icon={routingIcon} label="Tracking number" value={tracking.number} href={tracking.url || undefined} />}
+              <Detail icon={cardPosIcon} label={paid ? 'Amount paid' : 'Amount due'} value={naira(total)} />
             </Card>
           </div>
         </div>
       </div>
 
-      {confirm && <OrderStatusDialog kind="cancel" onClose={() => setConfirm(false)} onConfirm={cancel} />}
+      {confirm && <OrderStatusDialog kind="cancel" body={cancelMeaning(status) ?? undefined} onClose={() => setConfirm(false)} onConfirm={cancel} />}
+      {receiptOpen && (
+        <ReceiptModal
+          receipt={receiptData(summary, receipt.data, status)}
+          onViewOrder={() => setReceiptOpen(false)}
+          onTrack={tracking?.url ? () => window.open(tracking.url, '_blank', 'noreferrer') : undefined}
+          onClose={() => setReceiptOpen(false)}
+        />
+      )}
     </DashboardLayout>
   )
 }

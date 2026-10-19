@@ -5,6 +5,7 @@ import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
 import { to12h } from '../../lib/hours'
 import DeliveryDialog from '../../components/ui/DeliveryDialog'
+import RecipientStatus from '../../components/ui/RecipientStatus'
 import { useGetShippingProfileQuery } from '../../feature/delivery/deliveryApiSlice'
 import coverPhoto from '../../assets/images/store-cover.jpg'
 import editIcon from '../../assets/icons/st-edit.svg'
@@ -18,7 +19,7 @@ import exportIcon from '../../assets/icons/prod-export.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useDeleteMeMutation, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation } from '../../feature/authentication/authApiSlice'
 import { describeError, type NotificationTopic, type OpeningHours } from '../../services/earthApi'
-import { useGetCategoriesQuery } from '../../feature/stores/storesApiSlice'
+import { useGetCategoriesQuery, useProvisionPaymentRecipientMutation } from '../../feature/stores/storesApiSlice'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { canSell } from '../../feature/authentication/role'
@@ -147,6 +148,7 @@ export default function Settings() {
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | 'delete' | null>(null)
   const [deleteMe, { isLoading: deleting }] = useDeleteMeMutation()
+  const [provisionRecipient] = useProvisionPaymentRecipientMutation()
   const navigate = useNavigate()
   // The store's delivery setup (pickup contact and parcel); null until the seller sets it.
   const shipping = useGetShippingProfileQuery(store?.id ?? '', { skip: !store })
@@ -445,6 +447,7 @@ export default function Settings() {
                 </p>
               </div>
             )}
+            <RecipientStatus store={store} />
           </Card>
         )}
 
@@ -550,6 +553,8 @@ export default function Settings() {
             setStore(s)
             setDialog(null)
             saveLocal({ bankChangedAt: Date.now() })
+            // A new bank means a new Paystack recipient; the status line below says how it went.
+            if (s.status === 'LIVE') provisionRecipient(s.id).unwrap().catch(() => undefined)
             setDone('bank')
           }}
         />

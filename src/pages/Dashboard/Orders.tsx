@@ -9,7 +9,10 @@ import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
 import filterIcon from '../../assets/icons/db-filter.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
-import { orders, type Order, type OrderStatus } from '../../data/orders'
+import { orders as sampleRows, type Order, type OrderStatus } from '../../data/orders'
+import { orderFromOverview } from '../../data/overview'
+import { useListMyOrdersQuery } from '../../feature/orders/ordersApiSlice'
+import { describeError } from '../../services/earthApi'
 import { orderColumns } from './orderColumns'
 import { jakarta, SCROLL_ROW } from '../../utils/styles'
 
@@ -32,20 +35,27 @@ const tabMatches = (tab: Tab, status: OrderStatus) =>
 
 const RANGES = ['Last 7 days', 'Last 30 days', 'This month', 'All time'] as const
 type Range = (typeof RANGES)[number]
-const NOW = new Date('2024-09-25T00:00:00')
-const inRange = (o: Order, range: Range) => {
+const inRange = (o: Order, range: Range, now: Date) => {
   const d = new Date(o.placedAt)
-  const days = (NOW.getTime() - d.getTime()) / 86_400_000
+  const days = (now.getTime() - d.getTime()) / 86_400_000
   if (range === 'Last 7 days') return days <= 7
   if (range === 'Last 30 days') return days <= 30
-  if (range === 'This month') return d.getMonth() === NOW.getMonth() && d.getFullYear() === NOW.getFullYear()
+  if (range === 'This month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   return true
 }
 
 const ORDER_COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 } })
 
+/**
+ * The store's orders, from `GET /orders/me` (the same rows the overview's latest-orders table
+ * reads), with the status tabs, search, date range and pager of the frame (561:3641). The
+ * sample rows stay behind the dev switch.
+ */
 export default function Orders() {
   const navigate = useNavigate()
+  const list = useListMyOrdersQuery()
+  const [now] = useState(() => new Date())
+  const orders = useMemo(() => (sampleRows.length ? sampleRows : (list.data ?? []).map(orderFromOverview)), [list.data])
   const [tab, setTab] = useState<Tab>('all')
   const [query, setQuery] = useState('')
   const [range, setRange] = useState<Range>('Last 7 days')
@@ -69,20 +79,20 @@ export default function Orders() {
     }
     c.cancelled += c.declined
     return c
-  }, [])
+  }, [orders])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return orders.filter(
       (o) =>
         tabMatches(tab, o.status) &&
-        inRange(o, range) &&
+        inRange(o, range, now) &&
         (!q ||
           o.id.toLowerCase().includes(q) ||
           o.buyer.name.toLowerCase().includes(q) ||
           o.item.title.toLowerCase().includes(q)),
     )
-  }, [tab, query, range])
+  }, [orders, tab, query, range, now])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
@@ -93,7 +103,7 @@ export default function Orders() {
     setPage(1)
   }
 
-  const thisMonth = orders.filter((o) => o.status === 'completed' && inRange(o, 'This month')).length
+  const thisMonth = orders.filter((o) => o.status === 'completed' && inRange(o, 'This month', now)).length
   const inProgress = orders.filter(
     (o) => o.status === 'processing' || o.status === 'ready' || o.status === 'dispatched',
   ).length
@@ -236,14 +246,19 @@ export default function Orders() {
             </div>
           </div>
 
+          {list.error && (
+            <p role="alert" className="mt-[16px] text-[#b13b3b] text-[14px] leading-[24px]" style={jakarta(400)}>
+              {describeError(list.error)}
+            </p>
+          )}
           {filtered.length === 0 ? (
             /* Empty state (orders 561:3689): illustration 200, title 20/25 SemiBold, copy 14/24. The frame centres it on the
                whole panel; on a screen tall enough for that it sits over the panel and centres there, otherwise it flows
                under the search row and centres in the space left, so it never overlaps the tabs. */
             <EmptyBlock
               className="justify-center md:flex-1 md:min-h-0 py-[16px] max-md:py-[48px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0"
-              title="No order yet"
-              copy="New orders will appear here as soon as customers place them."
+              title={list.isLoading ? 'Loading orders…' : orders.length ? 'Nothing here' : 'No order yet'}
+              copy={orders.length ? 'No order matches this tab, range or search.' : 'New orders will appear here as soon as customers place them.'}
             />
           ) : (
             <>

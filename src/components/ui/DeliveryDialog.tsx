@@ -1,15 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Field, Shell, inputClass } from './SettingsDialogs'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useSaveShippingProfileMutation, type DeliveryAddress, type Parcel, type ShippingProfile } from '../../feature/delivery/deliveryApiSlice'
+import { useGetShipbubbleCategoriesQuery, useSaveShippingProfileMutation, type DeliveryAddress, type Parcel, type ShippingProfile } from '../../feature/delivery/deliveryApiSlice'
 import { describeError, toApiError, type Onboarding } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
-
-/**
- * The carriers' catalogue references for a parcel. Nothing on the API lists them yet, so every
- * store ships under the same ones until a seller can pick; see the API gaps doc, section 0.
- */
-const PROVIDER_REFS = { shipbubbleCategoryId: 1, terminalPackagingId: 'PA-1' } as const
 
 interface DeliveryDialogProps {
   store: Onboarding
@@ -28,6 +22,8 @@ const numberField = (v: string) => Math.round(Number(v))
 export default function DeliveryDialog({ store, current, onClose, onSaved }: DeliveryDialogProps) {
   const { account } = useAuth()
   const [save, { isLoading: busy }] = useSaveShippingProfileMutation()
+  // The carrier's own goods categories; a quote is refused under a guessed one, so the seller picks.
+  const categories = useGetShipbubbleCategoriesQuery()
   const a = store.businessAddress
   // The carriers quote from the listings' pickup address, which the API matches to this one letter
   // for letter, so the address is the store's as saved and only the contact and postal code are typed.
@@ -50,6 +46,7 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
     heightCm: p ? String(p.heightCm) : '',
     emptyWeightGrams: p ? String(p.emptyWeightGrams) : '',
     maxWeightKg: p ? String(p.maxWeightGrams / 1000) : '',
+    shipbubbleCategoryId: p ? String(p.shipbubbleCategoryId) : '',
   })
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -75,6 +72,7 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
     for (const k of dims) if (!(Number(parcel[k]) > 0)) problems[k] = 'Enter a number above zero.'
     if (!problems.maxWeightKg && !problems.emptyWeightGrams && numberField(parcel.maxWeightKg) * 1000 <= numberField(parcel.emptyWeightGrams))
       problems.maxWeightKg = 'The full weight must be more than the empty package.'
+    if (!(Number(parcel.shipbubbleCategoryId) > 0)) problems.shipbubbleCategoryId = 'Choose what the carriers class your goods as.'
     setFieldErrors(problems)
     if (Object.keys(problems).length) return setError('Check the highlighted details.')
     setError('')
@@ -84,7 +82,8 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
       heightCm: numberField(parcel.heightCm),
       emptyWeightGrams: numberField(parcel.emptyWeightGrams),
       maxWeightGrams: numberField(parcel.maxWeightKg) * 1000,
-      ...(p ? { shipbubbleCategoryId: p.shipbubbleCategoryId, terminalPackagingId: p.terminalPackagingId } : PROVIDER_REFS),
+      shipbubbleCategoryId: Number(parcel.shipbubbleCategoryId),
+      ...(p?.terminalPackagingId ? { terminalPackagingId: p.terminalPackagingId } : {}),
     }
     try {
       const saved = await save({
@@ -178,6 +177,24 @@ export default function DeliveryDialog({ store, current, onClose, onSaved }: Del
           {fieldError('maxWeightKg')}
         </Field>
       </div>
+      <Field label="What the carriers class your goods as" htmlFor="dl-category" hint={categories.error ? 'The carrier’s list could not be loaded; try again in a moment.' : 'The carrier prices and handles the parcel by this.'}>
+        <select
+          id="dl-category"
+          value={parcel.shipbubbleCategoryId}
+          onChange={(e) => setP({ shipbubbleCategoryId: e.target.value })}
+          disabled={!categories.data}
+          className={`${inputClass} disabled:opacity-60`}
+          style={jakarta(400)}
+        >
+          <option value="">{categories.isLoading ? 'Loading…' : 'Choose a category'}</option>
+          {(categories.data ?? []).map((c) => (
+            <option key={c.id} value={String(c.id)}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {fieldError('shipbubbleCategoryId')}
+      </Field>
       {error && (
         <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
           {error}

@@ -52,5 +52,9 @@ export function filterPurchases(orders: Order[], tab: PurchaseTab, query: string
   )
 }
 
-/** Only an order the seller has not started on can be cancelled by the buyer. */
-export const canCancel = (status: OrderStatus): boolean => status === 'new'
+export { canCancel } from './orderFlow'
+
+/** What the buyer has paid across their orders, in naira: the totals of the paid ones (kobo on the API). */
+export function amountSpent(orders: Pick<OrderSummary, 'paymentStatus' | 'total'>[]): number {
+  return orders.reduce((sum, o) => (o.paymentStatus === 'PAID' ? sum + Number(o.total) / 100 : sum), 0)
+}

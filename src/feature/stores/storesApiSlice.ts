@@ -57,6 +57,23 @@ export const storesApiSlice = apiSlice.injectEndpoints({
       },
       invalidatesTags: ['Catalog'],
     }),
+    /**
+     * The store's Paystack recipient (`/stores/{id}/payment-recipient`): provisioned once the store
+     * is live with a checked bank, so a buyer's payment can be split at source. The spec gives it no
+     * schema; null means none has been set up (404).
+     */
+    getPaymentRecipient: builder.query<Record<string, unknown> | null, string>({
+      async queryFn(storeId, _, __, baseQuery) {
+        const res = await baseQuery(`/stores/${encodeURIComponent(storeId)}/payment-recipient`)
+        if (res.error) return res.error.status === 404 ? { data: null } : { error: res.error }
+        return { data: (res.data ?? {}) as Record<string, unknown> }
+      },
+      providesTags: ['Recipient'],
+    }),
+    provisionPaymentRecipient: builder.mutation<Record<string, unknown> | null, string>({
+      query: (storeId) => ({ url: `/stores/${encodeURIComponent(storeId)}/payment-recipient`, method: 'POST', body: {} }),
+      invalidatesTags: ['Recipient'],
+    }),
     getCategories: builder.query<Category[], void>({
       queryFn: (_, __, ___, baseQuery) => allPages<Category>((page) => baseQuery(`/store-categories?limit=50&page=${page}`)),
       providesTags: ['Categories'],
@@ -65,4 +82,4 @@ export const storesApiSlice = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useGetOnboardingQuery, useLazyGetOnboardingQuery, useSaveOnboardingMutation, useGetCategoriesQuery } = storesApiSlice
+export const { useGetOnboardingQuery, useLazyGetOnboardingQuery, useSaveOnboardingMutation, useGetCategoriesQuery, useGetPaymentRecipientQuery, useProvisionPaymentRecipientMutation } = storesApiSlice

@@ -47,8 +47,13 @@ describe('purchases', () => {
     expect(filterPurchases(rows, 'completed', '').map((o) => o.id)).toEqual(['ord-2'])
     expect(filterPurchases(rows, 'new', 'ord-2')).toEqual([])
   })
-  it('only an order the seller has not started on can be cancelled', () => {
+  it('lets the buyer cancel until the carrier has collected the package', () => {
     expect(canCancel('new')).toBe(true)
-    for (const s of ['processing', 'ready', 'dispatched', 'completed', 'cancelled', 'declined'] as const) expect(canCancel(s)).toBe(false)
+    expect(canCancel('processing')).toBe(true)
+    expect(canCancel('ready')).toBe(true)
+    expect(canCancel('dispatched')).toBe(false)
+    expect(canCancel('completed')).toBe(false)
+    expect(canCancel('cancelled')).toBe(false)
+    expect(canCancel('declined')).toBe(false)
   })
 })

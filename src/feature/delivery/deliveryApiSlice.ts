@@ -18,11 +18,14 @@ export interface QuoteRequest {
   storeId: string
   items: { productId: string; quantity: number }[]
   address: DeliveryAddress
-  /** YYYY-MM-DD, the day the carrier collects from the seller. */
+  /** YYYY-MM-DD, the day the carrier collects from the seller: today to seven days ahead, Lagos time. */
   pickupDate: string
 }
 
-/** The parcel a seller ships in; the two provider references are the carriers' own catalogue ids. */
+/**
+ * The parcel a seller ships in. `shipbubbleCategoryId` is one of the carrier's own categories
+ * (`GET /delivery/providers/shipbubble/categories`); a guessed id is refused at quote time.
+ */
 export interface Parcel {
   lengthCm: number
   widthCm: number
@@ -30,7 +33,8 @@ export interface Parcel {
   emptyWeightGrams: number
   maxWeightGrams: number
   shipbubbleCategoryId: number
-  terminalPackagingId: string
+  /** Kept when an older profile carries it; the current walkthrough no longer sends it. */
+  terminalPackagingId?: string
 }
 
 /** A seller's delivery setup (`/delivery/stores/{storeId}/shipping`): pickup contact and parcel. */
@@ -40,11 +44,31 @@ export interface ShippingProfile {
   profile: { pickup: DeliveryAddress; parcel: Parcel }
 }
 
+/** One of Shipbubble's goods categories, by its own numeric id ("Groceries" was 2178251 when the walkthrough was written). */
+export interface ShipbubbleCategory {
+  id: number
+  name: string
+}
+
+/**
+ * One carrier offer for a basket. The walkthrough says a quote answer carries `items`, each with
+ * an `id` the order is created from, a total and an expiry (two minutes); it names no other
+ * field, so the rest is read leniently in `data/quotes.ts` until a quote can be produced.
+ */
+export interface Quote {
+  id: string
+  [key: string]: unknown
+}
+
+export interface QuoteResponse {
+  items: Quote[]
+  [key: string]: unknown
+}
+
 /**
  * Delivery on Earth: a seller's pickup contact and parcel (what the carriers need to quote), and
- * the buyer's `POST /delivery/quotes`, which compares live carrier rates for a basket. The API
- * documents no quote answer yet and the QA server has no carrier behind it, so the answer is
- * kept as it comes until it is known.
+ * the buyer's `POST /delivery/quotes`, which compares live carrier rates for a basket. Shipbubble
+ * is the default provider; the buyer picks a courier from the returned rates, not a provider.
  */
 export const deliveryApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -61,10 +85,16 @@ export const deliveryApiSlice = apiSlice.injectEndpoints({
       query: ({ storeId, ...body }) => ({ url: `/delivery/stores/${encodeURIComponent(storeId)}/shipping`, method: 'PUT', body }),
       invalidatesTags: ['Shipping'],
     }),
-    requestQuotes: builder.mutation<unknown, QuoteRequest>({
+    /** Public; the list is the carrier's own and changes rarely. */
+    getShipbubbleCategories: builder.query<ShipbubbleCategory[], void>({
+      query: () => '/delivery/providers/shipbubble/categories',
+      transformResponse: (res: { items: ShipbubbleCategory[] }) => res.items,
+      keepUnusedDataFor: 3600,
+    }),
+    requestQuotes: builder.mutation<QuoteResponse, QuoteRequest>({
       query: (body) => ({ url: '/delivery/quotes', method: 'POST', body }),
     }),
   }),
 })
 
-export const { useGetShippingProfileQuery, useSaveShippingProfileMutation, useRequestQuotesMutation } = deliveryApiSlice
+export const { useGetShippingProfileQuery, useSaveShippingProfileMutation, useGetShipbubbleCategoriesQuery, useRequestQuotesMutation } = deliveryApiSlice
