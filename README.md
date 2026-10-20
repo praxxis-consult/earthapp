@@ -185,9 +185,9 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 
 | Variable | Where | Meaning |
 | --- | --- | --- |
-| `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to the QA API |
+| `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to `https://earthapi.loodit.com`, the same origin `vercel.json` rewrites to |
 | `EARTH_REALTIME_TARGET` | shell, before `npm run dev` | The realtime service (Socket.IO) the dev proxy forwards `/socket.io` to. Defaults to the API target, which serves it on the same origin |
-| `VITE_REALTIME_URL` | build environment (Vercel) | The realtime service's public https origin for production; the browser connects to it directly, so its CORS list must name the site. Unset, the app keeps polling |
+| `VITE_REALTIME_URL` | build environment (Vercel) | Overrides where a production build opens the socket. Unset, it connects to the API origin directly (the browser speaks CORS and WSS to it, so its CORS list must name the site) |
 | `/v1` rewrite | `vercel.json` | Where production forwards `/v1`. Change it to point a deployment at another API |
 
 There are no secrets anywhere in this repo or its deployment: the app never holds an API key (the bank lookup's Paystack key lives on the Earth API), and the refresh token is an HttpOnly cookie the browser manages.
@@ -271,7 +271,7 @@ vite.config.js          dev proxy for /v1 and /socket.io
 
 **On load.** `SessionBootstrap` restores the session from the stored token, or from the cookie alone by refreshing, then reads `/accounts/me`. Anything else leaves the visitor anonymous.
 
-**Live updates.** Once the account is confirmed, `src/feature/realtime/Realtime.tsx` opens one Socket.IO connection to the realtime service with the access token in the handshake (`src/feature/realtime/realtimeClient.ts`). The service sends identifiers only; every durable event is acknowledged and marks the matching queries stale (chats, notifications, orders, overview), so the pages read again over HTTP, which stays the saved record. Events are applied once per id and stale versions are dropped. `sync.required` refreshes everything and resubscribes the open thread; the open thread (`useConversationLive`) asks for messages after its last sequence when one is announced and shows the other side's typing. While the socket is up the pages stop polling; without it (no `VITE_REALTIME_URL`, service down, reconnection exhausted) they poll as before. A socket the server closed is reopened after the session is checked, with a jittered wait and at most five times.
+**Live updates.** Once the account is confirmed, `src/feature/realtime/Realtime.tsx` opens one Socket.IO connection to the realtime service with the access token in the handshake (`src/feature/realtime/realtimeClient.ts`). The service sends identifiers only; every durable event is acknowledged and marks the matching queries stale (chats, notifications, orders, overview), so the pages read again over HTTP, which stays the saved record. Events are applied once per id and stale versions are dropped. `sync.required` refreshes everything and resubscribes the open thread; the open thread (`useConversationLive`) asks for messages after its last sequence when one is announced and shows the other side's typing. While the socket is up the pages stop polling; without it (an origin the API's CORS list does not name, such as a preview deployment; service down; reconnection exhausted) they poll as before. A socket the server closed is reopened after the session is checked, with a jittered wait and at most five times.
 
 **Endpoints by area**
 

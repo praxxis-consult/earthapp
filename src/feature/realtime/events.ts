@@ -115,8 +115,21 @@ export const TYPING_SEND_GAP_MS = 1_500
 export const TYPING_IDLE_MS = 3_000
 /** Durable events must be acknowledged within 5 s; commands wait this long for a reply. */
 export const COMMAND_TIMEOUT_MS = 5_000
-/** How many times a socket the server closed is reopened before the app stays on polling. */
+/** How many times a socket the server closed or refused is reopened before the app stays on polling. */
 export const MAX_SERVER_DISCONNECTS = 5
+
+/**
+ * What to do with a handshake the service refused. A rejected token is renewed once; a passing
+ * outage (the service answers 503 while its stores are unavailable), too many connections (429)
+ * or no answer at all is tried again after a wait, since the SDK reopens only a dropped transport,
+ * never a refused one; anything else (a forbidden account, a bad request) stays on polling.
+ */
+export type Refusal = 'renew' | 'retry' | 'give-up'
+export function refusal(status: number | undefined): Refusal {
+  if (status === 401) return 'renew'
+  if (status === undefined || status === 0 || status === 429 || status >= 500) return 'retry'
+  return 'give-up'
+}
 
 /** A jittered 1–10 s wait for the n-th reopen after the server closed the socket. */
 export function reopenDelayMs(attempt: number, random = Math.random): number {

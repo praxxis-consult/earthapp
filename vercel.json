@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/v1/:path*",
-      "destination": "http://qaaniuvtddbfg3oi3mroui5u.62.171.189.223.sslip.io/v1/:path*"
+      "destination": "https://earthapi.loodit.com/v1/:path*"
     },
     {
       "source": "/((?!v1/).*)",
