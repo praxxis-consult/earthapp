@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { shortOrderId } from '../../data/orders'
 import Pager from '../../components/ui/Pager'
 import DataTable from '../../components/ui/DataTable'
 import EmptyBlock from '../../components/ui/EmptyBlock'
@@ -14,7 +15,7 @@ import { jakarta, SCROLL_ROW } from '../../utils/styles'
 
 const PAGE_SIZE = 7
 
-const COLUMNS = orderColumns({ widths: { order: 192, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 100 }, party: 'seller' })
+const COLUMNS = orderColumns({ widths: { order: 174, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 118 }, party: 'seller' })
 
 /**
  * The buyer's orders. No frame exists for it; it is the seller's orders page (561:3325) with the
@@ -48,7 +49,7 @@ export default function Purchases() {
 
   return (
     <DashboardLayout>
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:min-h-full max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px] max-w-[490px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Orders
@@ -65,7 +66,7 @@ export default function Purchases() {
           <StatCard label="Delivered" value={stats.completed} />
         </div>
 
-        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 md:min-h-0 max-md:p-[16px]">
+        <div className="relative bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 max-md:p-[16px]">
           <div className="flex flex-col gap-[8px] max-w-[429px]">
             <p className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
               All orders
@@ -143,12 +144,11 @@ export default function Purchases() {
                 rows={rows}
                 rowKey={(o) => o.id}
                 onRowClick={(o) => navigate(`/dashboard/purchases/${o.id}`)}
-                rowLabel={(o) => `Order ${o.id}, ${o.item.soldBy}`}
+                rowLabel={(o) => `Order ${shortOrderId(o.id)}, ${o.item.soldBy}`}
                 head="tinted"
                 radius={10}
                 designWidth={1043}
-                scroll
-                className="mt-[24px] md:min-h-0 md:flex-1 max-md:mt-[16px]"
+                className="mt-[24px] max-md:mt-[16px]"
                 columns={COLUMNS}
               />
               <div className="mt-[16px] max-md:mt-[16px]">

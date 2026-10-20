@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
+import Thumb from '../../components/ui/Thumb'
 import OrderStatusDialog from '../../components/ui/OrderStatusDialog'
 import routingIcon from '../../assets/icons/rc-routing.svg'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
@@ -16,8 +17,6 @@ import truckFastIcon from '../../assets/icons/od-truck-fast.svg'
 import cardPosIcon from '../../assets/icons/od-card-pos.svg'
 import stepDoneIcon from '../../assets/icons/od-step-done.svg'
 import stepTodoIcon from '../../assets/icons/od-step-todo.svg'
-import truckTimeLg from '../../assets/icons/od-truck-time-lg.svg'
-import truckTimeSm from '../../assets/icons/od-truck-time-sm.svg'
 import bagHappyLg from '../../assets/icons/od-bag-happy-lg.svg'
 import bagHappySm from '../../assets/icons/od-bag-happy-sm.svg'
 import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
@@ -33,18 +32,19 @@ import {
   type OrderSummary,
 } from '../../feature/orders/ordersApiSlice'
 import { orderFromOverview } from '../../data/overview'
-import { isPaid, paymentExpired, stepTime, trackingView } from '../../data/orderFlow'
-import { findOrder, initials, naira, orderTotal, type Order, type OrderStatus } from '../../data/orders'
+import { isPaid, paymentExpired, sellerMoney, stepTime, trackingView } from '../../data/orderFlow'
+import { findOrder, initials, naira, orderTotal, type Order, type OrderStatus, shortOrderId } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
 
 /** The seven steps on the timeline card, with the timeline words that mark each as reached; a status sits at an index on it. */
 const STEPS: { label: string; words: string[] }[] = [
   { label: 'Order placed', words: ['placed', 'created'] },
-  { label: 'Payment confirmed', words: ['paid', 'payment'] },
+  { label: 'Payment confirmed', words: ['verified', 'paid'] },
   { label: 'Order accepted', words: ['accept'] },
   { label: 'Packed and ready', words: ['ready'] },
   { label: 'On the way', words: ['dispatch', 'collected', 'transit'] },
+  // The timeline records no delivery event; the carrier's delivery is on the booking (`fulfillmentDelivery.status`), read below
   { label: 'Delivered', words: ['deliver'] },
   { label: 'Completed', words: ['complet'] },
 ]
@@ -198,7 +198,10 @@ export default function OrderDetail() {
   const closed = status === 'cancelled' || status === 'declined'
   const placed = new Date(o.placedAt)
   const tracking = trackingView(summary?.fulfillmentDelivery)
-  const events = timeline.data ?? []
+  const events = timeline.data ?? summary?.timeline?.items ?? []
+  const money = sellerMoney(summary?.pricing, summary?.total ?? '0')
+  const acceptBy = summary?.acceptanceDeadline ? new Date(summary.acceptanceDeadline).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''
+  const addressLine = (a: OrderSummary['address']) => (a ? `${a.street}, ${a.area}, ${a.region}` : '')
 
   async function run(action: (a: { id: string; expectedVersion: number }) => { unwrap: () => Promise<unknown> }, after?: () => void) {
     if (!summary) return
@@ -210,7 +213,9 @@ export default function OrderDetail() {
       const problem = toApiError(e)
       setError(
         problem.status === 409
-          ? `${problem.detail || 'This order changed just now.'} Reload the page to see its latest state.`
+          ? /version|changed|stale/i.test(problem.code + problem.detail) || !problem.detail
+            ? `${problem.detail || 'This order changed just now.'} Reload the page to see its latest state.`
+            : problem.detail
           : problem.status === 422
             ? problem.detail || problem.title || 'The API refused this step.'
             : describeError(e),
@@ -222,7 +227,7 @@ export default function OrderDetail() {
     new: paid
       ? {
           title: 'Accept this order',
-          body: `Payment from ${buyer} is verified. Accept it to start packing, or decline and the buyer is refunded.`,
+          body: `Payment from ${buyer} is verified. Accept it${acceptBy ? ` by ${acceptBy}` : ''} to start packing, or decline and the buyer is refunded.`,
           actions: {
             label: 'Accept order',
             icon: checksIcon,
@@ -240,7 +245,7 @@ export default function OrderDetail() {
       actions: { label: 'Mark as ready', icon: truckIcon, busy, onClick: () => setDialog('evidence') },
     },
     ready: {
-      title: tracking ? 'The carrier is booked' : 'Booking the carrier',
+      title: tracking ? 'The carrier is booked' : summary?.delivery?.carrier ? `Booking ${summary.delivery.carrier}` : 'Booking the carrier',
       body: tracking
         ? `${tracking.courier || 'The carrier'} collects from your pickup address${tracking.number ? ` (tracking ${tracking.number})` : ''}. Mark the order dispatched once the carrier has collected the package.`
         : 'The delivery is being booked with the carrier now that the order is paid and ready; the tracking appears here. Mark it dispatched only once the carrier has collected the package.',
@@ -249,8 +254,8 @@ export default function OrderDetail() {
     dispatched: {
       title: `On its way to ${buyer}`,
       body: 'The carrier has the package. Once it has delivered, mark the order completed; the delivery record is checked.',
+      // The frame's truck glyphs sit where the button goes, so the dispatched banner shows the button alone
       actions: { label: 'Mark as completed', icon: checksIcon, busy, onClick: () => void run(complete) },
-      art: [truckTimeLg, truckTimeSm],
     },
     completed: {
       title: 'Order delivered successfully',
@@ -270,9 +275,11 @@ export default function OrderDetail() {
     },
   }
   const banner = banners[status]
+  const carrierName = tracking?.courier || summary?.delivery?.carrier || o.delivery.courier
   const deliveryRows = [
-    o.delivery.courier || tracking?.courier ? { icon: truckFastIcon, label: tracking?.courier || o.delivery.courier, value: o.delivery.method === 'Motorbike' ? 'Motorcycle' : o.delivery.method, swap: true } : { icon: truckFastIcon, label: 'Method', value: o.delivery.method },
-    o.delivery.address ? { icon: locationIcon, label: 'Delivery Address', value: o.delivery.address } : null,
+    carrierName ? { icon: truckFastIcon, label: summary?.delivery?.estimate ? `Carrier · ${summary.delivery.estimate.toLowerCase()}` : 'Carrier', value: carrierName } : { icon: truckFastIcon, label: 'Method', value: o.delivery.method },
+    summary?.pickup ? { icon: locationIcon, label: 'Collected from', value: addressLine(summary.pickup) } : null,
+    summary?.address ? { icon: locationIcon, label: 'Delivered to', value: addressLine(summary.address) } : o.delivery.address ? { icon: locationIcon, label: 'Delivery Address', value: o.delivery.address } : null,
     tracking?.number ? { icon: routingIcon, label: 'Tracking number', value: tracking.number, href: tracking.url || undefined } : null,
     { icon: cardPosIcon, label: paid ? 'Amount paid' : 'Amount due', value: naira(summary ? Number(summary.total) / 100 : o.delivery.amountPaid).replace(/\.00$/, '') },
   ]
@@ -292,13 +299,16 @@ export default function OrderDetail() {
             <div className="flex flex-col gap-[8px]">
               <div className="flex items-center gap-[8px] max-md:flex-wrap">
                 <h1 className="text-[#101604] text-[24px] leading-[32px] truncate" style={jakarta(600)}>
-                  Order {o.id}
+                  Order {shortOrderId(o.id)}
                 </h1>
                 <OrderStatusBadge status={status} />
               </div>
               <p className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
                 Placed {placed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
                 {placed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {summary?.itemCount ?? 1} {(summary?.itemCount ?? 1) === 1 ? 'item' : 'items'}
+              </p>
+              <p className="text-[#807e7e] text-[11px] leading-[14px] select-all" style={jakarta(400)}>
+                Reference {o.id}
               </p>
             </div>
           </div>
@@ -368,9 +378,9 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-          {banner.art && (
+          {banner.art && !banner.actions && (
             <>
-              {/* Two layered glyphs, as placed in the frame (the large one at 7% sits behind). */}
+              {/* Two layered glyphs, as placed in the frame (the large one at 7% sits behind); never beside a button, which stands where they do */}
               <img src={banner.art[0]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: -20, top: -27, width: 181, height: 181 }} />
               <img src={banner.art[1]} alt="" className="absolute pointer-events-none max-md:hidden" style={{ right: 61, top: -5, width: 136, height: 136 }} />
             </>
@@ -385,7 +395,7 @@ export default function OrderDetail() {
               {STEPS.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
-                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : stepTime(events, ...words)
+                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : i === 5 ? (stepTime(events, ...words) ?? (summary?.fulfillmentDelivery?.status === 'DELIVERED' ? (summary?.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />
@@ -411,7 +421,7 @@ export default function OrderDetail() {
               <div className="flex flex-col gap-[24px]">
                 <div className="flex items-center gap-[14px]">
                   {o.item.image ? (
-                    <img src={o.item.image} alt="" className="size-[76px] rounded-[12px] object-cover shrink-0" />
+                    <Thumb src={o.item.image} className="size-[76px] rounded-[12px] shrink-0" />
                   ) : (
                     <div className="size-[76px] rounded-[12px] bg-[#f7f7f7] shrink-0" />
                   )}
@@ -458,11 +468,18 @@ export default function OrderDetail() {
 
             <Card title="Payment summary" className="min-h-[261px]">
               <div className="flex flex-col gap-[16px]">
-                {[
-                  ['Items subtotal', naira(summary ? (Number(summary.item.priceMinor) / 100) * summary.item.quantity : o.payment.subtotal)],
-                  ['Delivery fee', naira(summary ? Math.max(0, Number(summary.total) / 100 - (Number(summary.item.priceMinor) / 100) * summary.item.quantity) : o.payment.fee)],
-                  ...(summary ? [] : [['Discount', naira(o.payment.discount)]]),
-                ].map(([k, v]) => (
+                {(summary
+                  ? [
+                      ['Goods', naira(money.goods)],
+                      ['Earth’s commission', `− ${naira(money.commission)}`],
+                      ['Buyer paid, delivery included', naira(Number(summary.total) / 100)],
+                    ]
+                  : [
+                      ['Items subtotal', naira(o.payment.subtotal)],
+                      ['Delivery fee', naira(o.payment.fee)],
+                      ['Discount', naira(o.payment.discount)],
+                    ]
+                ).map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
                       {k}
@@ -475,15 +492,15 @@ export default function OrderDetail() {
                 <div className="h-px w-full bg-[#f7f7f7]" />
                 <div className="flex items-center justify-between">
                   <span className="text-[#807e7e] text-[13px] leading-[16px]" style={jakarta(400)}>
-                    {paid ? 'Total paid' : 'Total due'}
+                    {summary ? 'Your share' : paid ? 'Total paid' : 'Total due'}
                   </span>
                   <span className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
-                    {naira(summary ? Number(summary.total) / 100 : orderTotal(o))}
+                    {naira(summary ? money.share : orderTotal(o))}
                   </span>
                 </div>
                 {summary && (
                   <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                    Payment {summary.paymentStatus.toLowerCase().replace(/_/g, ' ')}
+                    Payment {String(summary.paymentStatus).toLowerCase().replace(/_/g, ' ')}
                     {summary.paidAt ? ` on ${new Date(summary.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}. The buyer’s payment is split at source: your share goes to your bank, the commission and delivery to Earth.
                   </p>
                 )}
@@ -493,8 +510,12 @@ export default function OrderDetail() {
 
           <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Buyer">
-              <Detail text={initials(o.buyer.name)} label={o.buyer.since || 'Buyer'} value={o.buyer.name} swap />
-              {o.buyer.address && <Detail icon={locationIcon} label="Address" value={o.buyer.address} />}
+              <Detail text={initials(o.buyer.name)} label={summary?.customerSince ? `Customer since ${new Date(summary.customerSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : o.buyer.since || 'Buyer'} value={o.buyer.name} swap />
+              {summary?.address ? (
+                <Detail icon={locationIcon} label={`Delivery address · ${summary.address.phone}`} value={addressLine(summary.address)} />
+              ) : (
+                o.buyer.address && <Detail icon={locationIcon} label="Address" value={o.buyer.address} />
+              )}
               <MessageButton name={buyer} className="w-full" />
             </Card>
 

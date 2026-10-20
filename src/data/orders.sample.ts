@@ -354,6 +354,7 @@ export const sampleOrders: Order[] = seeds.map(
       },
       payment: { subtotal: price, fee: method === 'Pickup' ? 0 : 2500, discount: 0 },
       note: status === 'new' ? 'Please select firm tomatoes and pack carefully for the trip.' : undefined,
+      paid: status !== 'declined',
       status,
     }
   },

@@ -183,8 +183,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         </div>
       </button>
 
-      {/* Nav items */}
-      <nav className="flex flex-col gap-[12px] px-[16px] flex-1">
+      {/* Only the menu scrolls when the column is short (nine entries on a buying-and-selling account); the banner and Log out stay pinned below it */}
+      <nav className="flex flex-col gap-[12px] px-[16px] flex-1 min-h-0 overflow-y-auto [scrollbar-width:thin]">
         {navItems.map(({ label, icon, href, badge: badgeKey }) => {
           const badge = badgeKey === 'unreadChats' && unreadChats > 0 ? unreadChats : undefined
           return (
@@ -225,7 +225,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       </nav>
 
       {/* Share my store banner; for a buyer the same banner opens the marketplace instead */}
-      <div className="mx-[16px] mb-[40px] relative h-[144px] rounded-[20px] overflow-hidden bg-[#e3e3e3]">
+      <div className="mx-[16px] mt-[16px] mb-[24px] relative h-[144px] shrink-0 rounded-[20px] overflow-hidden bg-[#e3e3e3]">
         <img src={sidebarBgImg} alt="" className="absolute inset-0 max-w-none object-cover size-full pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#141414] from-[1%] to-transparent" />
         <div className="absolute top-[16px] left-[16px] w-[235px] flex flex-col gap-[4px]">

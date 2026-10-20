@@ -10,7 +10,7 @@ import { useAuth } from '../../feature/authentication/useAuth'
 import { EVERYWHERE, useListCatalogQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useListMyOrdersQuery } from '../../feature/orders/ordersApiSlice'
 import { amountSpent, purchaseFromApi, purchaseStats } from '../../data/purchases'
-import { naira } from '../../data/orders'
+import { naira, shortOrderId } from '../../data/orders'
 import { useSaved } from '../../lib/saved'
 import { describeError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -120,7 +120,7 @@ export default function BuyerOverview() {
               rows={recent}
               rowKey={(o) => o.id}
               onRowClick={(o) => navigate(`/dashboard/purchases/${o.id}`)}
-              rowLabel={(o) => `Order ${o.id}, ${o.item.soldBy}`}
+              rowLabel={(o) => `Order ${shortOrderId(o.id)}, ${o.item.soldBy}`}
               head="tinted"
               radius={10}
               designWidth={1043}

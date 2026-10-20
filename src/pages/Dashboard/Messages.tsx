@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import EmptyBlock from '../../components/ui/EmptyBlock'
@@ -30,11 +30,14 @@ import {
   type ChatMessage,
   type ChatThread,
 } from '../../feature/chats/chatsApiSlice'
+import { useAppSelector } from '../../app/hooks'
+import { selectLive } from '../../feature/realtime/realtimeSlice'
+import { useConversationLive } from '../../feature/realtime/useConversationLive'
 import { nairaFromMinor } from '../../lib/productView'
 import { initials } from '../../data/orders'
 import { jakarta } from '../../utils/styles'
 
-/** How often the open thread asks for messages after its last one, and the list for new threads. */
+/** How often the open thread asks for messages after its last one, and the list for new threads, while no live channel is up. */
 const THREAD_POLL_MS = 5_000
 const LIST_POLL_MS = 10_000
 const MAX_MEDIA_BYTES = { image: 10 * 1024 * 1024, video: 50 * 1024 * 1024 }
@@ -74,7 +77,8 @@ function dayLabel(iso: string): string {
  * tinted green at 5%) beside a 677px chat pane (88px header, day chips, 420px-wide bubbles —
  * incoming #f7f7f7 with the bottom-left corner squared, outgoing #007c53 with the bottom-right
  * squared — invoice, product and media attachments, then the composer). Threads and messages
- * come from the chats API; the open thread is polled for new messages and marked read as they land.
+ * come from the chats API; the open thread is subscribed on the live channel (polled when there is
+ * none), its new messages are read over HTTP as they are announced, and marked read as they land.
  */
 export default function Messages() {
   const navigate = useNavigate()
@@ -83,7 +87,8 @@ export default function Messages() {
   const seller = canSell(account)
   const me = account?.id ?? ''
   const [searchParams, setSearchParams] = useSearchParams()
-  const threads = useListChatsQuery(undefined, { pollingInterval: LIST_POLL_MS })
+  const live = useAppSelector(selectLive)
+  const threads = useListChatsQuery(undefined, { pollingInterval: live ? 0 : LIST_POLL_MS })
   const list = threads.data ?? []
   // The thread named in the URL (a notification lands here), else the newest.
   const wanted = searchParams.get('chat')
@@ -110,6 +115,16 @@ export default function Messages() {
   const counterpart = (t: ChatThread) => (t.seller.id === me ? t.buyer.name : t.storeName)
   const messages = history.currentData?.items ?? []
   const lastSequence = history.currentData?.lastSequence ?? null
+  // The live channel announces a new message by id only; the text is read after the last sequence on screen.
+  const position = useRef({ chatId: activeId, lastSequence })
+  useEffect(() => {
+    position.current = { chatId: activeId, lastSequence }
+  })
+  const replay = useCallback(() => {
+    const { chatId, lastSequence } = position.current
+    if (chatId && lastSequence !== null) poll({ chatId, afterSequence: lastSequence })
+  }, [poll])
+  const { subscribed, peerTyping, noteTyping, stopTyping } = useConversationLive(activeId, replay)
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -120,15 +135,15 @@ export default function Messages() {
     )
   }, [list, tab, query, me]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // New messages after the last one, every few seconds while the tab is visible.
+  // Without a live subscription: new messages after the last one, every few seconds while the tab is visible.
   useEffect(() => {
-    if (!activeId || lastSequence === null) return
+    if (!activeId || lastSequence === null || subscribed) return
     const tick = () => {
       if (document.visibilityState === 'visible') poll({ chatId: activeId, afterSequence: lastSequence })
     }
     const id = setInterval(tick, THREAD_POLL_MS)
     return () => clearInterval(id)
-  }, [activeId, lastSequence, poll])
+  }, [activeId, lastSequence, poll, subscribed])
 
   // What is on screen has been read: tell the API when the thread still counts anything unread.
   useEffect(() => {
@@ -216,6 +231,7 @@ export default function Messages() {
     const text = draft.trim()
     if (!text) return
     setDraft('')
+    stopTyping()
     void deliver({ kind: 'TEXT', text: text.slice(0, 4000) })
   }
 
@@ -451,9 +467,9 @@ export default function Messages() {
                     <p className="text-[#101604] text-[16px] leading-[20px] truncate" style={jakarta(600)}>
                       {counterpart(active)}
                     </p>
-                    {/* The frame shows an online dot here; the API has no presence, so the line names the listing instead. */}
-                    <p className="text-[#807e7e] text-[12px] leading-[15px] truncate" style={jakarta(400)}>
-                      {active.seller.id === me ? `Buyer · ${active.storeName}` : active.seller.name}
+                    {/* The frame shows an online dot here; the API has no presence, so the line names the listing, or says when the other side is typing. */}
+                    <p className={`text-[12px] leading-[15px] truncate ${peerTyping ? 'text-[#007c53]' : 'text-[#807e7e]'}`} style={jakarta(peerTyping ? 600 : 400)} aria-live="polite">
+                      {peerTyping ? 'Typing…' : active.seller.id === me ? `Buyer · ${active.storeName}` : active.seller.name}
                     </p>
                   </div>
                 </div>
@@ -538,7 +554,11 @@ export default function Messages() {
                 </div>
                 <input
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => {
+                    setDraft(e.target.value)
+                    if (e.target.value) noteTyping()
+                    else stopTyping()
+                  }}
                   placeholder={busy ? 'Sending…' : 'Type a message...'}
                   aria-label="Message"
                   maxLength={4000}

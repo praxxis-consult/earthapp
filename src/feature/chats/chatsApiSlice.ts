@@ -74,7 +74,7 @@ export interface ChatStart {
   lastSequence: string
   product?: ChatProduct
 }
-/** A thread's messages, oldest first, and the newest sequence read so far. */
+/** A thread's messages, oldest first, and the newest sequence read so far ('0' for a thread with no messages yet). */
 export interface ChatHistory {
   items: ChatMessage[]
   lastSequence: string | null
@@ -131,7 +131,8 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
         const res = await allPages<ChatMessage>((page) => baseQuery(`/chats/${encodeURIComponent(chatId)}/messages?limit=50&page=${page}`))
         if ('error' in res) return res
         const items = res.data.sort(bySequence)
-        return { data: { items, lastSequence: items.length ? items[items.length - 1].sequence : null } }
+        // An empty thread reads from sequence 0, so the first message still arrives without a reload.
+        return { data: { items, lastSequence: items.length ? items[items.length - 1].sequence : '0' } }
       },
     }),
     /** Messages after a sequence; they are folded into the thread's history and the list. */

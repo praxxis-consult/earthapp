@@ -1,6 +1,7 @@
 import type { DataColumn } from '../../components/ui/DataTable'
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge'
-import { naira, type Order } from '../../data/orders'
+import Thumb from '../../components/ui/Thumb'
+import { naira, shortOrderId, type Order } from '../../data/orders'
 import { jakarta } from '../../utils/styles'
 
 /** A table cell's text (orders 561:3325, overview 459:1048): 14/24 in #101928. */
@@ -31,8 +32,8 @@ export function orderColumns({ widths, quantityAlign = 'center', status = true, 
       card: 'title',
       cell: (o) => (
         <div className="flex flex-col min-w-0">
-          <p className={CELL} style={jakarta(600)}>
-            {o.id}
+          <p className={`${CELL} whitespace-nowrap`} style={jakarta(600)} title={o.id}>
+            {shortOrderId(o.id)}
           </p>
           <p className="text-[#807e7e] text-[12px] leading-[17px] truncate" style={jakarta(400)}>
             {o.placed}
@@ -56,7 +57,7 @@ export function orderColumns({ widths, quantityAlign = 'center', status = true, 
       cell: (o) => (
         <div className="flex items-center gap-[12px] min-w-0">
           <span className="relative size-[40px] shrink-0 rounded-full overflow-hidden ring-[1.5px] ring-white">
-            <img src={o.item.image} alt="" className="size-full object-cover" />
+            <Thumb src={o.item.image} className="size-full" />
           </span>
           <p className={`${CELL} capitalize truncate`} style={jakarta(400)}>
             {o.item.title}
@@ -105,7 +106,7 @@ export function orderColumns({ widths, quantityAlign = 'center', status = true, 
       width: widths.status,
       align: 'center',
       card: 'badge',
-      cell: (o) => <OrderStatusBadge status={o.status} maxWidth={92} />,
+      cell: (o) => <OrderStatusBadge status={o.status} maxWidth={(widths.status ?? 118) - 8} />,
     })
   }
   return columns

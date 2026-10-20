@@ -76,9 +76,10 @@ export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save ch
   )
 }
 
+/** A labelled control; in a row of fields each takes an equal share of the width. */
 export function Field({ label, htmlFor, children, hint }: { label: string; htmlFor?: string; children: ReactNode; hint?: string }) {
   return (
-    <div className="flex flex-col gap-[8px]">
+    <div className="flex flex-col gap-[8px] flex-1 min-w-0">
       <label htmlFor={htmlFor} className={labelClass} style={jakarta(500)}>
         {label}
       </label>

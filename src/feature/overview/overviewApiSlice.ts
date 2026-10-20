@@ -24,7 +24,7 @@ export interface OverviewOrder {
   itemCount: number
   firstItem: string
   item: { name: string; thumbnail: string | null; quantity: number; weightGrams: number; priceMinor: string }
-  deliveryMethod: 'SHIPPING'
+  deliveryMethod: 'SHIPPING' | 'PICKUP'
   version: number
 }
 

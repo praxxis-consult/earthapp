@@ -57,3 +57,11 @@ describe('purchases', () => {
     expect(canCancel('declined')).toBe(false)
   })
 })
+
+describe('order numbers', () => {
+  it('shows the tail of the id behind a hash and keeps anything that is not an id', async () => {
+    const { shortOrderId } = await import('../data/orders')
+    expect(shortOrderId('01a1564d-e888-72ae-8dcd-793c42120e26')).toBe('#42120E26')
+    expect(shortOrderId('ord-1')).toBe('ord-1')
+  })
+})

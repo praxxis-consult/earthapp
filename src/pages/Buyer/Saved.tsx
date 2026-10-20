@@ -18,8 +18,8 @@ export default function Saved() {
 
   return (
     <DashboardLayout>
-      {/* The page fills the dashboard viewport, as the orders page does: the panel reaches the bottom and its grid scrolls inside it */}
-      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:h-full max-md:px-[16px] max-md:pt-[24px]">
+      {/* The page scrolls; the panel reaches the bottom when it holds little and grows with the grid */}
+      <div className="px-[24px] pt-[40px] pb-[24px] flex flex-col gap-[24px] md:min-h-full max-md:px-[16px] max-md:pt-[24px]">
         <div className="flex flex-col gap-[8px] max-w-[600px]">
           <h1 className="text-[#101604] text-[24px] leading-[32px]" style={jakarta(600)}>
             Saved products
@@ -29,7 +29,7 @@ export default function Saved() {
           </p>
         </div>
 
-        <div className="bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 md:min-h-0 md:overflow-y-auto max-md:p-[16px]">
+        <div className="bg-white rounded-[20px] p-[24px] flex flex-col md:flex-1 max-md:p-[16px]">
           {saved.list.length === 0 ? (
             <EmptyBlock
               className="justify-center md:flex-1 py-[40px] max-md:py-[24px]"

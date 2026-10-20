@@ -1,4 +1,5 @@
 import { naira, type Order, type OrderStatus } from './orders'
+import { PAID_STATES } from './orderFlow'
 import type { Overview as ApiOverview, OverviewOrder } from '../feature/overview/overviewApiSlice'
 
 /**
@@ -81,8 +82,9 @@ export function orderFromOverview(o: OverviewOrder): Order {
       onSale: true,
       image: o.item.thumbnail ?? '',
     },
-    delivery: { method: 'Shipping', courier: '', address: '', expected: '', amountPaid: 0 },
+    delivery: { method: String(o.deliveryMethod).toUpperCase() === 'PICKUP' ? 'Pickup' : 'Shipping', courier: '', address: '', expected: '', amountPaid: 0 },
     payment: { subtotal: Number(o.total) / 100, fee: 0, discount: 0 },
+    paid: PAID_STATES.includes(String(o.paymentStatus).toUpperCase()),
     status: STATUS_FROM_API[o.status] ?? 'new',
   }
 }

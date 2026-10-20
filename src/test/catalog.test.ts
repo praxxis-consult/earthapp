@@ -14,7 +14,7 @@ const stores = [
   { id: 's2', storeName: 'Akpolo Agro', businessAddress: { country: 'NG', region: 'Delta', area: 'Uzere' } },
 ]
 const products = {
-  s1: [{ id: 'p1', storeId: 's1', productName: 'Organic Tomatoes', price: '2500', soldAs: 'KG', availableQuantity: 5, createdAt: '2026-10-01T00:00:00Z', categoryId: 'vegetables', images: [] }],
+  s1: [{ id: 'p1', storeId: 's1', productName: 'Organic Tomatoes', price: '2500', soldAs: 'KG', availableQuantity: 5, approximateWeightGrams: 25000, createdAt: '2026-10-01T00:00:00Z', categoryId: 'vegetables', images: [] }],
   s2: [{ id: 'p2', storeId: 's2', productName: 'Cocoa Beans', price: '9000', soldAs: 'BAG', availableQuantity: 2, createdAt: '2026-10-05T00:00:00Z', categoryId: 'cash-crops', images: [] }],
 }
 const page = <T,>(items: T[], n = 1, hasNext = false) => ({ data: { items, page: n, limit: 50, hasNext, nextPage: hasNext ? n + 1 : null } })
@@ -77,6 +77,8 @@ describe('listPlace', () => {
     const res = await listPlace(fakeBaseQuery, categories as never, EVERYWHERE)
     expect('data' in res && res.data.map((l) => l.title)).toEqual(['Cocoa Beans', 'Organic Tomatoes'])
     expect('data' in res && res.data[1].category).toBe('Vegetables')
+    expect('data' in res && res.data[1].weightGrams).toBe(25000)
+    expect('data' in res && res.data[0].weightGrams).toBe(0)
     expect(calls[0]).toBe('/products?limit=50&page=1')
   })
   it('narrows by country and by region', async () => {
