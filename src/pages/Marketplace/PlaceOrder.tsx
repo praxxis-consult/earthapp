@@ -1,3 +1,4 @@
+import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
@@ -39,11 +40,24 @@ export default function PlaceOrder() {
   const setQty = (update: (q: number) => number) => setQtyState({ id: id ?? '', qty: update(qty) })
 
 
+  if (product === undefined) {
+    return (
+      <LoadingRegion label="Loading listing" className="min-h-[400px] mx-auto max-w-[1200px] px-[16px] pt-[48px] flex flex-col gap-[16px]">
+        <Skeleton className="h-[36px] w-2/3 max-w-[480px]" />
+        <Skeleton className="h-[20px] w-full max-w-[640px]" />
+        <Skeleton className="h-[20px] w-5/6 max-w-[560px]" />
+        <div className="mt-[16px] flex gap-[16px] max-md:flex-col">
+          <Skeleton className="h-[240px] flex-1 rounded-[20px]" />
+          <Skeleton className="h-[240px] flex-1 rounded-[20px]" />
+        </div>
+      </LoadingRegion>
+    )
+  }
   if (!product) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-[#807e7e] text-[16px]" style={jakarta(400)}>
-          {product === undefined ? 'Loading…' : 'This listing is not available.'}
+          This listing is not available.
         </p>
       </div>
     )

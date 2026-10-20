@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import ImageViewer from '../../components/ui/ImageViewer'
+import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
+import { useStore } from '../../feature/stores/useStore'
 import SignInDialogs from '../../components/ui/SignInDialogs'
 import { useStartChatMutation } from '../../feature/chats/chatsApiSlice'
 import { describeError } from '../../services/earthApi'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useSaved } from '../../lib/saved'
+import { galleryView } from '../../lib/gallery'
 import savedIcon from '../../assets/icons/db-nav-archive.svg'
 import { timeAgo } from '../../lib/reviews'
 import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews/reviewsApiSlice'
@@ -81,6 +85,8 @@ export default function ProductDetail() {
   const location = useLocation()
   const { account } = useAuth()
   const saved = useSaved(account?.id)
+  // A seller looking at their own listing: the API refuses a chat with one's own store, and an order makes no sense.
+  const { store: ownStore } = useStore()
   const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   // undefined while loading, null when the API has no such public listing
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
@@ -97,6 +103,9 @@ export default function ProductDetail() {
   // Messaging and ordering need an account: a visitor signs in first, then the action carries on.
   const [wants, setWants] = useState<'message' | 'order' | null>(null)
   const [actionError, setActionError] = useState('')
+  // The photo in front, per listing (so moving to another listing starts from its first photo), and the full-size viewer.
+  const [front, setFront] = useState<{ id: string; at: number } | null>(null)
+  const [viewing, setViewing] = useState<number | null>(null)
   const signInOpen = wants !== null && !account
   const ordering = wants === 'order' && Boolean(account)
 
@@ -120,11 +129,51 @@ export default function ProductDetail() {
   }
   const [shown, setShown] = useState(3)
 
+  if (product === undefined) {
+    // The outline of the loaded page (gallery, then the panel's badges, name, copy, price and buttons) shimmers until the listing lands.
+    return (
+      <LoadingRegion label="Loading listing" className="bg-white w-full pb-[80px]">
+        <div className="max-w-[1200px] mx-auto pt-[64px] max-xl:px-[24px] max-md:px-[16px] max-md:pt-[32px]">
+          <Skeleton className="h-[24px] w-[64px]" />
+          <div className="mt-[40px] flex gap-[24px] items-start max-lg:flex-col max-md:mt-[24px]">
+            <div className="flex w-[588px] shrink-0 gap-[16px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none max-md:flex-col">
+              <Skeleton className="h-[480px] w-[397px] rounded-[20px] max-xl:w-auto max-xl:flex-1 max-md:w-full max-md:h-auto max-md:aspect-[4/3]" />
+              <div className="flex w-[175px] flex-col gap-[16px] max-md:w-full max-md:flex-row">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-[150px] rounded-[20px] max-md:h-[96px] max-md:w-[96px]" />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-1 min-w-0 flex-col gap-[16px] max-lg:w-full">
+              <div className="flex gap-[8px]">
+                <Skeleton className="h-[28px] w-[88px] rounded-full" />
+                <Skeleton className="h-[28px] w-[72px] rounded-full" />
+              </div>
+              <Skeleton className="h-[36px] w-3/4" />
+              <Skeleton className="h-[20px] w-full" />
+              <Skeleton className="h-[20px] w-5/6" />
+              <Skeleton className="mt-[8px] h-[44px] w-[220px]" />
+              <div className="mt-[8px] grid grid-cols-3 gap-[16px]">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-[48px]" />
+                ))}
+              </div>
+              <Skeleton className="mt-[8px] h-[56px] w-full rounded-[16px]" />
+              <div className="flex gap-[16px] max-sm:flex-col">
+                <Skeleton className="h-[48px] flex-1 rounded-[30px]" />
+                <Skeleton className="h-[48px] flex-1 rounded-[30px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </LoadingRegion>
+    )
+  }
   if (!product) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-[#807e7e] text-[16px]" style={jakarta(400)}>
-          {product === undefined ? 'Loading…' : 'This listing is not available.'}
+          This listing is not available.
         </p>
       </div>
     )
@@ -133,8 +182,8 @@ export default function ProductDetail() {
   const quantity = qty && qty.id === product.id ? qty.qty : product.moq
   const setQuantity = (n: number) => setQty({ id: product.id, qty: Math.min(Math.max(product.moq, n), Math.max(product.available, product.moq)) })
   const inStock = product.available > 0
-  const thumbs = product.images.slice(1, 4)
-  const extra = Math.max(0, product.images.length - 4)
+  const gallery = galleryView(product.images, front && front.id === product.id ? front.at : 0)
+  const mine = !!ownStore && ownStore.id === product.store.id
   const summary = summarise(reviewsQuery.data?.summary)
   const longDescription = product.description.length > 150
 
@@ -150,25 +199,42 @@ export default function ProductDetail() {
         </button>
 
         <div className="mt-[40px] flex gap-[24px] items-start max-lg:flex-col max-md:mt-[24px]">
-          {/* Gallery (663:28963) */}
+          {/* Gallery (663:28963): any thumbnail comes to the front on a tap; the front photo opens the full-size viewer. */}
           <div className="flex w-[588px] shrink-0 gap-[16px] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-lg:w-full max-lg:flex-none max-md:flex-col">
-            <div className="h-[480px] w-[397px] overflow-hidden rounded-[20px] bg-[#ededed] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-md:flex-none max-md:w-full max-md:h-auto max-md:aspect-[4/3]">
-              {product.image && <img src={product.image} alt={product.title} className="size-full object-cover" />}
-            </div>
+            <button
+              type="button"
+              onClick={() => gallery.main && setViewing(gallery.selected)}
+              aria-label={gallery.main ? `View ${product.title} photos full size` : undefined}
+              disabled={!gallery.main}
+              className="h-[480px] w-[397px] overflow-hidden rounded-[20px] bg-[#ededed] max-xl:w-auto max-xl:flex-1 max-xl:min-w-0 max-md:flex-none max-md:w-full max-md:h-auto max-md:aspect-[4/3] disabled:cursor-default"
+            >
+              {gallery.main && <img src={gallery.main} alt={product.title} className="size-full object-cover" />}
+            </button>
             <div className={`flex w-[175px] flex-col gap-[16px] max-md:w-full max-md:flex-row ${SCROLL_MD}`}>
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="relative h-[150px] overflow-hidden rounded-[20px] bg-[#ededed] max-md:h-[96px] max-md:w-[96px] max-md:shrink-0 max-md:rounded-[16px]">
-                  {thumbs[i] && <img src={thumbs[i]} alt="" className="size-full object-cover" />}
-                  {i === 2 && extra > 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center gap-[8px]" style={{ background: 'linear-gradient(180deg, rgba(20,20,20,0) 0%, #141414 100%)' }}>
-                      <img src={plusIcon} alt="" className="size-[20px]" />
-                      <span className="text-white text-[32px] leading-[48px] max-md:text-[20px] max-md:leading-[28px]" style={jakarta(600)}>
-                        {extra}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {[0, 1, 2].map((i) => {
+                const thumb = gallery.thumbs[i]
+                const more = i === 2 && gallery.extra > 0
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!thumb}
+                    onClick={() => thumb && (more ? setViewing(thumb.index) : setFront({ id: product.id, at: thumb.index }))}
+                    aria-label={thumb ? (more ? `See all ${product.images.length} photos` : `Show photo ${thumb.index + 1}`) : undefined}
+                    className="relative h-[150px] overflow-hidden rounded-[20px] bg-[#ededed] max-md:h-[96px] max-md:w-[96px] max-md:shrink-0 max-md:rounded-[16px] disabled:cursor-default"
+                  >
+                    {thumb && <img src={thumb.src} alt="" className="size-full object-cover" />}
+                    {more && (
+                      <div className="absolute inset-0 flex items-center justify-center gap-[8px]" style={{ background: 'linear-gradient(180deg, rgba(20,20,20,0) 0%, #141414 100%)' }}>
+                        <img src={plusIcon} alt="" className="size-[20px]" />
+                        <span className="text-white text-[32px] leading-[48px] max-md:text-[20px] max-md:leading-[28px]" style={jakarta(600)}>
+                          {gallery.extra}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -266,6 +332,20 @@ export default function ProductDetail() {
               </div>
             </div>
 
+            {mine ? (
+              <div className="flex flex-col gap-[8px] rounded-[16px] bg-[#f2f8f6] px-[16px] py-[12px]">
+                <span className="text-[#0c2310] text-[14px] leading-[20px]" style={jakarta(600)}>
+                  This is your listing
+                </span>
+                <span className="text-[#807e7e] text-[13px] leading-[18px]" style={jakarta(400)}>
+                  Buyers see it this way. Prices, stock and photos are changed from your dashboard.
+                </span>
+                <Link to={`/dashboard/products/${product.id}/edit`} className="mt-[4px] flex h-[40px] w-fit items-center gap-[8px] rounded-[30px] bg-[#007c53] px-[20px] text-white text-[14px] leading-[18px]" style={jakarta(500)}>
+                  Edit listing
+                  <img src={arrowRight} alt="" className="size-[16px]" />
+                </Link>
+              </div>
+            ) : (
             <div className="flex gap-[16px] max-sm:flex-col">
               <button
                 type="button"
@@ -288,7 +368,8 @@ export default function ProductDetail() {
                 <img src={arrowRight} alt="" className="size-[16px]" />
               </button>
             </div>
-            {account && (
+            )}
+            {account && !mine && (
               <button
                 type="button"
                 onClick={() => saved.toggle(product)}
@@ -477,6 +558,7 @@ export default function ProductDetail() {
       </div>
 
       {ordering && <PlaceOrderModal listing={product} quantity={quantity} onClose={() => setWants(null)} />}
+      {viewing !== null && <ImageViewer images={product.images} start={viewing} title={product.title} onClose={() => setViewing(null)} />}
       <SignInDialogs open={signInOpen} onClose={() => setWants(null)} redirectTo={location.pathname} />
     </div>
   )

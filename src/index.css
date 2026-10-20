@@ -50,3 +50,18 @@
   --color-card-placeholder: #E4DEDE;
   --color-overlay-dark: #141414;
 }
+
+/* Loading placeholders: a soft sweep over the shape of what is coming (src/components/ui/Skeleton.tsx).
+   People who asked for less motion get a still block instead. */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f1f1f1 25%, #e6e6e6 37%, #f1f1f1 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: #ededed; }
+}
