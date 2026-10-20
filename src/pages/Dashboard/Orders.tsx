@@ -7,10 +7,12 @@ import EmptyBlock from '../../components/ui/EmptyBlock'
 import StatCard from '../../components/ui/StatCard'
 import searchIcon from '../../assets/icons/db-search.svg'
 import calendarIcon from '../../assets/icons/db-calendar.svg'
-import filterIcon from '../../assets/icons/db-filter.svg'
+import FilterMenu from '../../components/ui/FilterMenu'
+import { useMenu } from '../../components/ui/useMenu'
 import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
-import { orders as sampleRows, type Order, type OrderStatus, shortOrderId } from '../../data/orders'
+import { orders as sampleRows, type OrderStatus, shortOrderId } from '../../data/orders'
 import { orderFromOverview } from '../../data/overview'
+import { DEFAULT_FILTERS, ORDER_FILTER_GROUPS, RANGES, activeFilterCount, applyFilters, inRange, type OrderFilters, type Range } from '../../data/orderFilters'
 import { useListMyOrdersQuery } from '../../feature/orders/ordersApiSlice'
 import { describeError } from '../../services/earthApi'
 import { orderColumns } from './orderColumns'
@@ -33,17 +35,6 @@ const TABS: { key: Tab; label: string }[] = [
 const tabMatches = (tab: Tab, status: OrderStatus) =>
   tab === 'all' || status === tab || (tab === 'cancelled' && status === 'declined')
 
-const RANGES = ['Last 7 days', 'Last 30 days', 'This month', 'All time'] as const
-type Range = (typeof RANGES)[number]
-const inRange = (o: Order, range: Range, now: Date) => {
-  const d = new Date(o.placedAt)
-  const days = (now.getTime() - d.getTime()) / 86_400_000
-  if (range === 'Last 7 days') return days <= 7
-  if (range === 'Last 30 days') return days <= 30
-  if (range === 'This month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-  return true
-}
-
 const ORDER_COLUMNS = orderColumns({ widths: { order: 174, buyer: 146, quantity: 105, price: 119, delivery: 104, status: 118 } })
 
 /**
@@ -59,7 +50,8 @@ export default function Orders() {
   const [tab, setTab] = useState<Tab>('all')
   const [query, setQuery] = useState('')
   const [range, setRange] = useState<Range>('Last 7 days')
-  const [rangeOpen, setRangeOpen] = useState(false)
+  const { open: rangeOpen, setOpen: setRangeOpen, ref: rangeRef } = useMenu()
+  const [filters, setFilters] = useState<OrderFilters>(DEFAULT_FILTERS)
   const [page, setPage] = useState(1)
 
   const counts = useMemo(() => {
@@ -83,16 +75,19 @@ export default function Orders() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return orders.filter(
-      (o) =>
-        tabMatches(tab, o.status) &&
-        inRange(o, range, now) &&
-        (!q ||
-          o.id.toLowerCase().includes(q) ||
-          o.buyer.name.toLowerCase().includes(q) ||
-          o.item.title.toLowerCase().includes(q)),
+    return applyFilters(
+      orders.filter(
+        (o) =>
+          tabMatches(tab, o.status) &&
+          inRange(o, range, now) &&
+          (!q ||
+            o.id.toLowerCase().includes(q) ||
+            o.buyer.name.toLowerCase().includes(q) ||
+            o.item.title.toLowerCase().includes(q)),
+      ),
+      filters,
     )
-  }, [orders, tab, query, range, now])
+  }, [orders, tab, query, range, now, filters])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
@@ -193,7 +188,7 @@ export default function Orders() {
               />
             </label>
             <div className="flex items-center gap-[16px] shrink-0 max-md:gap-[12px]">
-              <div className="relative max-md:flex-1">
+              <div ref={rangeRef} className="relative max-md:flex-1">
                 <button
                   type="button"
                   onClick={() => setRangeOpen((o) => !o)}
@@ -233,16 +228,20 @@ export default function Orders() {
                   </ul>
                 )}
               </div>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-[8px] h-[48px] px-[16px] rounded-[30px] bg-[#f7f7f7] max-md:flex-1"
-              >
-                <img src={filterIcon} alt="" className="size-[20px]" />
-                <span className="text-[#101604] text-[13px] leading-[16px]" style={jakarta(600)}>
-                  Filters
-                </span>
-                <img src={arrowDownIcon} alt="" className="size-[16px]" />
-              </button>
+              <FilterMenu
+                groups={ORDER_FILTER_GROUPS}
+                value={filters}
+                active={activeFilterCount(filters)}
+                onChange={(key, value) => {
+                  setFilters((f) => ({ ...f, [key]: value }))
+                  setPage(1)
+                }}
+                onReset={() => {
+                  setFilters(DEFAULT_FILTERS)
+                  setPage(1)
+                }}
+                label="Filter orders"
+              />
             </div>
           </div>
 
@@ -258,7 +257,7 @@ export default function Orders() {
             <EmptyBlock
               className="justify-center md:flex-1 md:min-h-0 py-[16px] max-md:py-[48px] [@media(min-height:1100px)]:absolute [@media(min-height:1100px)]:inset-0 [@media(min-height:1100px)]:py-0"
               title={list.isLoading ? 'Loading orders…' : orders.length ? 'Nothing here' : 'No order yet'}
-              copy={orders.length ? 'No order matches this tab, range or search.' : 'New orders will appear here as soon as customers place them.'}
+              copy={orders.length ? 'No order matches this tab, range, search or filter.' : 'New orders will appear here as soon as customers place them.'}
             />
           ) : (
             <>

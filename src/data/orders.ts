@@ -41,6 +41,8 @@ export interface Order {
     discount: number
   }
   note?: string
+  /** The buyer's payment has been verified. */
+  paid: boolean
   status: OrderStatus
 }
 
