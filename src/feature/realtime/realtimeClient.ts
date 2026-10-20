@@ -2,14 +2,18 @@ import { io, type Socket } from 'socket.io-client'
 import { ApiError } from '../../app/api/problem'
 import { COMMAND_TIMEOUT_MS } from './events'
 
+/** The API origin of the deployed site; its CORS list names the site, so the socket can go there directly. */
+const PRODUCTION_API_ORIGIN = 'https://earthapi.loodit.com'
+
 /**
- * The Earth realtime service is a separate host from the HTTP API. In production its address
- * comes from `VITE_REALTIME_URL` (an https origin; the browser then speaks CORS and WSS to it).
- * Left unset, the app connects to its own origin under /socket.io/, which the dev server proxies
- * to the API (or `EARTH_REALTIME_TARGET`, vite.config.js) and a static deployment does not serve at
- * all; the connection then fails and every page keeps polling, exactly as before there was a live channel.
+ * Where the socket connects. The realtime service shares the API's origin. In development that is
+ * the dev server itself under /socket.io/, which vite.config.js proxies (a static deployment cannot
+ * proxy websockets). A production build connects to the API origin directly, since the browser may
+ * speak CORS and WSS to it; `VITE_REALTIME_URL` overrides either. When the connection fails, every
+ * page keeps polling, exactly as before there was a live channel.
  */
-export const REALTIME_URL: string | undefined = (import.meta.env.VITE_REALTIME_URL as string | undefined)?.trim() || undefined
+export const REALTIME_URL: string | undefined =
+  (import.meta.env.VITE_REALTIME_URL as string | undefined)?.trim() || (import.meta.env.PROD ? PRODUCTION_API_ORIGIN : undefined)
 
 let socket: Socket | null = null
 

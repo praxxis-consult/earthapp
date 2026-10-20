@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DURABLE_EVENTS, SYNC_TAGS, SeenEvents, olderThan, reopenDelayMs, tagsFor } from '../feature/realtime/events'
+import { DURABLE_EVENTS, SYNC_TAGS, SeenEvents, olderThan, refusal, reopenDelayMs, tagsFor } from '../feature/realtime/events'
 import { command, emitLive, onLive, type Commandable } from '../feature/realtime/realtimeClient'
 import { ApiError } from '../app/api/problem'
 
@@ -55,6 +55,18 @@ describe('reopenDelayMs', () => {
     expect(reopenDelayMs(1, () => 1)).toBe(1500)
     expect(reopenDelayMs(3, () => 0.5)).toBe(4000)
     expect(reopenDelayMs(9, () => 1)).toBe(10_000)
+  })
+})
+
+describe('refusal', () => {
+  it('renews a rejected token, waits out an outage, and gives up on the rest', () => {
+    expect(refusal(401)).toBe('renew')
+    expect(refusal(503)).toBe('retry')
+    expect(refusal(502)).toBe('retry')
+    expect(refusal(429)).toBe('retry')
+    expect(refusal(undefined)).toBe('retry')
+    expect(refusal(403)).toBe('give-up')
+    expect(refusal(400)).toBe('give-up')
   })
 })
 

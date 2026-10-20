@@ -3,7 +3,7 @@ import { apiSlice, refreshOnce } from '../../app/api/apiSlice'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { store } from '../../app/store'
 import { selectAuth } from '../authentication/authSlice'
-import { DURABLE_EVENTS, MAX_SERVER_DISCONNECTS, SYNC_TAGS, SeenEvents, reopenDelayMs, tagsFor, type LiveEvent, type LiveTag, type SyncRequired, type TypingEvent } from './events'
+import { DURABLE_EVENTS, MAX_SERVER_DISCONNECTS, SYNC_TAGS, SeenEvents, refusal, reopenDelayMs, tagsFor, type LiveEvent, type LiveTag, type SyncRequired, type TypingEvent } from './events'
 import { emitLive, openSocket, setSocketToken } from './realtimeClient'
 import { setLive } from './realtimeSlice'
 
@@ -33,7 +33,7 @@ export default function Realtime() {
     const socket = openSocket(token)
     const seen = new SeenEvents()
     let gone = false
-    let kicks = 0
+    let closures = 0
     let reopen: ReturnType<typeof setTimeout> | undefined
     let renewedOnce = false
 
@@ -58,27 +58,38 @@ export default function Realtime() {
       invalidate(SYNC_TAGS)
       emitLive('sync.required', event)
     }
-    // One rejected token is renewed and tried again; anything else is left to the SDK's bounded reconnection.
-    const onConnectError = async (error: Error & { data?: { status?: number } }) => {
+    // A socket the server closed or refused is reopened after a jittered wait, at most a few times
+    // in all (the SDK's own reconnection covers a dropped transport, and only that).
+    const reopenLater = (retryAfterSeconds = 0) => {
+      if (gone || ++closures > MAX_SERVER_DISCONNECTS) return
+      reopen = setTimeout(
+        () => {
+          if (!gone) socket.connect()
+        },
+        Math.max(reopenDelayMs(closures), retryAfterSeconds * 1_000),
+      )
+    }
+    // A refused handshake: one rejected token is renewed and tried again at once; a passing outage
+    // is tried again later; anything else stays on polling.
+    const onConnectError = async (error: Error & { data?: { status?: number; retryAfterSeconds?: number } }) => {
       dispatch(setLive(false))
-      if (error.data?.status !== 401 || renewedOnce) return
+      if (socket.active || gone) return // the SDK is reopening a dropped transport
+      const verdict = refusal(error.data?.status)
+      if (verdict === 'retry') return reopenLater(error.data?.retryAfterSeconds)
+      if (verdict !== 'renew' || renewedOnce) return
       renewedOnce = true
       if ((await refreshOnce(dispatch)) && !gone) {
         socket.auth = { token: store.getState().auth.accessToken }
         socket.connect()
       }
     }
-    // The SDK reopens a dropped transport by itself, but not a socket the server closed: those are
-    // checked (credentials still valid?) and reopened with a jittered wait, at most a few times.
+    // A socket the server closed is checked (credentials still valid?) before it is reopened.
     const onDisconnect = async (reason: string) => {
       dispatch(setLive(false))
       if (reason !== 'io server disconnect' || gone) return
-      if (++kicks > MAX_SERVER_DISCONNECTS) return
       if (!(await refreshOnce(dispatch)) || gone) return
       socket.auth = { token: store.getState().auth.accessToken }
-      reopen = setTimeout(() => {
-        if (!gone) socket.connect()
-      }, reopenDelayMs(kicks))
+      reopenLater()
     }
     // Once the bounded reconnection gave up, coming back to the tab tries once more.
     const onVisible = () => {
