@@ -10,13 +10,15 @@ import { canSell } from '../../feature/authentication/role'
 import { useGetUnreadCountQuery, useListNotificationsQuery, useMarkNotificationReadMutation, type Notification } from '../../feature/notifications/notificationsApiSlice'
 import { initials } from '../../data/orders'
 import { useMenu } from '../ui/useMenu'
+import { useAppSelector } from '../../app/hooks'
+import { selectLive } from '../../feature/realtime/realtimeSlice'
 
 interface DashboardTopbarProps {
   /** Opens the navigation drawer; the button only shows below `lg`, where the sidebar is hidden. */
   onMenu?: () => void
 }
 
-/** How often the bell asks for its unread count while the dashboard is open. */
+/** How often the bell asks for its unread count while the dashboard is open and no live channel is up. */
 const COUNT_POLL_MS = 30_000
 
 /**
@@ -51,7 +53,8 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
   const [query, setQuery] = useState('')
   const name = account ? `${account.firstName} ${account.lastName}` : ''
   const { open, setOpen, ref } = useMenu()
-  const { data: unread = 0 } = useGetUnreadCountQuery(undefined, { pollingInterval: COUNT_POLL_MS })
+  const live = useAppSelector(selectLive)
+  const { data: unread = 0 } = useGetUnreadCountQuery(undefined, { pollingInterval: live ? 0 : COUNT_POLL_MS })
   const inbox = useListNotificationsQuery(undefined, { skip: !open })
   const [markRead] = useMarkNotificationReadMutation()
 

@@ -186,6 +186,8 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 | Variable | Where | Meaning |
 | --- | --- | --- |
 | `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to the QA API |
+| `EARTH_REALTIME_TARGET` | shell, before `npm run dev` | The realtime service (Socket.IO) the dev proxy forwards `/socket.io` to. Defaults to `http://localhost:8088` |
+| `VITE_REALTIME_URL` | build environment (Vercel) | The realtime service's public https origin for production; the browser connects to it directly, so its CORS list must name the site. Unset, the app keeps polling |
 | `/v1` rewrite | `vercel.json` | Where production forwards `/v1`. Change it to point a deployment at another API |
 
 There are no secrets anywhere in this repo or its deployment: the app never holds an API key (the bank lookup's Paystack key lives on the Earth API), and the refresh token is an HttpOnly cookie the browser manages.
@@ -258,7 +260,7 @@ src/
 figma-refs/             raw design dumps and reference renders used for measuring (not shipped)
 scripts/                working notes for the frame-to-component process
 vercel.json             /v1 rewrite, SPA fallback, security headers
-vite.config.js          dev proxy for /v1
+vite.config.js          dev proxy for /v1 and /socket.io
 ```
 
 ## API integration
@@ -268,6 +270,8 @@ vite.config.js          dev proxy for /v1
 **Sessions.** Signing in returns an access token with its expiry and sets an HttpOnly refresh cookie. The token is kept in the Redux `auth` slice and local storage. The base query in `src/app/api/apiSlice.ts` adds the bearer header, refreshes the token just before it expires or once after a 401, and converts problem+json responses into typed errors (with `retryAfter` when the API sends one). All refreshes go through one single-flight helper, because the API rotates the refresh cookie on every call and two refreshes in flight would end the session.
 
 **On load.** `SessionBootstrap` restores the session from the stored token, or from the cookie alone by refreshing, then reads `/accounts/me`. Anything else leaves the visitor anonymous.
+
+**Live updates.** Once the account is confirmed, `src/feature/realtime/Realtime.tsx` opens one Socket.IO connection to the realtime service with the access token in the handshake (`src/feature/realtime/realtimeClient.ts`). The service sends identifiers only; every durable event is acknowledged and marks the matching queries stale (chats, notifications, orders, overview), so the pages read again over HTTP, which stays the saved record. Events are applied once per id and stale versions are dropped. `sync.required` refreshes everything and resubscribes the open thread; the open thread (`useConversationLive`) asks for messages after its last sequence when one is announced and shows the other side's typing. While the socket is up the pages stop polling; without it (no `VITE_REALTIME_URL`, service down, reconnection exhausted) they poll as before. A socket the server closed is reopened after the session is checked, with a jittered wait and at most five times.
 
 **Endpoints by area**
 
@@ -299,7 +303,7 @@ vite.config.js          dev proxy for /v1
 | Marketplace list, product page, order page | Live catalogue: every store, a country or a region. Message seller opens the chat (sign-in first). Place order takes the delivery address and asks the carriers for quotes (`POST /delivery/quotes`); choosing a quote and paying wait for the API to document the quote and order answers, and the QA server's carriers do not answer yet |
 | Waitlist on the landing page | Live |
 | Dashboard shell: store name and area, seller name, share-store link | Live |
-| Messages: threads, text, product and photo messages, read position, unread badge | Live (polled; the API has no live channel yet) |
+| Messages: threads, text, product and photo messages, read position, unread badge, typing | Live (socket when the realtime service is reachable, polled otherwise) |
 | Overview numbers and charts | Live from the API for a LIVE store (zeros until the API has counted activity) |
 | Orders, payouts, referrals | Zero state (payouts and referrals endpoints exist but their answers are undocumented) |
 | Referrals | Local placeholder |
@@ -314,7 +318,7 @@ Checked against the API's `/v1/docs-json`, which lists 24 paths today. These are
 1. **Overview**: one endpoint returning earnings this week, awaiting and completed counts, rating with review count, sales per day and views per day for the last seven days, and the latest orders.
 2. **Products and settings**: `DELETE /products/{id}`; a seller-set SKU on create (the design has an editable SKU, the API generates it); `PATCH` and `DELETE` on `/accounts/me`; store description and opening hours on the onboarding profile; notification preferences; a decision on the category limit (the API accepts seven per store, the sign-up design says up to three).
 3. **Orders**: list and detail, plus the transitions the detail page already has dialogs for: accept, decline with a reason, ready for pickup with packing photos, dispatched with courier and tracking, completed, cancelled. Statuses the app knows: new, processing, ready, dispatched, completed, cancelled, declined.
-4. **Messages**: threads with unread counts; messages of kind text, product, media and invoice; send; mark read; later a live channel for new messages and typing.
+4. **Messages**: threads with unread counts; messages of kind text, product, media and invoice; send; mark read; the realtime service announces new messages, reads and typing.
 5. **Payouts and referrals**: paid total, pending, the order limit and tiers, transactions; referral code and link, counts and the list of referred users.
 6. **Reviews**: read and write per product, and a store rating.
 7. **Marketplace and buyers**: a cross-store product listing (today the catalogue reads every store's products one store at a time), placing an order from the buyer side and payment confirmation.

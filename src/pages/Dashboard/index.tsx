@@ -5,6 +5,8 @@ import DataTable from '../../components/ui/DataTable'
 import EmptyBlock from '../../components/ui/EmptyBlock'
 import StatCard from '../../components/ui/StatCard'
 import { useAuth } from '../../feature/authentication/useAuth'
+import { useAppSelector } from '../../app/hooks'
+import { selectLive } from '../../feature/realtime/realtimeSlice'
 import pinIcon from '../../assets/icons/db-pin.svg'
 import pin1Icon from '../../assets/icons/db-pin1.svg'
 import tooltipBgIcon from '../../assets/icons/db-tooltip-bg.svg'
@@ -119,7 +121,8 @@ export default function DashboardOverview() {
   const { account } = useAuth()
   const { store } = useStore()
   // The API's seven-day overview needs a LIVE store; until then, and while it answers 503 ("initializing"), the page shows zeros.
-  const overview = useGetOverviewQuery(undefined, { skip: !store || store.status !== 'LIVE', pollingInterval: 60_000 })
+  const live = useAppSelector(selectLive)
+  const overview = useGetOverviewQuery(undefined, { skip: !store || store.status !== 'LIVE', pollingInterval: live ? 0 : 60_000 })
   const data = overview.data ? fromApi(overview.data) : zero
   const preparing = overview.error ? toApiError(overview.error).status === 503 : false
   const hasOrders = data.recentOrders.length > 0

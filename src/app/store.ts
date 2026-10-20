@@ -2,11 +2,13 @@ import { configureStore } from '@reduxjs/toolkit'
 import { apiSlice } from './api/apiSlice'
 import authReducer from '../feature/authentication/authSlice'
 import uiReducer from '../feature/ui/uiSlice'
+import realtimeReducer from '../feature/realtime/realtimeSlice'
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     ui: uiReducer,
+    realtime: realtimeReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),

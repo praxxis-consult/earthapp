@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const target = env.EARTH_API_TARGET || 'http://qaaniuvtddbfg3oi3mroui5u.62.171.189.223.sslip.io'
   const host = new URL(target).host
+  // The realtime service (Socket.IO) is its own host; locally it runs beside the API on 8088.
+  const realtime = env.EARTH_REALTIME_TARGET || 'http://localhost:8088'
   return {
     plugins: [react(), tailwindcss()],
     server: {
@@ -25,6 +27,22 @@ export default defineConfig(({ mode }) => {
               req.removeHeader('origin')
               req.removeHeader('referer')
             })
+          },
+        },
+        // The browser opens the socket on its own origin; CORS does not apply once the Origin
+        // header is dropped here, the same as for /v1. Production sets VITE_REALTIME_URL instead.
+        '/socket.io': {
+          target: realtime,
+          ws: true,
+          changeOrigin: true,
+          headers: { 'ngrok-skip-browser-warning': '1' },
+          configure: (proxy) => {
+            const strip = (req) => {
+              req.removeHeader('origin')
+              req.removeHeader('referer')
+            }
+            proxy.on('proxyReq', strip)
+            proxy.on('proxyReqWs', strip)
           },
         },
       },
