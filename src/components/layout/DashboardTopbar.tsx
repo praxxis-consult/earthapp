@@ -128,7 +128,7 @@ export default function DashboardTopbar({ onMenu }: DashboardTopbarProps) {
             <div
               role="menu"
               aria-label="Notifications"
-              className="absolute right-0 top-[40px] z-30 w-[360px] max-w-[calc(100vw-32px)] rounded-[20px] bg-white p-[8px] shadow-[0_12px_32px_rgba(16,22,4,0.12)]"
+              className="absolute right-0 top-[40px] z-30 w-[360px] max-w-[calc(100vw-32px)] rounded-[20px] bg-white p-[8px] shadow-[0_12px_32px_rgba(16,22,4,0.12)] max-md:fixed max-md:inset-x-[16px] max-md:top-[72px] max-md:w-auto max-md:max-w-none max-md:max-h-[calc(100dvh-88px)] max-md:overflow-y-auto"
               aria-busy={inbox.isLoading}
             >
               <p className="px-[12px] py-[8px] text-[#101604] text-[14px] leading-[24px]" style={jakarta(600)}>

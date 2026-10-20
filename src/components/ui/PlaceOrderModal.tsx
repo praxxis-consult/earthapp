@@ -168,7 +168,7 @@ export default function PlaceOrderModal({ listing, quantity, onClose }: PlaceOrd
         role="dialog"
         aria-modal="true"
         aria-label={`Order ${listing.title}`}
-        className="bg-white flex flex-col p-[32px] rounded-[30px] w-[1200px] max-w-full max-h-[90vh] overflow-y-auto max-md:p-[20px] max-md:rounded-[20px]"
+        className="bg-white flex flex-col p-[32px] rounded-[30px] w-[1200px] max-w-full max-h-[90vh] overflow-hidden max-md:p-[20px] max-md:rounded-[20px] max-md:max-h-[calc(100dvh-32px)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b border-[#e4dede] flex gap-[28px] items-start w-full shrink-0 mb-[24px] max-md:gap-[16px] max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden" role="tablist">
@@ -187,7 +187,8 @@ export default function PlaceOrderModal({ listing, quantity, onClose }: PlaceOrd
           ))}
         </div>
 
-        <div className="flex gap-[48px] items-start w-full max-lg:flex-col max-lg:gap-[32px]">
+        {/* Only this part scrolls: the tabs above and the summary with the step on below stay in reach. */}
+        <div className="flex gap-[48px] items-start w-full flex-1 min-h-0 overflow-y-auto max-lg:flex-col max-lg:gap-[32px]">
           {activeTab === 'Product details' && <ProductDetailsTab listing={listing} />}
           {activeTab === 'Shipping & terms' && <ShippingTab listing={listing} />}
           {activeTab === 'Documents' && (
@@ -199,7 +200,7 @@ export default function PlaceOrderModal({ listing, quantity, onClose }: PlaceOrd
         </div>
 
         {/* Summary + the step on: what is being ordered, and where it should go */}
-        <div className="mt-[32px] flex items-center justify-between gap-[16px] border-t border-[#e4dede] pt-[24px] max-md:flex-col max-md:items-stretch">
+        <div className="mt-[32px] flex shrink-0 items-center justify-between gap-[16px] border-t border-[#e4dede] pt-[24px] max-md:mt-[16px] max-md:pt-[16px] max-md:flex-col max-md:items-stretch">
           <div className="flex flex-col gap-[4px]">
             <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>Your order</span>
             <span className="text-[#0c2310] text-[16px]" style={jakarta(600)}>
