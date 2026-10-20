@@ -6,8 +6,8 @@ import { COMMAND_TIMEOUT_MS } from './events'
  * The Earth realtime service is a separate host from the HTTP API. In production its address
  * comes from `VITE_REALTIME_URL` (an https origin; the browser then speaks CORS and WSS to it).
  * Left unset, the app connects to its own origin under /socket.io/, which the dev server proxies
- * to `EARTH_REALTIME_TARGET` (vite.config.js) and a static deployment does not serve at all; the
- * connection then fails and every page keeps polling, exactly as before there was a live channel.
+ * to the API (or `EARTH_REALTIME_TARGET`, vite.config.js) and a static deployment does not serve at
+ * all; the connection then fails and every page keeps polling, exactly as before there was a live channel.
  */
 export const REALTIME_URL: string | undefined = (import.meta.env.VITE_REALTIME_URL as string | undefined)?.trim() || undefined
 

@@ -9,8 +9,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const target = env.EARTH_API_TARGET || 'http://qaaniuvtddbfg3oi3mroui5u.62.171.189.223.sslip.io'
   const host = new URL(target).host
-  // The realtime service (Socket.IO) is its own host; locally it runs beside the API on 8088.
-  const realtime = env.EARTH_REALTIME_TARGET || 'http://localhost:8088'
+  // The realtime service (Socket.IO) shares the API's origin unless it is given one of its own.
+  const realtime = env.EARTH_REALTIME_TARGET || target
   return {
     plugins: [react(), tailwindcss()],
     server: {
