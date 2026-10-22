@@ -12,15 +12,17 @@ import referralsIcon from '../../assets/icons/db-referrals.svg'
 import settingsIcon from '../../assets/icons/db-settings.svg'
 import shopIcon from '../../assets/icons/db-nav-shop.svg'
 import savedIcon from '../../assets/icons/db-nav-archive.svg'
+import cartIcon from '../../assets/icons/nav-cart.svg'
 import shareIcon from '../../assets/icons/db-share.svg'
 import logoutIcon from '../../assets/icons/db-logout.svg'
-import arrowDownIcon from '../../assets/icons/db-arrow-down.svg'
 import avatarImg from '../../assets/images/db-avatar.png'
 import sidebarBgImg from '../../assets/images/db-sidebar-bg.png'
 import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
 import { useUnreadChats } from '../../feature/chats/useUnreadChats'
+import { useCart } from '../../lib/cart'
+import { referralLink } from '../../data/referrals'
 import { canSell } from '../../feature/authentication/role'
 import { initials } from '../../data/orders'
 
@@ -28,7 +30,7 @@ interface NavItem {
   label: string
   icon: string
   href: string
-  badge?: 'unreadChats'
+  badge?: 'unreadChats' | 'cart'
 }
 
 /** The seller's menu, as the dashboard frame lists it. */
@@ -42,10 +44,11 @@ const SELLER_NAV: NavItem[] = [
   { label: 'Account settings', icon: settingsIcon,  href: '/dashboard/settings' },
 ]
 
-/** The buyer's menu, as the buyer dashboard frame (806:7584) lists it: Marketplace is the public catalogue. */
+/** The buyer's menu, as the buyer marketplace frame (816:9128) lists it: the marketplace and the cart live in the dashboard. */
 const BUYER_NAV: NavItem[] = [
   { label: 'Overview',         icon: overviewIcon,  href: '/dashboard' },
-  { label: 'Marketplace',      icon: shopIcon,      href: '/marketplace' },
+  { label: 'Marketplace',      icon: shopIcon,      href: '/dashboard/marketplace' },
+  { label: 'Cart',             icon: cartIcon,      href: '/dashboard/cart', badge: 'cart' },
   { label: 'Orders',           icon: ordersIcon,    href: '/dashboard/purchases' },
   { label: 'Messages',         icon: messagesIcon,  href: '/dashboard/messages', badge: 'unreadChats' },
   { label: 'Saved products',   icon: savedIcon,     href: '/dashboard/saved' },
@@ -81,6 +84,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
   const name = account ? `${account.firstName} ${account.lastName}` : ''
   // The Messages badge: threads with unread messages, kept fresh while the dashboard is open.
   const unreadChats = useUnreadChats()
+  // The Cart badge: lines waiting in this browser's cart.
+  const cartCount = useCart(account?.id).count
   const { store } = useStore()
   const [copied, setCopied] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
@@ -92,9 +97,10 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
    * clipboard is blocked does the sheet (or the link itself) stand in, so a click always answers.
    */
   async function share() {
-    if (!store) return
-    const link = `${window.location.origin}/marketplace?store=${store.id}`
-    const text = `Shop at ${store.storeName} on Earth`
+    if (seller && !store) return
+    // A seller shares the store's marketplace link; a buyer the referral link (859:41044 "Invite family & friends").
+    const link = seller && store ? `${window.location.origin}/marketplace?store=${store.id}` : referralLink(account ? `${account.firstName} ${account.lastName}` : undefined)
+    const text = seller && store ? `Shop at ${store.storeName} on Earth` : 'Join me on Earth, the marketplace for farm produce and natural resources'
     const touch = window.matchMedia('(pointer: coarse)').matches
     let copiedNow = false
     try {
@@ -106,7 +112,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
     if (copiedNow) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
-      setToast({ title: 'Store link copied', body: 'Paste it anywhere your customers are: WhatsApp, Instagram, SMS.' })
+      setToast(seller ? { title: 'Store link copied', body: 'Paste it anywhere your customers are: WhatsApp, Instagram, SMS.' } : { title: 'Referral link copied', body: 'Send it to anyone who would like to buy or sell on Earth.' })
     }
     if (navigator.share && (touch || !copiedNow)) {
       try {
@@ -186,7 +192,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
       {/* Only the menu scrolls when the column is short (nine entries on a buying-and-selling account); the banner and Log out stay pinned below it */}
       <nav className="flex flex-col gap-[12px] px-[16px] flex-1 min-h-0 overflow-y-auto [scrollbar-width:thin]">
         {navItems.map(({ label, icon, href, badge: badgeKey }) => {
-          const badge = badgeKey === 'unreadChats' && unreadChats > 0 ? unreadChats : undefined
+          const count = badgeKey === 'unreadChats' ? unreadChats : badgeKey === 'cart' ? cartCount : 0
+          const badge = count > 0 ? count : undefined
           return (
           <NavLink
             key={href}
@@ -229,9 +236,9 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
         <img src={sidebarBgImg} alt="" className="absolute inset-0 max-w-none object-cover size-full pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#141414] from-[1%] to-transparent" />
         <div className="absolute top-[16px] left-[16px] w-[235px] flex flex-col gap-[4px]">
-          <p className="text-white text-[16px] leading-[24px]" style={jakarta(700)}>{seller ? 'Sell where you are already' : 'Fresh from the land'}</p>
+          <p className="text-white text-[16px] leading-[24px]" style={jakarta(700)}>{seller ? 'Sell where you are already' : 'Invite family & friends'}</p>
           <p className="text-[rgba(255,255,255,0.75)] text-[12px] leading-[15px]" style={jakarta(500)}>
-            {seller ? 'Share your store link where your customers already are.' : 'See what farmers and miners listed this week.'}
+            {seller ? 'Share your store link where your customers already are.' : 'Refer anyone who would like to buy or sell on Earth.'}
           </p>
         </div>
         {seller ? (
@@ -244,18 +251,13 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
             </p>
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={() => {
-              navigate('/marketplace')
-              if (inDrawer) onClose?.()
-            }}
-            className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px]"
-          >
+          <button type="button" onClick={share} className="absolute top-[92px] left-[16px] bg-[#aee74a] flex gap-[10px] items-center justify-center h-[36px] rounded-[30px] w-[235px]">
+            <div className="relative shrink-0 size-[20px]">
+              <img src={shareIcon} alt="" className="absolute block inset-0 max-w-none size-full" />
+            </div>
             <p className="text-[#0c2310] text-[14px] leading-[24px] text-center whitespace-nowrap" style={jakarta(600)}>
-              Browse marketplace
+              {copied ? 'Link copied' : 'Share referral link'}
             </p>
-            <img src={arrowDownIcon} alt="" className="block size-[16px] -rotate-90" />
           </button>
         )}
       </div>

@@ -13,9 +13,19 @@ import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
 
-interface CheckoutDialogProps {
+/** One listing and how many of it. */
+export interface CheckoutLine {
   listing: Listing
   quantity: number
+}
+interface CheckoutDialogProps {
+  /** One listing… */
+  listing?: Listing
+  quantity?: number
+  /** …or several lines of the same store (the cart); one quote and one order hold them all. */
+  lines?: CheckoutLine[]
+  /** Called once the order exists (before payment starts), with its id: the cart drops the lines. */
+  onOrdered?: (orderId: string) => void
   onClose: () => void
 }
 
@@ -38,8 +48,15 @@ function useNow(): number {
  * A quote lasts two minutes and an order fifteen; both are counted down here. The design file has
  * no checkout frame, so this follows the 648px form dialog (639:24245).
  */
-export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutDialogProps) {
+export default function CheckoutDialog({ listing, quantity, lines, onOrdered, onClose }: CheckoutDialogProps) {
   const { account } = useAuth()
+  const goods: CheckoutLine[] = lines && lines.length ? lines : [{ listing: listing!, quantity: quantity ?? 1 }]
+  const first = goods[0].listing
+  const units = goods.reduce((n, l) => n + l.quantity, 0)
+  const unitWord = (l: CheckoutLine) => `${l.quantity} ${l.listing.unit}${l.quantity === 1 ? '' : 's'}`
+  /** "5 bags of Ofada Rice", or "3 listings (8 items)" for a cart. */
+  const what = goods.length === 1 ? `${unitWord(goods[0])} of ${first.title}` : `${goods.length} listings (${units} items)`
+  const weightKg = Math.round(goods.reduce((g, l) => g + l.quantity * l.listing.weightGrams, 0) / 1000)
   const [requestQuotes, { isLoading: busy }] = useRequestQuotesMutation()
   const [createOrder, { isLoading: placing }] = useCreateOrderMutation()
   const payment = usePayment()
@@ -65,7 +82,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
   const [chosen, setChosen] = useState('')
   const [note, setNote] = useState('')
   const set = (patch: Partial<DeliveryAddress>) => setAddress((a) => ({ ...a, ...patch }))
-  const total = naira(quantity * listing.priceNum).replace(/\.00$/, '')
+  const total = naira(goods.reduce((n, l) => n + l.quantity * l.listing.priceNum, 0)).replace(/\.00$/, '')
   const fieldError = (k: string) =>
     fieldErrors[k] ? (
       <p role="alert" className="text-[#b13b3b] text-[12px] leading-[20px]" style={jakarta(400)}>
@@ -98,8 +115,8 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
     setError('')
     try {
       const res = await requestQuotes({
-        storeId: listing.store.id,
-        items: [{ productId: listing.id, quantity }],
+        storeId: first.store.id,
+        items: goods.map((l) => ({ productId: l.listing.id, quantity: l.quantity })),
         address: { ...a, area: a.area.trim(), street: a.street.trim(), landmark: a.landmark.trim() || 'Not provided', postalCode: a.postalCode.trim(), firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone, email: a.email.trim() },
         pickupDate,
       }).unwrap()
@@ -131,7 +148,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
             : problem.status === 409 && problem.code === 'shipping-conflict'
               ? // The seller's delivery setup does not cover this basket: too heavy for their package, their own goods, or a pickup that does not match. The weight one is the buyer's to change.
                 /parcel|capacity|weight|heav/i.test(problem.detail + problem.title)
-                ? `${quantity} ${listing.unit}${quantity === 1 ? '' : 's'}${listing.weightGrams ? ` (about ${Math.round((quantity * listing.weightGrams) / 1000)} kg)` : ''} is more than this seller’s packaging takes in one order. Order fewer, or message the seller about a larger one.`
+                ? `${what}${weightKg ? ` (about ${weightKg} kg)` : ''} is more than this seller’s packaging takes in one order. Order fewer, or message the seller about a larger one.`
                 : `${problem.detail || problem.title} Message the seller to sort it out.`
               : describeError(err),
       )
@@ -144,6 +161,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
     setError('')
     try {
       const order = await createOrder({ quoteId: chosen, ...(note.trim() ? { note: note.trim() } : {}) }).unwrap()
+      onOrdered?.(order.id)
       await payment.pay(order.id)
     } catch (err) {
       const problem = toApiError(err)
@@ -185,7 +203,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
     return (
       <Shell title="Choose a carrier" onClose={onClose} onSubmit={expired ? submit : place} busy={placing} cta={expired ? 'Get fresh quotes' : 'Place order and pay'} busyLabel="Placing your order…" cancel>
         <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-          {quantity} {listing.unit}{quantity === 1 ? '' : 's'} of {listing.title} · {total} for the goods. Pick who delivers it; the price and total are per offer. {expired ? 'These offers have expired.' : `Offers expire in ${mmss(left)}.`}
+          {what} · {total} for the goods. Pick who delivers it; the price and total are per offer. {expired ? 'These offers have expired.' : `Offers expire in ${mmss(left)}.`}
         </p>
         <div role="radiogroup" aria-label="Carrier offers" className="flex flex-col gap-[8px]">
           {views.map((v) => {
@@ -262,7 +280,7 @@ export default function CheckoutDialog({ listing, quantity, onClose }: CheckoutD
   return (
     <Shell title="Where should it go?" onClose={onClose} onSubmit={submit} busy={busy} cta="Get delivery quotes" cancel>
       <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-        {quantity} {listing.unit}{quantity === 1 ? '' : 's'} of {listing.title} from {listing.store.storeName} · {total} for the goods. Carriers quote the delivery next; you pay only after choosing one.
+        {what} from {first.store.storeName} · {total} for the goods. Carriers quote the delivery next; you pay only after choosing one.
       </p>
       <div className="flex gap-[16px] max-md:flex-col">
         <Field label="First name" htmlFor="co-first">

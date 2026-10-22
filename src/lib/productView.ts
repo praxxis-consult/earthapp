@@ -41,6 +41,7 @@ const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 export function weightLabel(grams?: number): string {
   if (!grams) return ''
+  if (grams < 1000) return `up to ${Math.round(grams)} g` // a sachet of gold, a parcel of stones
   const kg = grams / 1000
   if (kg >= 1000) return `up to ${+(kg / 1000).toFixed(1)} tonnes`
   return `up to ${+kg.toFixed(1)} kg`

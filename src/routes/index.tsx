@@ -5,6 +5,9 @@ import DashboardHome from '../pages/Dashboard/Home'
 import Purchases from '../pages/Buyer/Purchases'
 import PurchaseDetail from '../pages/Buyer/PurchaseDetail'
 import Saved from '../pages/Buyer/Saved'
+import Cart from '../pages/Buyer/Cart'
+import BuyerMarketplace from '../pages/Dashboard/Marketplace'
+import MarketplaceListing from '../pages/Dashboard/MarketplaceListing'
 import Marketplace from '../pages/Marketplace'
 import ProductDetail from '../pages/Marketplace/ProductDetail'
 import PlaceOrder from '../pages/Marketplace/PlaceOrder'
@@ -66,6 +69,10 @@ export default function AppRoutes() {
         <Route path="/dashboard/purchases" element={<Purchases />} />
         <Route path="/dashboard/purchases/:id" element={<PurchaseDetail />} />
         <Route path="/dashboard/saved" element={<Saved />} />
+        {/* The buyer's marketplace and listings inside the dashboard (816:9128, 818:10697), and the cart */}
+        <Route path="/dashboard/marketplace" element={<BuyerMarketplace />} />
+        <Route path="/dashboard/marketplace/:id" element={<MarketplaceListing />} />
+        <Route path="/dashboard/cart" element={<Cart />} />
         <Route path="/dashboard/referrals" element={<Referral />} />
         {/* Paystack sends the buyer back here; the API confirms the payment, the URL proves nothing */}
         <Route path="/payment-return" element={<PaymentReturn />} />

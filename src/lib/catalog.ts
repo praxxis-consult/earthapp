@@ -9,6 +9,8 @@ export interface PublicStore {
   businessAddress: { country: string; region: string; area: string; street: string; landmark: string }
   status: 'LIVE'
   liveAt: string
+  /** UNVERIFIED until Earth checks the seller's identity. */
+  verificationStatus?: string
 }
 
 /** What the marketplace cards, product page and order page render. */

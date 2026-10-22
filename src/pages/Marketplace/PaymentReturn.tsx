@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import PaymentSuccessModal from '../../components/ui/PaymentSuccessModal'
 import badge from '../../assets/icons/onboarding-badge.svg'
 import { useConfirmPaymentMutation } from '../../feature/orders/ordersApiSlice'
 import { confirmOutcome } from '../../data/orderFlow'
@@ -42,6 +43,14 @@ export default function PaymentReturn() {
   }, [orderId])
 
   const view = !orderId ? { paid: false, title: 'No order to confirm', body: 'This page expects to be opened from a payment. Your orders are under My orders.' } : result
+
+  // A confirmed payment shows the "Payment successful" card (828:28307) over the dashboard; the other outcomes keep the page below.
+  if (orderId && view?.paid)
+    return (
+      <DashboardLayout>
+        <PaymentSuccessModal orderId={orderId} body={view.body} />
+      </DashboardLayout>
+    )
 
   return (
     <DashboardLayout>
