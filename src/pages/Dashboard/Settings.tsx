@@ -5,6 +5,9 @@ import SuccessModal from '../../components/ui/SuccessModal'
 import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../components/ui/SettingsDialogs'
 import { to12h } from '../../lib/hours'
 import DeliveryDialog from '../../components/ui/DeliveryDialog'
+import AddressDialog from '../../components/ui/AddressDialog'
+import EmptyBlock from '../../components/ui/EmptyBlock'
+import { addressLine, useAddresses, type SavedAddress } from '../../lib/addresses'
 import RecipientStatus from '../../components/ui/RecipientStatus'
 import { useGetShippingProfileQuery } from '../../feature/delivery/deliveryApiSlice'
 import coverPhoto from '../../assets/images/store-cover.jpg'
@@ -16,6 +19,12 @@ import bankIcon from '../../assets/icons/st-bank.svg'
 import trashIcon from '../../assets/icons/st-trash.svg'
 import checkIcon from '../../assets/icons/od-truck-fast.svg'
 import exportIcon from '../../assets/icons/prod-export.svg'
+import identityIcon from '../../assets/icons/as-identity.svg'
+import verifyNowIcon from '../../assets/icons/as-verify-now.svg'
+import addIcon from '../../assets/icons/as-add-24.svg'
+import locationIcon from '../../assets/icons/as-location-24.svg'
+import editAddressIcon from '../../assets/icons/as-edit-24.svg'
+import trashAddressIcon from '../../assets/icons/as-trash-24.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useDeleteMeMutation, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation } from '../../feature/authentication/authApiSlice'
 import { describeError, type NotificationTopic, type OpeningHours } from '../../services/earthApi'
@@ -27,15 +36,19 @@ import { countryName } from '../../onboarding/draft'
 import { initials } from '../../data/orders'
 import { jakarta, CTA_BG, CTA_TEXT_BG, SCROLL_ROW } from '../../utils/styles'
 
-type Tab = 'store' | 'personal' | 'payout' | 'notifications'
+type Tab = 'store' | 'personal' | 'payout' | 'addresses' | 'notifications'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'store', label: 'Store details' },
   { key: 'personal', label: 'Personal details' },
   { key: 'payout', label: 'Payout account' },
   { key: 'notifications', label: 'Notifications' },
 ]
-/** A buyer has no store and no payout account: only the person and their notification choices. */
-const BUYER_TABS = TABS.filter((t) => t.key === 'personal' || t.key === 'notifications')
+/** The buyer's tabs (857:38996 / 857:39663): the person, their delivery addresses, their notification choices. */
+const BUYER_TABS: { key: Tab; label: string }[] = [
+  { key: 'personal', label: 'Personal details' },
+  { key: 'addresses', label: 'Delivery addresses' },
+  { key: 'notifications', label: 'Notifications' },
+]
 
 /** The cover photo has no API field yet and lives in the browser, under the account's own key so another sign-in never sees it. */
 const localKey = (accountId: string) => `earth.settings.${accountId}`
@@ -96,10 +109,10 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
   return <section className={`bg-white rounded-[25px] p-[24px] max-md:p-[16px] ${className}`}>{children}</section>
 }
 
-function PrimaryButton({ label, onClick, icon = editIcon }: { label: string; onClick: () => void; icon?: string }) {
+function PrimaryButton({ label, onClick, icon = editIcon, iconSize = 20 }: { label: string; onClick: () => void; icon?: string; iconSize?: 20 | 24 }) {
   return (
     <button type="button" onClick={onClick} className="flex h-[48px] items-center gap-[8px] rounded-[30px] px-[24px]" style={{ backgroundImage: CTA_BG }}>
-      <img src={icon} alt="" className="size-[20px]" />
+      <img src={icon} alt="" style={{ width: iconSize, height: iconSize }} />
       <span className="text-[14px] leading-[18px] bg-clip-text text-transparent whitespace-nowrap" style={{ ...jakarta(500), backgroundImage: CTA_TEXT_BG }}>
         {label}
       </span>
@@ -145,7 +158,10 @@ export default function Settings() {
   const prefs = useGetNotificationPreferencesQuery(undefined, { skip: tab !== 'notifications' })
   const [updatePrefs] = useUpdateNotificationPreferencesMutation()
   const [local, setLocal] = useState<Local>(() => readLocal(account?.id ?? ''))
-  const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | null>(null)
+  const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'address' | null>(null)
+  // The buyer's delivery addresses live in this browser (no API holds them); the one being edited, if any.
+  const addresses = useAddresses(account?.id)
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | 'delete' | null>(null)
   const [deleteMe, { isLoading: deleting }] = useDeleteMeMutation()
   const [provisionRecipient] = useProvisionPaymentRecipientMutation()
@@ -189,6 +205,8 @@ export default function Settings() {
       <PrimaryButton label="Edit store details" onClick={() => store && setDialog('store')} />
     ) : tab === 'personal' ? (
       <PrimaryButton label="Edit personal details" onClick={() => setDialog('personal')} />
+    ) : tab === 'addresses' ? (
+      <PrimaryButton label="Add address" icon={addIcon} iconSize={24} onClick={() => { setEditingAddress(null); setDialog('address') }} />
     ) : null
 
   return (
@@ -215,7 +233,7 @@ export default function Settings() {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className="h-[39px] px-[16px] rounded-[30px] text-[12px] leading-[15px] border whitespace-nowrap max-md:shrink-0"
+              className={`h-[39px] px-[16px] text-[12px] leading-[15px] whitespace-nowrap max-md:shrink-0 ${seller ? 'rounded-[30px] border' : 'border-b-[1.2px]'}`}
               style={{ ...jakarta(500), color: tab === t.key ? '#007c53' : '#807e7e', borderColor: tab === t.key ? '#007c53' : 'transparent' }}
             >
               {t.label}
@@ -336,6 +354,36 @@ export default function Settings() {
                 <Field label="Phone number" value={person.phoneNumber} />
               </div>
             </div>
+            {/* The buyer's verification (857:39038): one identity row. The API has no identity check for a buyer yet, so Verify now waits for it. */}
+            {!seller && (
+              <>
+                <div className="h-px w-full bg-[#f7f7f7]" />
+                <div className="flex flex-col gap-[24px]">
+                  <h2 className="text-[#101604] text-[20px] leading-[25px]" style={jakarta(600)}>
+                    Verification
+                  </h2>
+                  <div className="flex items-center justify-between py-[8px] max-sm:flex-col max-sm:items-start max-sm:gap-[12px]">
+                    <div className="flex items-center gap-[12px]">
+                      <span className="flex size-[48px] items-center justify-center rounded-full bg-[#f2f8f6]">
+                        <img src={identityIcon} alt="" className="size-[16px]" />
+                      </span>
+                      <div className="flex flex-col gap-[4px]">
+                        <p className="text-[#101604] text-[16px] leading-[24px]" style={jakarta(500)}>
+                          Identity
+                        </p>
+                        <p className="text-[#807e7e] text-[12px] leading-[15px]" style={jakarta(400)}>
+                          Checked against your identity document and selfie
+                        </p>
+                      </div>
+                    </div>
+                    <button type="button" title="Identity checks for buyers are coming; nothing is needed from you yet" className="flex h-[28px] items-center gap-[4px] rounded-[30px] px-[8px] text-[#007c53] text-[14px] leading-[18px]" style={jakarta(500)}>
+                      <img src={verifyNowIcon} alt="" className="size-[20px]" />
+                      Verify now
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
             {/* Verification is the seller's: identity, bank and registration belong to the store. */}
             {seller && (
               <>
@@ -451,6 +499,51 @@ export default function Settings() {
           </Card>
         )}
 
+        {/* Delivery addresses (857:39663): one 89px white card per address, radius 20, 24 padding; the default badge or Make default; edit and remove 24 apart */}
+        {tab === 'addresses' && (
+          <div className="mt-[24px] flex flex-col gap-[24px]">
+            {addresses.list.length === 0 ? (
+              <Card>
+                <EmptyBlock
+                  className="py-[40px] max-md:py-[24px]"
+                  title="No delivery address yet"
+                  copy="Save where your orders should go; the default one starts every checkout off. Addresses are kept on this device."
+                  action={<PrimaryButton label="Add address" icon={addIcon} iconSize={24} onClick={() => { setEditingAddress(null); setDialog('address') }} />}
+                />
+              </Card>
+            ) : (
+              addresses.list.map((a) => (
+                <section key={a.id} aria-label={addressLine(a)} className="bg-white rounded-[20px] p-[24px] flex items-center justify-between gap-[40px] max-md:p-[16px] max-md:flex-col max-md:items-stretch max-md:gap-[16px]">
+                  <div className="flex items-center gap-[12px] min-w-0">
+                    <img src={locationIcon} alt="" className="size-[24px] shrink-0" />
+                    <p className="min-h-[41px] text-[#101604] text-[12px] leading-[20px] min-w-0" style={jakarta(500)}>
+                      <span className="block truncate">{addressLine(a)}</span>
+                      <span className="block truncate">Landmark: {a.landmark || 'none given'}</span>
+                    </p>
+                    {a.isDefault ? (
+                      <span className="flex h-[26px] shrink-0 items-center rounded-[30px] px-[12px] text-[#007c53] text-[11px] leading-[14px]" style={{ ...jakarta(600), background: 'rgba(0,124,83,0.08)' }}>
+                        Default
+                      </span>
+                    ) : (
+                      <button type="button" onClick={() => addresses.makeDefault(a.id)} className="flex h-[26px] shrink-0 items-center rounded-[30px] bg-[#aee74a] px-[12px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
+                        Make default
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-[24px] shrink-0 max-md:justify-end">
+                    <button type="button" onClick={() => { setEditingAddress(a); setDialog('address') }} aria-label={`Edit ${addressLine(a)}`} className="flex size-[24px] items-center justify-center">
+                      <img src={editAddressIcon} alt="" className="size-[24px]" />
+                    </button>
+                    <button type="button" onClick={() => addresses.remove(a.id)} aria-label={`Remove ${addressLine(a)}`} className="flex size-[24px] items-center justify-center">
+                      <img src={trashAddressIcon} alt="" className="size-[24px]" />
+                    </button>
+                  </div>
+                </section>
+              ))
+            )}
+          </div>
+        )}
+
         {tab === 'notifications' && (
           <Card className="mt-[24px]">
             {prefs.error && (
@@ -521,6 +614,20 @@ export default function Settings() {
             setStore(s)
             setDialog(null)
             setDone('store')
+          }}
+        />
+      )}
+      {dialog === 'address' && (
+        <AddressDialog
+          initial={editingAddress}
+          firstOne={addresses.list.length === 0}
+          onClose={() => setDialog(null)}
+          onSaved={(a, makeDefault) => {
+            if (editingAddress) {
+              addresses.update(editingAddress.id, a)
+              if (makeDefault) addresses.makeDefault(editingAddress.id)
+            } else addresses.add(a, makeDefault)
+            setDialog(null)
           }}
         />
       )}
