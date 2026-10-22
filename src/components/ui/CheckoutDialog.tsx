@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Field, Select, Shell, inputClass } from './SettingsDialogs'
 import { useAuth } from '../../feature/authentication/useAuth'
+import { useAddresses } from '../../lib/addresses'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
@@ -61,18 +62,13 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const [createOrder, { isLoading: placing }] = useCreateOrderMutation()
   const payment = usePayment()
   const now = useNow()
-  const [address, setAddress] = useState<DeliveryAddress>({
-    country: 'NG',
-    region: '',
-    area: '',
-    street: '',
-    landmark: '',
-    postalCode: '',
-    firstName: account?.firstName ?? '',
-    lastName: account?.lastName ?? '',
-    phone: account?.phoneNumber ?? '',
-    email: account?.email ?? '',
-  })
+  // The default delivery address saved under Account settings starts the form off; otherwise the account's own details do.
+  const { defaultAddress } = useAddresses(account?.id)
+  const [address, setAddress] = useState<DeliveryAddress>(() =>
+    defaultAddress
+      ? { country: 'NG', region: defaultAddress.region, area: defaultAddress.area, street: defaultAddress.street, landmark: defaultAddress.landmark, postalCode: defaultAddress.postalCode, firstName: defaultAddress.firstName, lastName: defaultAddress.lastName, phone: defaultAddress.phone, email: defaultAddress.email }
+      : { country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
+  )
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [error, setError] = useState('')
   // One line under a field, from the checks here or from the API's `errors[].path` (`address.postalCode`).
