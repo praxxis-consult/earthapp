@@ -23,7 +23,11 @@ describe('saved listings', () => {
   })
   it('keeps what the card needs, with the store name and location', () => {
     const s = snapshot(listing('9'), '2026-10-19T10:00:00Z')
-    expect(s).toEqual({ id: '9', title: 'Item 9', price: '₦2,000', unit: 'bag', image: null, storeName: 'Betta Store', location: 'Ajah, Lagos', savedAt: '2026-10-19T10:00:00Z' })
+    expect(s).toMatchObject({ id: '9', title: 'Item 9', price: '₦2,000', unit: 'bag', image: null, storeName: 'Betta Store', location: 'Ajah, Lagos', savedAt: '2026-10-19T10:00:00Z' })
+    // The saved page draws the marketplace card, so the copy, the Sold as line and the listed month come along.
+    expect(s.soldAs).toMatch(/^Bag/)
+    expect(typeof s.description).toBe('string')
+    expect(typeof s.listed).toBe('string')
   })
 })
 
