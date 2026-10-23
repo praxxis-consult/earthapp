@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
 import agricultureImg from '../../assets/images/deal-agriculture.jpg'
 import energyImg from '../../assets/images/deal-energy.jpg'
 import mineralsImg from '../../assets/images/deal-minerals.jpg'
@@ -31,7 +32,7 @@ const categories: DealCategory[] = [
       <img
         src={energyImg}
         alt="Energy"
-        className="absolute bottom-[-34px] left-1/2 h-[650px] w-130 max-w-none -translate-x-1/2 object-cover"
+        className="absolute -bottom-8.5 left-1/2 h-162.5 w-130 max-w-none -translate-x-1/2 object-cover"
       />
     ),
   },
@@ -42,7 +43,7 @@ const categories: DealCategory[] = [
       <img
         src={mineralsImg}
         alt="Minerals"
-        className="absolute right-0 bottom-[-20px] h-144 w-96 max-w-none object-cover"
+        className="absolute right-0 -bottom-5 h-144 w-96 max-w-none object-cover"
       />
     ),
   },
@@ -84,38 +85,62 @@ const categories: DealCategory[] = [
 ]
 
 export default function WhatWeDeal() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // A plain vertical mouse-wheel scroll does nothing over an overflow-x-auto row, so the
+  // extra cards read as unreachable. Redirect vertical wheel delta into horizontal scroll
+  // here — no visible control added, since Figma doesn't show one.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    function onWheel(e: WheelEvent) {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      e.preventDefault()
+      el!.scrollLeft += e.deltaY
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
   return (
     <section className="w-full bg-white py-16 font-jakarta">
-      <div className="mx-auto w-full max-w-page px-30 max-xl:px-[24px] max-md:px-[16px]">
-        <div className="mx-auto flex w-full max-w-content flex-col gap-10">
-          <div className="flex items-center justify-between max-lg:flex-col max-lg:items-start max-lg:gap-[16px]">
-            <h2 className="text-[64px] font-semibold leading-18 tracking-[-3.2px] text-surface-dark max-lg:text-[40px] max-lg:leading-[48px] max-lg:tracking-[-1.6px] max-md:text-[32px] max-md:leading-[40px] max-md:tracking-[-1px]">
+      <div className="mx-auto w-full max-w-page px-30 max-xl:px-6 max-md:px-4">
+        <div className="mx-auto flex w-full max-w-content flex-col">
+          <div className="flex items-center justify-between max-lg:flex-col max-lg:items-start max-lg:gap-4">
+            <h2 className="text-[64px] font-semibold leading-18 tracking-[-3.2px] text-surface-dark max-lg:text-[40px] max-lg:leading-12 max-lg:tracking-[-1.6px] max-md:text-[32px] max-md:leading-10 max-md:tracking-[-1px]">
               What we deal in
             </h2>
-            <p className="w-110 text-[16px] leading-[29.25px] text-nav-text max-lg:w-full max-lg:max-w-[440px]">
+            <p className="w-110 text-[16px] leading-[29.25px] text-nav-text max-lg:w-full max-lg:max-w-110">
               Six categories, one operating discipline: verified supply, quality at origin, and
               clean documentation across borders.
             </p>
           </div>
-
-          <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto max-md:gap-4" style={{ scrollbarWidth: 'none' }}>
-            {categories.map((category) => (
-              <div
-                key={category.title}
-                className="relative h-125 w-96 shrink-0 snap-start overflow-hidden rounded-[20px] bg-card-placeholder max-md:h-[400px] max-md:w-[300px]"
-              >
-                {category.media}
-                <div className="absolute inset-x-0 bottom-0 h-43.25 bg-linear-to-t from-overlay-dark from-1% to-overlay-dark/0" />
-                <div className="absolute bottom-6 left-6 flex w-84 flex-col gap-2 max-md:w-[252px]">
-                  <h3 className="text-[24px] font-semibold leading-8 tracking-[-1px] text-white">
-                    {category.title}
-                  </h3>
-                  <p className="text-[16px] leading-6 text-white/75">{category.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
+      </div>
+
+      {/* Cards row lives outside max-w-content/max-w-page so it can bleed past the 1200px
+          grid and scroll freely — pl/pr align the first and last card with the content's
+          edges at any viewport width, matching the bleed pattern TrustSection already uses. */}
+      <div
+        ref={scrollRef}
+        className="mt-10 flex snap-x snap-mandatory gap-6 overflow-x-auto pl-[max(calc((100vw-1200px)/2),30px)] pr-[max(calc((100vw-1200px)/2),30px)] scroll-pl-[max(calc((100vw-1200px)/2),30px)] scroll-pr-[max(calc((100vw-1200px)/2),30px)] max-md:gap-4 max-md:pl-4 max-md:pr-4 max-md:scroll-pl-4 max-md:scroll-pr-4"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {categories.map((category) => (
+          <div
+            key={category.title}
+            className="relative h-125 w-96 shrink-0 snap-start overflow-hidden rounded-[20px] bg-card-placeholder max-md:h-100 max-md:w-75"
+          >
+            {category.media}
+            <div className="absolute inset-x-0 bottom-0 h-43.25 bg-linear-to-t from-overlay-dark from-1% to-overlay-dark/0" />
+            <div className="absolute bottom-6 left-6 flex w-84 flex-col gap-2 max-md:w-63">
+              <h3 className="text-[24px] font-semibold leading-8 tracking-[-1px] text-white">
+                {category.title}
+              </h3>
+              <p className="text-[16px] leading-6 text-white/75">{category.description}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )

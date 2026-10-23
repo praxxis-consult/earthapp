@@ -49,6 +49,7 @@
   --color-border-subtle: #9C9C9C;
   --color-card-placeholder: #E4DEDE;
   --color-overlay-dark: #141414;
+  --color-icon-mint: #F2F9F7;
 }
 
 /* Loading placeholders: a soft sweep over the shape of what is coming (src/components/ui/Skeleton.tsx).

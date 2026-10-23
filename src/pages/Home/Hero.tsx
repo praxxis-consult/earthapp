@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import scrollIcon from '../../assets/icons/hero-scroll.svg'
 import arrowRight from '../../assets/icons/hero-arrow-right.svg'
-import slide1 from '../../assets/images/hero-slide-1.png'
-import slide2 from '../../assets/images/hero-slide-6.png'
-import slide3 from '../../assets/images/hero-slide-7.png'
-import slide4 from '../../assets/images/hero-slide-8.png'
-import slide5 from '../../assets/images/hero-slide-9.png'
 
-const SLIDES = [slide1, slide2, slide3, slide4, slide5]
+// Compressed muted renditions of the source .mov files (h264, faststart); each poster is the
+// video's own first frame so the first paint matches where playback starts.
+const VIDEOS = [
+  { src: '/videos/hero-1.mp4', poster: '/videos/hero-1-poster.jpg' },
+  { src: '/videos/hero-2.mp4', poster: '/videos/hero-2-poster.jpg' },
+  { src: '/videos/hero-3.mp4', poster: '/videos/hero-3-poster.jpg' },
+  { src: '/videos/hero-4.mp4', poster: '/videos/hero-4-poster.jpg' },
+]
+// Poster rotation cadence when the reader prefers reduced motion and the videos stay paused.
 const INTERVAL_MS = 5000
 
 // 120/120 on the frame; 72 on tablets and 48 on phones so both lines fit without wrapping.
@@ -23,11 +26,29 @@ const jakarta = (weight: number): React.CSSProperties => ({
 export default function Hero() {
   const navigate = useNavigate()
   const [active, setActive] = useState(0)
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
+  const [reduceMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
+  // Reduced motion: videos stay paused on their posters and the rotation is a timed crossfade.
   useEffect(() => {
-    const id = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), INTERVAL_MS)
+    if (!reduceMotion) return
+    const id = setInterval(() => setActive((i) => (i + 1) % VIDEOS.length), INTERVAL_MS)
     return () => clearInterval(id)
-  }, [])
+  }, [reduceMotion])
+
+  // Only the active video plays, from its start; the others hold their frame while faded out.
+  useEffect(() => {
+    if (reduceMotion) return
+    videoRefs.current.forEach((v, i) => {
+      if (!v) return
+      if (i === active) {
+        v.currentTime = 0
+        v.play().catch(() => {}) // autoplay can be blocked — the poster stays up
+      } else {
+        v.pause()
+      }
+    })
+  }, [active, reduceMotion])
 
   const sectionRef = useRef<HTMLElement>(null)
   // "Scroll" takes the reader to what follows the hero, however tall the screen made it.
@@ -40,12 +61,17 @@ export default function Hero() {
     // 560 is the floor for a very short window.
     <section ref={sectionRef} className="relative overflow-hidden w-full h-[calc(100svh-96px)] min-h-[560px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
 
-      {/* ── Cycling backgrounds ── */}
-      {SLIDES.map((src, i) => (
-        <img
-          key={src}
-          src={src}
-          alt=""
+      {/* ── Cycling background videos — each advances to the next when it ends ── */}
+      {VIDEOS.map((v, i) => (
+        <video
+          key={v.src}
+          ref={(el) => { videoRefs.current[i] = el }}
+          src={v.src}
+          poster={v.poster}
+          muted
+          playsInline
+          preload={i === 0 ? 'auto' : 'metadata'}
+          onEnded={() => setActive((n) => (n + 1) % VIDEOS.length)}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
           style={{ opacity: i === active ? 1 : 0 }}
         />
@@ -154,7 +180,7 @@ export default function Hero() {
 
             {/* Slide indicator dots */}
             <div className="flex items-center max-md:ml-auto" style={{ gap: '8px' }}>
-              {SLIDES.map((_, i) => (
+              {VIDEOS.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActive(i)}

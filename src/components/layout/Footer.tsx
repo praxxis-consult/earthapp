@@ -69,7 +69,7 @@ const navColumns = [
 
 export default function Footer() {
   return (
-    <footer className="w-full" style={footerBg}>
+    <footer className="w-full  overflow-hidden" style={footerBg}>
       <div className="max-w-[1200px] mx-auto flex flex-col justify-between pt-[80px] pb-[80px] max-xl:px-[24px] max-lg:pt-[56px] max-lg:pb-[32px] max-md:px-[16px]">
       {/* ── Top row ── */}
       <div className="flex items-start gap-[24px] max-lg:flex-col max-lg:gap-[40px]">

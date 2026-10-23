@@ -4,12 +4,16 @@ import Footer from './Footer'
 
 export default function MainLayout() {
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden">
+    <div>
       <Navbar />
-      <main className="flex-1">
+      <main className="relative z-0">
         <Outlet />
       </main>
-      <Footer />
+      {/* Footer sits above the preceding section (higher z) so it can overlap it. The overlap
+          itself is driven on scroll by the last section pinning against it (see Newsletter). */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   )
 }
