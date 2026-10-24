@@ -38,11 +38,11 @@ export default function Navbar() {
         <div className="max-w-[1200px] mx-auto flex items-center px-0 py-[24px] gap-[141px] max-xl:px-[24px] max-xl:justify-between max-xl:gap-[24px] max-lg:gap-0 max-md:px-[16px]">
           {/* ── Logo — pinned left ── */}
           <div className="flex gap-[8px] items-center shrink-0">
-            <div className="h-[48px] w-[46.629px] relative shrink-0">
+            <div className="h-[48px] w-[46.629px] relative shrink-0 max-md:h-[40px] max-md:w-[38.86px]">
               <img alt="Earth logo mark" className="absolute inset-0 block size-full max-w-none" src={logoMark} />
             </div>
             <p
-              className="text-[#0c2310] text-[40.65px] leading-[0] lowercase whitespace-nowrap shrink-0"
+              className="text-[#0c2310] text-[40.65px] leading-[0] lowercase whitespace-nowrap shrink-0 max-md:text-[33.9px]"
               style={{ fontFamily: 'Goldman, serif' }}
             >
               <span className="uppercase" style={{ lineHeight: '0.38' }}>

@@ -236,7 +236,7 @@ export default function BrowseControls({ browse, icons }: BrowseControlsProps) {
               role="tab"
               aria-selected={b.category === cat}
               onClick={() => b.setCategory(cat)}
-              className={`h-[40px] px-[16px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap shrink-0 transition-colors ${b.category === cat ? 'bg-[#007c53] text-white' : 'bg-[#f7f7f7] text-[#807e7e]'}`}
+              className={`h-[40px] px-[16px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap shrink-0 transition-colors max-md:h-[44px] ${b.category === cat ? 'bg-[#007c53] text-white' : 'bg-[#f7f7f7] text-[#807e7e]'}`}
               style={jakarta(500)}
             >
               {cat}

@@ -36,7 +36,7 @@ export default function Marketplace() {
           >
             Products & Natural Resources
           </h1>
-          <p className="text-[#807e7e] text-[16px] leading-[29.25px]" style={jakarta(400)}>
+          <p className="text-[#807e7e] text-[16px] leading-[29.25px] max-md:leading-[24px]" style={jakarta(400)}>
             Direct access to authenticated bulk agricultural harvests, battery minerals, precious bullion,
             clean energy, and sustainable timber. Explore live 30-day price trends, technical specifications,
             and origin ports with zero speculative markups.

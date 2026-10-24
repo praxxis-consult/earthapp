@@ -14,9 +14,9 @@ const VIDEOS = [
 // Poster rotation cadence when the reader prefers reduced motion and the videos stay paused.
 const INTERVAL_MS = 5000
 
-// 120/120 on the frame; 72 on tablets and 48 on phones so both lines fit without wrapping.
+// 120/120 on the frame; 72 on tablets and 44 on phones (the phone scale: display 44, section titles 32, body 16/24).
 const headlineClass =
-  'text-[#f8f6f1] text-[120px] leading-[120px] tracking-[-2px] w-full max-lg:text-[72px] max-lg:leading-[76px] max-md:text-[48px] max-md:leading-[52px] max-md:tracking-[-1px]'
+  'text-[#f8f6f1] text-[120px] leading-[120px] tracking-[-2px] w-full max-lg:text-[72px] max-lg:leading-[76px] max-md:text-[44px] max-md:leading-[48px] max-md:tracking-[-1.1px]'
 
 const jakarta = (weight: number): React.CSSProperties => ({
   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -119,8 +119,8 @@ export default function Hero() {
           {/* Body + CTAs */}
           <div className="flex items-end justify-between w-full max-lg:flex-col max-lg:items-start max-lg:gap-[24px]">
             <p
-              className="text-[#f8f8f8] text-[16px] w-[588px] max-lg:w-full max-lg:max-w-[588px]"
-              style={{ ...jakarta(400), lineHeight: '29.25px' }}
+              className="text-[#f8f8f8] text-[16px] leading-[29.25px] w-[588px] max-lg:w-full max-lg:max-w-[588px] max-md:leading-[24px]"
+              style={jakarta(400)}
             >
               Earth sources, buys and moves products and natural resources — agriculture, energy,
               minerals, metals and raw materials from where they are produced to the markets that
@@ -185,21 +185,24 @@ export default function Hero() {
             {/* Slide indicator dots */}
             <div className="flex items-center max-md:ml-auto" style={{ gap: '8px' }}>
               {VIDEOS.map((_, i) => (
+                // The dot is 6px as drawn; the button around it is 24px tall so a finger can hit it.
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setActive(i)}
                   aria-label={`Slide ${i + 1}`}
-                  style={{
-                    width: i === active ? '24px' : '6px',
-                    height: '6px',
-                    borderRadius: '999px',
-                    background: i === active ? '#fff' : 'rgba(255,255,255,0.4)',
-                    transition: 'all 0.3s',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                  }}
-                />
+                  aria-pressed={i === active}
+                  className="flex h-[24px] min-w-[24px] items-center justify-center border-0 bg-transparent p-0"
+                >
+                  <span
+                    className="block rounded-full transition-all duration-300"
+                    style={{
+                      width: i === active ? '24px' : '6px',
+                      height: '6px',
+                      background: i === active ? '#fff' : 'rgba(255,255,255,0.4)',
+                    }}
+                  />
+                </button>
               ))}
             </div>
           </div>

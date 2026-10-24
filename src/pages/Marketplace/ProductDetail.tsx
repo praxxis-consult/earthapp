@@ -137,7 +137,7 @@ export default function ProductDetail() {
   return (
     <div className="bg-white w-full pb-[80px]">
       <div className="max-w-[1200px] mx-auto pt-[64px] max-xl:px-[24px] max-md:px-[16px] max-md:pt-[32px]">
-        <button type="button" onClick={() => navigate(-1)} className="flex gap-[8px] items-center">
+        <button type="button" onClick={() => navigate(-1)} className="flex gap-[8px] items-center max-md:min-h-[44px] max-md:-my-[10px]">
           <img src={backIcon} alt="" className="size-[16px]" />
           <span className="text-[#807e7e] text-[16px] leading-[24px]" style={jakarta(500)}>
             Back
@@ -206,7 +206,7 @@ export default function ProductDetail() {
                 <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(500)}>
                   {more || !longDescription ? product.description : `${product.description.slice(0, 150).trimEnd()}…`}{' '}
                   {longDescription && (
-                    <button type="button" onClick={() => setMore((m) => !m)} className="text-[#007c53]" style={jakarta(500)}>
+                    <button type="button" onClick={() => setMore((m) => !m)} className="text-[#007c53] max-md:py-[10px] max-md:-my-[10px]" style={jakarta(500)}>
                       {more ? 'Show less' : 'Show more'}
                     </button>
                   )}
@@ -266,13 +266,13 @@ export default function ProductDetail() {
                 Order quantity
               </p>
               <div className="flex h-[52px] items-center justify-between rounded-full bg-[#f7f7f7] px-[18px]">
-                <button type="button" onClick={() => setQuantity(quantity - 1)} aria-label="Decrease quantity" className="text-[#807e7e] text-[22px] leading-[28px]" style={jakarta(500)}>
+                <button type="button" onClick={() => setQuantity(quantity - 1)} aria-label="Decrease quantity" className="text-[#807e7e] text-[22px] leading-[28px] max-md:flex max-md:size-[44px] max-md:items-center max-md:justify-center max-md:-ml-[14px]" style={jakarta(500)}>
                   −
                 </button>
                 <span className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(600)}>
                   {quantity}
                 </span>
-                <button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity" className="text-[#807e7e] text-[22px] leading-[28px]" style={jakarta(500)}>
+                <button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity" className="text-[#807e7e] text-[22px] leading-[28px] max-md:flex max-md:size-[44px] max-md:items-center max-md:justify-center max-md:-mr-[14px]" style={jakarta(500)}>
                   +
                 </button>
               </div>
@@ -345,7 +345,7 @@ export default function ProductDetail() {
                 role="tab"
                 aria-selected={tab === t.key}
                 onClick={() => setTab(t.key)}
-                className="h-[39px] rounded-[30px] border px-[16px] text-[12px] leading-[15px] whitespace-nowrap shrink-0"
+                className="h-[39px] rounded-[30px] border px-[16px] text-[12px] leading-[15px] whitespace-nowrap shrink-0 max-md:h-[44px]"
                 style={{ ...jakarta(500), color: tab === t.key ? '#007c53' : '#807e7e', borderColor: tab === t.key ? '#007c53' : 'transparent' }}
               >
                 {t.label}
