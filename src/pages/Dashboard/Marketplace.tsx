@@ -1,6 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import BrowseControls from '../../components/marketplace/BrowseControls'
+import ListingCard from '../../components/marketplace/ListingCard'
 import Pager from '../../components/ui/Pager'
 import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import { useBrowse } from '../../feature/marketplace/useBrowse'
@@ -9,7 +10,6 @@ import searchIcon from '../../assets/icons/bm-search.svg'
 import locationIcon from '../../assets/icons/bm-location.svg'
 import sortIcon from '../../assets/icons/bm-sort.svg'
 import arrowDown from '../../assets/icons/bm-arrow-down.svg'
-import arrowRight from '../../assets/icons/rc-arrow-right.svg'
 import { jakarta } from '../../utils/styles'
 
 /** The frame's grid (818:10584) is three rows of three 354×502 cards. */
@@ -78,66 +78,12 @@ export default function BuyerMarketplace() {
         ) : (
           <ul className="grid grid-cols-3 gap-x-[16px] gap-y-[24px] max-xl:grid-cols-2 max-md:grid-cols-1">
             {listings.map((p) => (
-              // Card (817:9855): 354×502, white, the 1px #e4dede stroke inside, radius 30
-              <li key={p.id} className="bg-white rounded-[30px] overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_#e4dede]">
-                {/* 817:9856: 200 tall on #eeeeee */}
-                <div className="h-[200px] bg-[#eeeeee] overflow-hidden shrink-0">
-                  {p.image && <img src={p.image} alt={p.title} className="w-full h-full object-cover" />}
-                </div>
-                {/* 817:9858: 24 above and below, 16 at the sides, 322 wide, blocks 24 apart */}
-                <div className="flex flex-col gap-[24px] px-[16px] py-[24px] flex-1">
-                  <div className="flex flex-col gap-[8px]">
-                    {/* 817:9860: name 600 16/24, price 700 18/24 #007c53 right */}
-                    <div className="flex items-center justify-between gap-[16px]">
-                      <p className="text-[#101604] text-[16px] leading-[24px] flex-1 min-w-0 truncate" style={jakarta(600)}>
-                        {p.title}
-                      </p>
-                      <p className="text-[#007c53] text-[18px] leading-[24px] whitespace-nowrap shrink-0" style={jakarta(700)} title={`${p.price} per ${p.unit}`}>
-                        {p.price}
-                      </p>
-                    </div>
-                    <p className="text-[#807e7e] text-[14px] leading-[24px] h-[48px] line-clamp-2" style={jakarta(400)}>
-                      {p.description}
-                    </p>
-                  </div>
-                  {/* 817:9864: three 18px rows 12 apart, label 600 14 / value 400 14 #807e7e right */}
-                  <div className="flex flex-col gap-[12px]">
-                    {[
-                      { label: 'Location', value: p.location },
-                      { label: 'Sold as', value: soldAsLabel({ soldAs: p.unit, approximateWeightGrams: p.weightGrams || undefined }) },
-                      { label: 'Listed', value: p.listed },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between gap-[12px] leading-[18px]">
-                        <span className="text-[#101604] text-[14px] shrink-0" style={jakarta(600)}>{label}</span>
-                        <span className="text-[#807e7e] text-[14px] text-right truncate" style={jakarta(400)}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {/* 817:9877: View details 156×48 (#f7f7f7, 28 sides) and Place order 157×48 (#007c53, 24 sides), 8 apart */}
-                  <div className="flex items-center justify-between gap-[8px] mt-auto">
-                    <Link
-                      to={`/dashboard/marketplace/${p.id}`}
-                      className="bg-[#f7f7f7] text-[#101604] text-[14px] leading-[18px] h-[48px] flex-1 rounded-[30px] flex items-center justify-center px-[28px] max-lg:px-[16px]"
-                      style={jakarta(500)}
-                    >
-                      View details
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/dashboard/marketplace/${p.id}?order=1`)}
-                      className="h-[48px] flex-1 rounded-[30px] flex items-center justify-center gap-[8px] bg-[#007c53] px-[24px] max-lg:px-[16px]"
-                    >
-                      <span
-                        className="text-[14px] leading-[18px]"
-                        style={{ ...jakarta(500), background: 'linear-gradient(178.5deg, #fff 4.99%, rgba(255,255,255,0.86) 85.73%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-                      >
-                        Place order
-                      </span>
-                      <img src={arrowRight} alt="" className="size-[16px]" />
-                    </button>
-                  </div>
-                </div>
-              </li>
+              <ListingCard
+                key={p.id}
+                listing={{ id: p.id, title: p.title, price: p.price, unit: p.unit, description: p.description, image: p.image, location: p.location, soldAs: soldAsLabel({ soldAs: p.unit, approximateWeightGrams: p.weightGrams || undefined }), listed: p.listed }}
+                secondary={{ label: 'View details', to: `/dashboard/marketplace/${p.id}` }}
+                primary={{ label: 'Place order', onClick: () => navigate(`/dashboard/marketplace/${p.id}?order=1`) }}
+              />
             ))}
           </ul>
         )}

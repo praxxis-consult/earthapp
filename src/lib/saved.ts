@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
 import type { Listing } from './catalog'
+import { soldAsLabel } from './productView'
 
 /** What the saved list keeps of a listing, so the page draws without a round trip; the link opens the live listing. */
 export interface SavedListing {
@@ -11,6 +12,10 @@ export interface SavedListing {
   storeName: string
   location: string
   savedAt: string
+  /** Kept since the saved page draws the marketplace card (857:33452); absent on entries saved before. */
+  description?: string
+  soldAs?: string
+  listed?: string
 }
 
 const KEY = (accountId: string) => `earth.saved.${accountId}`
@@ -50,6 +55,9 @@ export const snapshot = (p: Listing, savedAt = new Date().toISOString()): SavedL
   storeName: p.store.storeName,
   location: p.location,
   savedAt,
+  description: p.description,
+  soldAs: soldAsLabel({ soldAs: p.unit, approximateWeightGrams: p.weightGrams || undefined }),
+  listed: p.listed,
 })
 
 /** Adds the listing (newest first) or, when it is already there, removes it; answers whether it is saved now. */
