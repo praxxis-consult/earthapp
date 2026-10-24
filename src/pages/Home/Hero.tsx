@@ -58,8 +58,10 @@ export default function Hero() {
     // The hero fills the first screen on every desktop: the viewport height under the 96px nav
     // (the frame's 1024 is what a 1120-tall screen gives). The content stays anchored 80 above
     // the fold, so the headline, text and buttons are on screen before any scroll on any size;
-    // 560 is the floor for a very short window.
-    <section ref={sectionRef} className="relative overflow-hidden w-full h-[calc(100svh-96px)] min-h-[560px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
+    // 560 is the floor for a very short window. The dark green behind the videos is what shows
+    // until the first poster arrives (700 KB, several seconds on a phone), so the cream copy
+    // never sits on white.
+    <section ref={sectionRef} className="relative overflow-hidden w-full bg-[#0c2310] h-[calc(100svh-96px)] min-h-[560px] max-lg:h-auto max-lg:min-h-[640px] max-lg:flex max-lg:flex-col max-lg:justify-end">
 
       {/* ── Cycling background videos — each advances to the next when it ends ── */}
       {VIDEOS.map((v, i) => (
@@ -125,11 +127,11 @@ export default function Hero() {
               need them.
             </p>
 
-            <div className="flex items-center max-md:flex-wrap" style={{ gap: '16px' }}>
+            <div className="flex items-center max-md:w-full max-md:flex-col max-md:items-stretch" style={{ gap: '16px' }}>
               {/* Start Trading */}
               <button
                 onClick={() => navigate('/marketplace')}
-                className="flex items-center justify-center"
+                className="flex items-center justify-center max-md:w-full"
                 style={{ background: '#aee74a', height: '48px', padding: '16px 24px', borderRadius: '30px', gap: '8px' }}
               >
                 <span className="text-[#0c2310] text-[14px] whitespace-nowrap" style={{ ...jakarta(500), letterSpacing: '-0.28px' }}>
@@ -140,7 +142,9 @@ export default function Hero() {
 
               {/* Explore all Resources */}
               <button
-                className="flex items-center justify-center"
+                type="button"
+                onClick={() => navigate('/marketplace')}
+                className="flex items-center justify-center max-md:w-full"
                 style={{ background: '#404438', height: '48px', padding: '16px 28px', borderRadius: '30px' }}
               >
                 <span
