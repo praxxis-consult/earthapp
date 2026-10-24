@@ -183,7 +183,7 @@ export default function TrustSection() {
           <h2 className="text-white text-[48px] font-bold font-jakarta tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]">
             Trade Built on Honesty and Physical Proof
           </h2>
-          <p className="text-white/75 text-[16px] font-jakarta leading-[29.25px]">
+          <p className="text-white/75 text-[16px] font-jakarta leading-[29.25px] max-md:leading-[24px]">
             In global commerce, trust isn't just a promise, it is proven in independent laboratories, verified by satellite mapping, and confirmed by fair wages paid directly to producers.
           </p>
         </div>
@@ -192,7 +192,7 @@ export default function TrustSection() {
         <div className="absolute top-[156px] right-0 flex gap-[16px] items-center max-xl:right-[24px] max-lg:static">
           <button
             onClick={() => scrollCards('left')}
-            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors ${canScroll.left ? ARROW_ON : ARROW_OFF}`}
+            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors max-md:size-11 ${canScroll.left ? ARROW_ON : ARROW_OFF}`}
             aria-label="Scroll left"
             aria-disabled={!canScroll.left}
           >
@@ -200,7 +200,7 @@ export default function TrustSection() {
           </button>
           <button
             onClick={() => scrollCards('right')}
-            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors ${canScroll.right ? ARROW_ON : ARROW_OFF}`}
+            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors max-md:size-11 ${canScroll.right ? ARROW_ON : ARROW_OFF}`}
             aria-label="Scroll right"
             aria-disabled={!canScroll.right}
           >
@@ -228,7 +228,7 @@ export default function TrustSection() {
           {cards.map((card) => (
             <div
               key={card.title}
-              className="bg-white border border-card-placeholder border-solid rounded-[30px] h-76 w-147 shrink-0 relative overflow-hidden max-md:h-auto max-md:w-[320px] max-md:flex max-md:flex-col max-md:gap-4 max-md:p-6"
+              className="bg-white border border-card-placeholder border-solid rounded-[30px] h-76 w-147 shrink-0 relative overflow-hidden max-md:h-auto max-md:w-[320px] max-md:flex max-md:flex-col max-md:gap-4 max-md:p-5"
             >
               {/* Icon box */}
               <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-icon-mint rounded-[20px] overflow-hidden flex items-center justify-center max-md:static max-md:size-[64px]">
@@ -244,10 +244,10 @@ export default function TrustSection() {
 
               {/* Text block */}
               <div className="absolute left-[23.5px] top-[143.5px] w-[540px] flex flex-col gap-[8px] max-md:static max-md:w-full">
-                <p className="text-surface-dark text-[24px] font-semibold font-jakarta tracking-[-1px] leading-8">
+                <p className="text-surface-dark text-[24px] font-semibold font-jakarta tracking-[-1px] leading-8 max-md:text-[20px] max-md:leading-[28px] max-md:tracking-[-0.6px]">
                   {card.title}
                 </p>
-                <p className="text-nav-text text-[15px] font-jakarta leading-6">
+                <p className="text-nav-text text-[15px] font-jakarta leading-6 max-md:text-[14px] max-md:leading-[22px]">
                   {card.body}
                 </p>
               </div>

@@ -31,7 +31,7 @@ export default function MarketplaceCatalog() {
   const failed = Boolean(error)
 
   return (
-    <section className="w-full bg-white py-[64px]">
+    <section className="w-full bg-white py-[64px] max-md:py-[48px]">
       <div className="max-w-[1200px] mx-auto max-xl:px-[24px] max-md:px-[16px]">
         {/* Header */}
         <div className="flex items-start justify-between mb-[24px] max-lg:flex-col max-lg:gap-[16px]">
@@ -42,7 +42,7 @@ export default function MarketplaceCatalog() {
             >
               From the Ground<br />to Your Daily Life
             </h2>
-            <p className="text-[#807e7e] text-[16px] leading-[29.25px]" style={jakartaRegular}>
+            <p className="text-[#807e7e] text-[16px] leading-[29.25px] max-md:leading-[24px]" style={jakartaRegular}>
               Browse our live catalog of ethically sourced raw materials with transparent origins and lab-tested quality.
             </p>
           </div>
@@ -72,7 +72,7 @@ export default function MarketplaceCatalog() {
               role="tab"
               aria-selected={cat === active}
               onClick={() => setActive(cat)}
-              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap shrink-0 ${
+              className={`px-[16px] py-[12px] rounded-[30px] text-[13px] leading-[16px] whitespace-nowrap shrink-0 max-md:py-[14px] ${
                 cat === active ? 'bg-[#007c53] text-white' : 'bg-[#f7f7f7] text-[#807e7e]'
               }`}
               style={jakartaMedium}
@@ -119,7 +119,7 @@ function CatalogCard({ listing: p }: { listing: Listing }) {
       {/* Content (118:206): 24px top, 16px sides, blocks 24 apart */}
       <div className="flex flex-col gap-[24px] p-[16px] pt-[24px] flex-1">
         <div className="flex flex-col gap-[8px]">
-          <p className="text-[#101604] text-[18px] tracking-[-1px] leading-[24px] truncate" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>
+          <p className="text-[#101604] text-[18px] tracking-[-1px] leading-[24px] truncate max-md:whitespace-normal max-md:line-clamp-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>
             {p.title}
           </p>
           <p className="text-[#807e7e] text-[14px] leading-[24px] h-[48px] line-clamp-2" style={jakartaRegular}>

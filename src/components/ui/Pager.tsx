@@ -34,7 +34,7 @@ export default function Pager({ page, pageCount, onChange, variant = 'card' }: P
         onClick={() => onChange(Math.max(1, current - 1))}
         disabled={current === 1}
         aria-label="Previous page"
-        className="size-[20px] disabled:opacity-50"
+        className="flex size-[20px] items-center justify-center disabled:opacity-50 max-md:size-[44px]"
       >
         <img src={pagePrevIcon} alt="" className="size-[20px]" />
       </button>
@@ -69,7 +69,7 @@ export default function Pager({ page, pageCount, onChange, variant = 'card' }: P
         onClick={() => onChange(Math.min(pageCount, current + 1))}
         disabled={current === pageCount}
         aria-label="Next page"
-        className="size-[20px] disabled:opacity-50"
+        className="flex size-[20px] items-center justify-center disabled:opacity-50 max-md:size-[44px]"
       >
         <img src={pageNextIcon} alt="" className="size-[20px]" />
       </button>

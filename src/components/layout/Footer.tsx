@@ -153,12 +153,12 @@ export default function Footer() {
               </span>
 
               {/* Links */}
-              <div className="flex flex-col gap-[16px] items-start">
+              <div className="flex flex-col gap-[16px] items-start max-md:gap-0">
                 {col.links.map((link) => (
                   <Link
                     key={link.label}
                     to={link.to}
-                    className="text-[14px] text-white leading-[24px] hover:opacity-80 transition-opacity"
+                    className="text-[14px] text-white leading-[24px] hover:opacity-80 transition-opacity max-md:py-[10px]"
                     style={jakartaRegular}
                   >
                     {link.label}

@@ -103,14 +103,14 @@ export default function WhatWeDeal() {
   }, [])
 
   return (
-    <section className="w-full bg-white py-16 font-jakarta">
+    <section className="w-full bg-white py-16 font-jakarta max-md:py-12">
       <div className="mx-auto w-full max-w-page px-30 max-xl:px-6 max-md:px-4">
         <div className="mx-auto flex w-full max-w-content flex-col">
           <div className="flex items-center justify-between max-lg:flex-col max-lg:items-start max-lg:gap-4">
             <h2 className="text-[64px] font-semibold leading-18 tracking-[-3.2px] text-surface-dark max-lg:text-[40px] max-lg:leading-12 max-lg:tracking-[-1.6px] max-md:text-[32px] max-md:leading-10 max-md:tracking-[-1px]">
               What we deal in
             </h2>
-            <p className="w-110 text-[16px] leading-[29.25px] text-nav-text max-lg:w-full max-lg:max-w-110">
+            <p className="w-110 text-[16px] leading-[29.25px] text-nav-text max-lg:w-full max-lg:max-w-110 max-md:leading-[24px]">
               Six categories, one operating discipline: verified supply, quality at origin, and
               clean documentation across borders.
             </p>
@@ -134,10 +134,10 @@ export default function WhatWeDeal() {
             {category.media}
             <div className="absolute inset-x-0 bottom-0 h-43.25 bg-linear-to-t from-overlay-dark from-1% to-overlay-dark/0" />
             <div className="absolute bottom-6 left-6 flex w-84 flex-col gap-2 max-md:w-63">
-              <h3 className="text-[24px] font-semibold leading-8 tracking-[-1px] text-white">
+              <h3 className="text-[24px] font-semibold leading-8 tracking-[-1px] text-white max-md:text-[20px] max-md:leading-[28px] max-md:tracking-[-0.6px]">
                 {category.title}
               </h3>
-              <p className="text-[16px] leading-6 text-white/75">{category.description}</p>
+              <p className="text-[16px] leading-6 text-white/75 max-md:text-[15px] max-md:leading-[22px]">{category.description}</p>
             </div>
           </div>
         ))}
