@@ -32,7 +32,10 @@ const field =
 // page. While scrolling through this zone the newsletter stays visually pinned (translated
 // down to cancel the scroll) and the footer — higher z-index, in normal flow after it —
 // scrolls up over it. Scrolling back up unwinds it and the newsletter regains full height.
+// 340 of the 372px of landscape under the form on the frame; below lg the landscape is half
+// the width (the section's bottom padding), so the overlap is the same share of that.
 const OVERLAP = 340
+const overlapFor = (width: number) => (width < 1024 ? Math.min(OVERLAP, Math.round(width * 0.45)) : OVERLAP)
 
 export default function Newsletter() {
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -43,14 +46,9 @@ export default function Newsletter() {
     const section = sectionRef.current
     if (!wrapper || !section) return
     function update() {
-      // Desktop only — on phones/tablets the section is auto-height and stacks normally.
-      if (window.innerWidth < 1024) {
-        section!.style.transform = ''
-        return
-      }
       // wrapper is never transformed, so its position is the true flow top.
       const flowTop = wrapper!.getBoundingClientRect().top + window.scrollY
-      const lag = Math.max(0, Math.min(window.scrollY - flowTop, OVERLAP))
+      const lag = Math.max(0, Math.min(window.scrollY - flowTop, overlapFor(window.innerWidth)))
       section!.style.transform = `translateY(${lag}px)`
     }
     update()
@@ -195,7 +193,7 @@ export default function Newsletter() {
               <button
                 type="submit"
                 disabled={busy}
-                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 bg-primary transition-[background-color,transform] duration-200 ease-out hover:bg-[#026b48] hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 max-md:w-full"
+                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 bg-primary transition-[background-color,transform] duration-200 ease-out hover:bg-[#026b48] hover:scale-105 active:scale-95 disabled:opacity-70 disabled:hover:scale-100 max-md:w-full"
               >
                 <span
                   className="text-[14px] tracking-[-0.28px] bg-clip-text text-transparent whitespace-nowrap"
