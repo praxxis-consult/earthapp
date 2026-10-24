@@ -27,3 +27,6 @@ dist-ssr
 
 # Design references and raw node dumps (local only)
 figma-refs/
+
+# Raw video sources — only the compressed renditions in public/videos ship
+media-src

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import newsletterBg from '../../assets/images/newsletter-bg.png'
 import { useAuth } from '../../feature/authentication/useAuth'
 import {
@@ -20,7 +20,7 @@ const INTENTS: { value: WaitlistIntent; label: string }[] = [
 ]
 
 const field =
-  'h-[48px] rounded-[30px] bg-[#f7f7f7] px-[16px] text-[#101604] text-[16px] leading-[24px] outline-none placeholder:text-[#666666] border-[0.5px] border-[#e4dede] focus:border-[#007c53]'
+  'h-[48px] rounded-[30px] bg-[#f7f7f7] px-[16px] text-[#101604] text-[16px] leading-[24px] outline-none placeholder:text-[#666666] border-[0.5px] border-transparent transition-colors duration-200 hover:border-primary/50 focus:border-primary'
 
 /**
  * Figma "Stay in the Loop" (384:2367): the 588px heading block at 64, then the 564px email field
@@ -28,7 +28,40 @@ const field =
  * needs a city and what they are here for, so those appear once the address is in; the emailed
  * six-digit code confirms the place, which is then read back with the place token.
  */
+// How far (px) the footer is allowed to overlap up into the newsletter at the bottom of the
+// page. While scrolling through this zone the newsletter stays visually pinned (translated
+// down to cancel the scroll) and the footer — higher z-index, in normal flow after it —
+// scrolls up over it. Scrolling back up unwinds it and the newsletter regains full height.
+const OVERLAP = 340
+
 export default function Newsletter() {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current
+    const section = sectionRef.current
+    if (!wrapper || !section) return
+    function update() {
+      // Desktop only — on phones/tablets the section is auto-height and stacks normally.
+      if (window.innerWidth < 1024) {
+        section!.style.transform = ''
+        return
+      }
+      // wrapper is never transformed, so its position is the true flow top.
+      const flowTop = wrapper!.getBoundingClientRect().top + window.scrollY
+      const lag = Math.max(0, Math.min(window.scrollY - flowTop, OVERLAP))
+      section!.style.transform = `translateY(${lag}px)`
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+
   const { account } = useAuth()
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
@@ -94,11 +127,20 @@ export default function Newsletter() {
   }
 
   return (
-    <section className="w-full h-[679px] relative overflow-hidden max-lg:h-auto max-lg:py-[64px] max-md:py-[48px]">
-      <img src={newsletterBg} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom" />
+    <div ref={wrapperRef}>
+    <section ref={sectionRef} className="w-full h-169.75 relative z-0 overflow-hidden will-change-transform max-lg:h-auto max-lg:py-16 max-md:py-12">
+      {/* The frame stretches the 1024x683 photo to fill the 1440x679 box (plain fill, mild
+          aspect distortion) — silhouette-measured against the frame render, which disagrees
+          with the percentage crop in Figma's CSS export panel. Below lg the section height
+          is fluid, so a straight stretch would distort badly; cover-bottom keeps the ridge
+          anchored there instead. */}
+      <div
+        className="absolute inset-0 bg-no-repeat bg-size-[100%_100%] max-lg:bg-cover max-lg:bg-bottom"
+        style={{ backgroundImage: `url(${newsletterBg})` }}
+      />
 
       <div className="absolute inset-0 flex flex-col items-center pt-[64px] max-lg:relative max-lg:inset-auto max-lg:pt-0 max-lg:px-[24px] max-md:px-[16px]">
-        <div className="w-[588px] flex flex-col gap-[8px] text-center mb-[131px] max-lg:w-full max-lg:max-w-[588px] max-lg:mb-[48px]">
+        <div className="w-[588px] flex flex-col gap-[8px] text-center mb-16 max-lg:w-full max-lg:max-w-147 max-lg:mb-12">
           <h2 className="text-[#101604] text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]" style={jakarta(700)}>
             Stay in the Loop
           </h2>
@@ -150,8 +192,7 @@ export default function Newsletter() {
               <button
                 type="submit"
                 disabled={busy}
-                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 disabled:opacity-70 max-md:w-full"
-                style={{ backgroundImage: 'linear-gradient(90deg, rgb(0, 124, 83) 0%, rgb(0, 124, 83) 100%)' }}
+                className="h-[48px] px-[24px] rounded-[30px] flex items-center justify-center shrink-0 bg-primary transition-[background-color,transform] duration-200 ease-out hover:bg-[#026b48] hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 max-md:w-full"
               >
                 <span
                   className="text-[14px] tracking-[-0.28px] bg-clip-text text-transparent whitespace-nowrap"
@@ -207,5 +248,6 @@ export default function Newsletter() {
         )}
       </div>
     </section>
+    </div>
   )
 }

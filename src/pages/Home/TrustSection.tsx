@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import arrowRight from '../../assets/icons/arrow-right.svg'
 import boxIcon from '../../assets/icons/trust-box.svg'
 import medalIcon from '../../assets/icons/trust-medal.svg'
@@ -63,8 +63,30 @@ const CARD_GAP = 24
 // How far the vector container extends above the section
 const BLEED = 380
 
+const ARROW_ON = 'bg-[#aee74a] hover:bg-[#c5f060]'
+const ARROW_OFF = 'bg-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.3)]'
+
 export default function TrustSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScroll, setCanScroll] = useState({ left: false, right: true })
+
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setCanScroll({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 })
+  }, [])
+
+  useEffect(() => {
+    updateArrows()
+    const el = scrollRef.current
+    el?.addEventListener('scroll', updateArrows, { passive: true })
+    window.addEventListener('resize', updateArrows)
+    return () => {
+      el?.removeEventListener('scroll', updateArrows)
+      window.removeEventListener('resize', updateArrows)
+    }
+  }, [updateArrows])
 
   function scrollCards(dir: 'left' | 'right') {
     if (!scrollRef.current) return
@@ -158,16 +180,10 @@ export default function TrustSection() {
 
         {/* Header text */}
         <div className="absolute top-[64px] left-0 w-[588px] flex flex-col gap-[8px] max-xl:left-[24px] max-lg:static max-lg:w-full max-lg:max-w-[588px]">
-          <h2
-            className="text-white text-[48px] tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}
-          >
+          <h2 className="text-white text-[48px] font-bold font-jakarta tracking-[-0.96px] leading-[64px] max-md:text-[32px] max-md:leading-[40px]">
             Trade Built on Honesty and Physical Proof
           </h2>
-          <p
-            className="text-[rgba(255,255,255,0.75)] text-[16px] leading-[29.25px]"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
-          >
+          <p className="text-white/75 text-[16px] font-jakarta leading-[29.25px]">
             In global commerce, trust isn't just a promise, it is proven in independent laboratories, verified by satellite mapping, and confirmed by fair wages paid directly to producers.
           </p>
         </div>
@@ -176,15 +192,17 @@ export default function TrustSection() {
         <div className="absolute top-[156px] right-0 flex gap-[16px] items-center max-xl:right-[24px] max-lg:static">
           <button
             onClick={() => scrollCards('left')}
-            className="size-[40px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center cursor-pointer hover:bg-[rgba(255,255,255,0.3)] transition-colors"
+            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors ${canScroll.left ? ARROW_ON : ARROW_OFF}`}
             aria-label="Scroll left"
+            aria-disabled={!canScroll.left}
           >
             <img src={arrowRight} alt="" className="size-[20px] rotate-180" />
           </button>
           <button
             onClick={() => scrollCards('right')}
-            className="size-[40px] rounded-full bg-[#aee74a] flex items-center justify-center cursor-pointer hover:bg-[#c5f060] transition-colors"
+            className={`size-10 rounded-full flex items-center justify-center cursor-pointer transition-colors ${canScroll.right ? ARROW_ON : ARROW_OFF}`}
             aria-label="Scroll right"
+            aria-disabled={!canScroll.right}
           >
             <img src={arrowRight} alt="" className="size-[20px]" />
           </button>
@@ -206,44 +224,42 @@ export default function TrustSection() {
           msOverflowStyle: 'none',
         }}
       >
-        <div className="flex gap-[24px] pb-[4px] pl-[max(calc((100vw-1200px)/2),24px)] max-lg:pr-[24px] max-md:pl-[16px] max-md:pr-[16px]">
+        <div className="flex gap-[24px] pb-[4px] pl-[max(calc((100vw-1200px)/2),24px)] max-md:pl-4">
           {cards.map((card) => (
             <div
               key={card.title}
-              className="bg-white border border-[#e4dede] border-solid rounded-[30px] h-[304px] w-[588px] shrink-0 relative overflow-hidden max-md:h-auto max-md:w-[320px] max-md:flex max-md:flex-col max-md:gap-[16px] max-md:p-[24px]"
+              className="bg-white border border-card-placeholder border-solid rounded-[30px] h-76 w-147 shrink-0 relative overflow-hidden max-md:h-auto max-md:w-[320px] max-md:flex max-md:flex-col max-md:gap-4 max-md:p-6"
             >
               {/* Icon box */}
-              <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-[#f2f9f7] rounded-[20px] overflow-hidden flex items-center justify-center max-md:static max-md:size-[64px]">
+              <div className="absolute left-[23.5px] top-[23.5px] size-[80px] bg-icon-mint rounded-[20px] overflow-hidden flex items-center justify-center max-md:static max-md:size-[64px]">
                 <img src={card.icon} alt="" className="size-[32px]" />
               </div>
 
               {/* Badge pill */}
-              <div className="absolute top-[46.5px] right-[23.5px] bg-[#f2f9f7] rounded-[30px] px-[16px] py-[5px] max-md:static max-md:self-start">
-                <span
-                  className="text-[#0c2310] text-[12px] leading-[24px] whitespace-nowrap max-md:whitespace-normal"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
-                >
+              <div className="absolute top-[46.5px] right-[23.5px] bg-icon-mint rounded-[30px] px-[16px] py-[5px] max-md:static max-md:self-start">
+                <span className="text-primary-dark text-[12px] font-medium font-jakarta leading-6 whitespace-nowrap max-md:whitespace-normal">
                   {card.badge}
                 </span>
               </div>
 
               {/* Text block */}
               <div className="absolute left-[23.5px] top-[143.5px] w-[540px] flex flex-col gap-[8px] max-md:static max-md:w-full">
-                <p
-                  className="text-[#101604] text-[24px] tracking-[-1px] leading-[32px]"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}
-                >
+                <p className="text-surface-dark text-[24px] font-semibold font-jakarta tracking-[-1px] leading-8">
                   {card.title}
                 </p>
-                <p
-                  className="text-[#807e7e] text-[15px] leading-[24px]"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}
-                >
+                <p className="text-nav-text text-[15px] font-jakarta leading-6">
                   {card.body}
                 </p>
               </div>
             </div>
           ))}
+          {/* Trailing spacer — a real element, not container padding, so the gap after the
+              last card survives scroll-chaining/overscroll quirks and always matches the
+              leading pl- gap exactly. */}
+          <div
+            aria-hidden="true"
+            className="shrink-0 w-[max(calc((100vw-1200px)/2),24px)] max-md:w-4"
+          />
         </div>
       </div>
 
