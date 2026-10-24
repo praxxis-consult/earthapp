@@ -38,7 +38,8 @@ describe('EarthMarkets — structure', () => {
   it('section has correct height class', () => {
     const { container } = render(<EarthMarkets />)
     const section = container.querySelector('section')
-    expect(section?.className).toContain('h-[758px]')
+    // 189.5 spacing units = 758px, the frame's height (the class moved off the arbitrary value)
+    expect(section?.className).toContain('h-189.5')
   })
 
   it('gradient overlay is present', () => {

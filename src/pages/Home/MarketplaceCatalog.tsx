@@ -56,9 +56,11 @@ export default function MarketplaceCatalog() {
           </Link>
         </div>
 
-        {/* Category tabs (112:85): 40px pills, 12 apart; the active one green */}
+        {/* Category tabs (112:85): 40px pills, 12 apart; the active one green. The row scrolls
+            sideways wherever the API's categories outgrow the width (eleven of them pass 976px
+            on a 1024 screen), bleeding into the gutters below xl so the first pill stays aligned. */}
         <div
-          className="flex gap-[12px] items-center mb-[32px] max-lg:overflow-x-auto max-lg:-mx-[24px] max-lg:px-[24px] max-md:-mx-[16px] max-md:px-[16px]"
+          className="flex gap-[12px] items-center mb-[32px] overflow-x-auto max-xl:-mx-[24px] max-xl:px-[24px] max-md:-mx-[16px] max-md:px-[16px]"
           style={{ scrollbarWidth: 'none' }}
           role="tablist"
           aria-label="Categories"

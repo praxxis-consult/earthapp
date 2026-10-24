@@ -128,14 +128,17 @@ export default function Newsletter() {
 
   return (
     <div ref={wrapperRef}>
-    <section ref={sectionRef} className="w-full h-169.75 relative z-0 overflow-hidden will-change-transform max-lg:h-auto max-lg:py-16 max-md:py-12">
+    <section ref={sectionRef} className="w-full h-169.75 relative z-0 overflow-hidden will-change-transform max-lg:h-auto max-lg:pt-16 max-lg:pb-[50vw] max-md:pt-12">
       {/* The frame stretches the 1024x683 photo to fill the 1440x679 box (plain fill, mild
           aspect distortion) — silhouette-measured against the frame render, which disagrees
           with the percentage crop in Figma's CSS export panel. Below lg the section height
-          is fluid, so a straight stretch would distort badly; cover-bottom keeps the ridge
-          anchored there instead. */}
+          is fluid, so a straight stretch would distort badly; the photo keeps its own shape at
+          the full width, anchored to the bottom, and the section's bottom padding (half the
+          width) is the landscape under the form: the ridge's highest point is 29% down the
+          photo, so the copy and the form stay on the transparent sky above it, as on the frame,
+          instead of the mountains climbing behind the text. */}
       <div
-        className="absolute inset-0 bg-no-repeat bg-size-[100%_100%] max-lg:bg-cover max-lg:bg-bottom"
+        className="absolute inset-0 bg-no-repeat bg-size-[100%_100%] max-lg:bg-size-[100%_auto] max-lg:bg-bottom"
         style={{ backgroundImage: `url(${newsletterBg})` }}
       />
 
