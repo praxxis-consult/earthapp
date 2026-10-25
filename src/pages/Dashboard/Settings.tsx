@@ -159,8 +159,8 @@ export default function Settings() {
   const [updatePrefs] = useUpdateNotificationPreferencesMutation()
   const [local, setLocal] = useState<Local>(() => readLocal(account?.id ?? ''))
   const [dialog, setDialog] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'address' | null>(null)
-  // The buyer's delivery addresses live in this browser (no API holds them); the one being edited, if any.
-  const addresses = useAddresses(account?.id)
+  // The buyer's delivery addresses on the API; the one being edited, if any.
+  const addresses = useAddresses()
   const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null)
   const [done, setDone] = useState<'store' | 'personal' | 'bank' | 'delivery' | 'warning' | 'delete' | null>(null)
   const [deleteMe, { isLoading: deleting }] = useDeleteMeMutation()
@@ -507,7 +507,7 @@ export default function Settings() {
                 <EmptyBlock
                   className="py-[40px] max-md:py-[24px]"
                   title="No delivery address yet"
-                  copy="Save where your orders should go; the default one starts every checkout off. Addresses are kept on this device."
+                  copy="Save where your orders should go; the default one starts every checkout off."
                   action={<PrimaryButton label="Add address" icon={addIcon} iconSize={24} onClick={() => { setEditingAddress(null); setDialog('address') }} />}
                 />
               </Card>
@@ -525,7 +525,7 @@ export default function Settings() {
                         Default
                       </span>
                     ) : (
-                      <button type="button" onClick={() => addresses.makeDefault(a.id)} className="flex h-[26px] shrink-0 items-center rounded-[30px] bg-[#aee74a] px-[12px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
+                      <button type="button" onClick={() => addresses.makeDefault(a.id).catch((e) => setError(describeError(e)))} className="flex h-[26px] shrink-0 items-center rounded-[30px] bg-[#aee74a] px-[12px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
                         Make default
                       </button>
                     )}
@@ -534,7 +534,7 @@ export default function Settings() {
                     <button type="button" onClick={() => { setEditingAddress(a); setDialog('address') }} aria-label={`Edit ${addressLine(a)}`} className="flex size-[24px] items-center justify-center">
                       <img src={editAddressIcon} alt="" className="size-[24px]" />
                     </button>
-                    <button type="button" onClick={() => addresses.remove(a.id)} aria-label={`Remove ${addressLine(a)}`} className="flex size-[24px] items-center justify-center">
+                    <button type="button" onClick={() => addresses.remove(a.id).catch((e) => setError(describeError(e)))} aria-label={`Remove ${addressLine(a)}`} className="flex size-[24px] items-center justify-center">
                       <img src={trashAddressIcon} alt="" className="size-[24px]" />
                     </button>
                   </div>
@@ -622,11 +622,16 @@ export default function Settings() {
           initial={editingAddress}
           firstOne={addresses.list.length === 0}
           onClose={() => setDialog(null)}
-          onSaved={(a, makeDefault) => {
-            if (editingAddress) {
-              addresses.update(editingAddress.id, a)
-              if (makeDefault) addresses.makeDefault(editingAddress.id)
-            } else addresses.add(a, makeDefault)
+          onSaved={async (a, makeDefault) => {
+            setError('')
+            try {
+              if (editingAddress) {
+                await addresses.update(editingAddress.id, a)
+                if (makeDefault && !editingAddress.isDefault) await addresses.makeDefault(editingAddress.id)
+              } else await addresses.add(a, makeDefault)
+            } catch (e) {
+              setError(describeError(e))
+            }
             setDialog(null)
           }}
         />

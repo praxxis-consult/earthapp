@@ -21,7 +21,7 @@ import { jakarta } from '../../utils/styles'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
 import { useUnreadChats } from '../../feature/chats/useUnreadChats'
-import { useCart } from '../../lib/cart'
+import { useCart } from '../../feature/cart/useCart'
 import { referralLink } from '../../data/referrals'
 import { canSell } from '../../feature/authentication/role'
 import { initials } from '../../data/orders'
@@ -84,8 +84,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
   const name = account ? `${account.firstName} ${account.lastName}` : ''
   // The Messages badge: threads with unread messages, kept fresh while the dashboard is open.
   const unreadChats = useUnreadChats()
-  // The Cart badge: lines waiting in this browser's cart.
-  const cartCount = useCart(account?.id).count
+  // The Cart badge: lines waiting in the account's cart on the API.
+  const cartCount = useCart().count
   const { store } = useStore()
   const [copied, setCopied] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)

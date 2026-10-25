@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ALL_CATEGORIES, filterListings, paginate } from '../lib/browse'
-import { addToCart, clampQuantity, clearStoreLines, groupByStore, removeFromCart, resetCartCache, setCartQuantity } from '../lib/cart'
+import { clampQuantity, groupItems, withAdded } from '../lib/cart'
 import type { Listing } from '../lib/catalog'
 
 const listing = (over: Partial<Listing> & { id: string }): Listing => ({
@@ -57,42 +57,28 @@ describe('paginate', () => {
 })
 
 describe('cart', () => {
-  beforeEach(() => {
-    resetCartCache()
-    localStorage.clear()
-  })
   const gold = listing({ id: 'gold', moq: 1, available: 60 })
   const ore = listing({ id: 'ore', title: 'Copper Ore', priceNum: 6500, moq: 20, available: 900 })
   const rice = listing({ id: 'rice', title: 'Ofada Rice', priceNum: 96000, store: { ...gold.store, id: 's2', storeName: 'Isoko Harvest Hub' } })
 
-  it('keeps a quantity between the minimum order and what is available', () => {
-    expect(clampQuantity(ore, 5)).toBe(20)
-    expect(clampQuantity(ore, 1000)).toBe(900)
-    expect(clampQuantity({ moq: 2, available: 0 }, 5)).toBe(2)
+  it('clamps a quantity between the minimum order and what is available', () => {
+    expect(clampQuantity(gold, 0)).toBe(gold.moq)
+    expect(clampQuantity(gold, 99)).toBe(gold.available)
+    expect(clampQuantity({ moq: 5, available: 0 }, 1)).toBe(5)
   })
-  it('adds a line, adds to it on a second add, and answers the quantity', () => {
-    expect(addToCart('acct', gold, 2)).toBe(2)
-    expect(addToCart('acct', gold, 3)).toBe(5)
-    expect(addToCart('acct', ore, 1)).toBe(20)
-    expect(JSON.parse(localStorage.getItem('earth.cart.acct')!)).toHaveLength(2)
+  it('adds a line, or adds to the line the listing already has, within its bounds', () => {
+    const first = withAdded([], gold, 2)
+    expect(first).toEqual({ items: [{ storeId: gold.store.id, productId: 'gold', quantity: 2 }], quantity: 2 })
+    const more = withAdded(first.items, gold, 3)
+    expect(more.quantity).toBe(5)
+    expect(more.items).toHaveLength(1)
+    expect(withAdded(more.items, ore, 1).items).toHaveLength(2)
+    expect(withAdded(more.items, ore, 1).quantity).toBe(20)
   })
-  it('groups the lines by store with the goods total, and clears a store once ordered', () => {
-    addToCart('acct', gold, 2)
-    addToCart('acct', ore, 20)
-    addToCart('acct', rice, 1)
-    setCartQuantity('acct', 'gold', 4)
-    resetCartCache()
-    const groups = groupByStore(JSON.parse(localStorage.getItem('earth.cart.acct')!))
-    expect(groups.map((g) => [g.storeName, g.lines.length, g.goodsTotal])).toEqual([
-      ['Akpolo Agro & Mine', 2, 4 * 148000 + 20 * 6500],
-      ['Isoko Harvest Hub', 1, 96000],
-    ])
-    clearStoreLines('acct', 's1')
-    removeFromCart('acct', 'nothing')
-    expect(JSON.parse(localStorage.getItem('earth.cart.acct')!).map((l: { listing: Listing }) => l.listing.id)).toEqual(['rice'])
-  })
-  it('keeps carts apart per account', () => {
-    addToCart('one', gold, 1)
-    expect(localStorage.getItem('earth.cart.two')).toBeNull()
+  it('groups the lines by store in the order the stores were first added', () => {
+    const items = withAdded(withAdded(withAdded([], gold, 2).items, ore, 20).items, rice, 1).items
+    const groups = groupItems(items)
+    expect(groups.map((g) => g.storeId)).toEqual([gold.store.id, rice.store.id])
+    expect(groups[0].items.map((i) => i.productId)).toEqual(['gold', 'ore'])
   })
 })

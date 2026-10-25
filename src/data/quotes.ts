@@ -8,6 +8,8 @@ export interface QuoteView {
   name: string
   /** What the buyer pays for the delivery: the carrier's charge plus Earth's delivery markup, as "₦4,095.96"; '' when unknown. */
   delivery: string
+  /** The same in naira, for adding offers across stores; undefined when unknown. */
+  deliveryNum: number | undefined
   /** Everything the buyer pays with this offer, goods included; '' when unknown. */
   total: string
   /** The goods alone, as the quote prices them; '' when unknown. */
@@ -48,6 +50,7 @@ export function quoteView(q: Quote, index: number): QuoteView {
     id: q.id,
     name: name && !/^\d+$/.test(name) ? name : `Carrier option ${index + 1}`,
     delivery: money(delivery),
+    deliveryNum: delivery === null ? undefined : delivery / 100,
     total: money(total),
     goods: money(goods),
     expiresAt: str(first(q, ['expiresAt', 'expiry', 'validUntil'])) || null,

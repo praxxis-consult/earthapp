@@ -13,7 +13,7 @@ import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { initials } from '../../data/orders'
-import { useCart } from '../../lib/cart'
+import { useCart } from '../../feature/cart/useCart'
 import { galleryView } from '../../lib/gallery'
 import { soldAsLabel } from '../../lib/productView'
 import { useSaved } from '../../lib/saved'
@@ -51,7 +51,7 @@ export default function MarketplaceListing() {
   const { account } = useAuth()
   const { store: ownStore } = useStore()
   const saved = useSaved(account?.id)
-  const cart = useCart(account?.id)
+  const cart = useCart()
   const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const reviewsQuery = useGetReviewsQuery(id ?? '', { skip: !id })
@@ -140,9 +140,14 @@ export default function MarketplaceListing() {
       setActionError(describeError(e))
     }
   }
-  function addToCart() {
-    const now = cart.add(product!, quantity)
-    setToast({ title: inCart ? 'Cart updated' : 'Added to cart', body: `${plural(now, product!.unit)} of ${product!.title} from ${product!.store.storeName}. Check out from Cart when you are ready.` })
+  async function addToCart() {
+    setActionError('')
+    try {
+      const now = await cart.add(product!, quantity)
+      setToast({ title: inCart ? 'Cart updated' : 'Added to cart', body: `${plural(now, product!.unit)} of ${product!.title} from ${product!.store.storeName}. Check out from Cart when you are ready.` })
+    } catch (e) {
+      setActionError(describeError(e))
+    }
   }
   function closeOrder() {
     setOrdering(false)

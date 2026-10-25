@@ -12,6 +12,9 @@ import type { OrderStatus } from './orders'
 
 /** Payment is settled on the API's own word, never on a redirect or a success screen: VERIFIED on the order (PAID on the payment record). */
 export const PAID_STATES = ['VERIFIED', 'PAID']
+
+/** The buyer collects from the seller's pickup address: no carrier, no dispatch; READY is followed by the buyer's own confirmation. */
+export const isSelfPickup = (o: Pick<OrderSummary, 'deliveryMethod'>): boolean => String(o.deliveryMethod ?? '').toUpperCase() === 'SELF_PICKUP'
 export const isPaid = (o: Pick<OrderSummary, 'paymentStatus'>): boolean => PAID_STATES.includes(String(o.paymentStatus).toUpperCase())
 
 /**
@@ -79,14 +82,15 @@ export const canCancel = (status: OrderStatus): boolean => cancelMeaning(status)
 
 /** The seller's next step at each stage, and the real-world fact it depends on. */
 export type SellerStep = 'accept' | 'ready' | 'dispatch' | 'complete' | null
-export function sellerStep(status: OrderStatus): SellerStep {
+export function sellerStep(status: OrderStatus, selfPickup = false): SellerStep {
   switch (status) {
     case 'new':
       return 'accept'
     case 'processing':
       return 'ready'
     case 'ready':
-      return 'dispatch'
+      // A self-pickup order waits for the buyer to confirm they collected it; there is nothing to dispatch.
+      return selfPickup ? null : 'dispatch'
     case 'dispatched':
       return 'complete'
     default:

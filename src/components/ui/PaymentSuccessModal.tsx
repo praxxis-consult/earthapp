@@ -4,7 +4,11 @@ import glow from '../../assets/icons/bm-paid-glow.svg'
 import { jakarta } from '../../utils/styles'
 
 interface PaymentSuccessModalProps {
-  orderId: string
+  /** The paid order the first button follows… */
+  orderId?: string
+  /** …or, for a combined payment, where it goes instead (the orders list) and what it says. */
+  followTo?: string
+  followLabel?: string
   /** What the API said about the order once the payment was confirmed. */
   body?: string
 }
@@ -15,9 +19,9 @@ interface PaymentSuccessModalProps {
  * 40 below the copy. The frame's close glyph is hidden, so the two buttons (and Escape, which
  * follows the order) are the ways on.
  */
-export default function PaymentSuccessModal({ orderId, body }: PaymentSuccessModalProps) {
+export default function PaymentSuccessModal({ orderId, followTo, followLabel, body }: PaymentSuccessModalProps) {
   const navigate = useNavigate()
-  const follow = () => navigate(`/dashboard/purchases/${encodeURIComponent(orderId)}`)
+  const follow = () => navigate(followTo ?? (orderId ? `/dashboard/purchases/${encodeURIComponent(orderId)}` : '/dashboard/purchases'))
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') follow()
@@ -25,7 +29,7 @@ export default function PaymentSuccessModal({ orderId, body }: PaymentSuccessMod
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
+  }, [orderId, followTo])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[16px]" style={{ background: 'rgba(0,0,0,0.45)' }}>
@@ -45,7 +49,7 @@ export default function PaymentSuccessModal({ orderId, body }: PaymentSuccessMod
           {/* 828:28315: the gradient sits under a solid #007c53, so the button reads green */}
           <button type="button" onClick={follow} autoFocus className="flex h-[48px] w-full items-center justify-center rounded-[30px] bg-[#007c53] px-[24px]">
             <span className="text-white text-[14px] leading-[18px]" style={jakarta(500)}>
-              Follow my order
+              {followLabel ?? 'Follow my order'}
             </span>
           </button>
           <button type="button" onClick={() => navigate('/dashboard/marketplace')} className="flex h-[48px] w-full items-center justify-center rounded-[30px] bg-[#f7f7f7] px-[24px]">

@@ -1,12 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Field, Select, Shell, inputClass } from './SettingsDialogs'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Field, Shell, inputClass } from './SettingsDialogs'
+import DeliveryAddressFields from './DeliveryAddressFields'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useAddresses } from '../../lib/addresses'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
-import { regionsOf } from '../../data/locations'
-import { areaProblem, earliestPickupDay, fullNameProblem, lagosDay, lagosHour, latestPickupDay, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem, CARRIER_CUTOFF_HOUR } from '../../lib/address'
+import { addressProblems, carrierAddress, lagosDay } from '../../lib/address'
 import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
@@ -43,12 +43,15 @@ function useNow(): number {
 }
 
 /**
- * The buyer's order: where the goods go and when the carrier may collect (`POST /delivery/quotes`
- * turns that into carrier offers), the offer they choose, the note for the seller, then the order
- * (`POST /orders` from the quote id, no client key) and straight on to the hosted Paystack page.
- * A quote lasts two minutes and an order fifteen; both are counted down here. The design file has
- * no checkout frame, so this follows the 648px form dialog (639:24245).
+ * The buyer's order. Delivered: where the goods go and when the carrier may collect
+ * (`POST /delivery/quotes` turns that into carrier offers), the offer they choose, the note for
+ * the seller, then the order (`POST /orders` from the quote id, no client key) and straight on to
+ * the hosted Paystack page. Collected by the buyer (25 October): no address, quote or carrier fee;
+ * the order is created under a client id and goes to payment at once. A quote lasts two minutes
+ * and an order fifteen; both are counted down here. The design file has no checkout frame, so this
+ * follows the 648px form dialog (639:24245).
  */
+type Method = 'delivery' | 'pickup'
 export default function CheckoutDialog({ listing, quantity, lines, onOrdered, onClose }: CheckoutDialogProps) {
   const { account } = useAuth()
   const goods: CheckoutLine[] = lines && lines.length ? lines : [{ listing: listing!, quantity: quantity ?? 1 }]
@@ -62,8 +65,11 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const [createOrder, { isLoading: placing }] = useCreateOrderMutation()
   const payment = usePayment()
   const now = useNow()
+  const [method, setMethod] = useState<Method>('delivery')
+  // One client id per dialog, so a retried self-pickup order is the same order, not a second one.
+  const clientOrderId = useRef(crypto.randomUUID())
   // The default delivery address saved under Account settings starts the form off; otherwise the account's own details do.
-  const { defaultAddress } = useAddresses(account?.id)
+  const { defaultAddress } = useAddresses()
   const [address, setAddress] = useState<DeliveryAddress>(() =>
     defaultAddress
       ? { country: 'NG', region: defaultAddress.region, area: defaultAddress.area, street: defaultAddress.street, landmark: defaultAddress.landmark, postalCode: defaultAddress.postalCode, firstName: defaultAddress.firstName, lastName: defaultAddress.lastName, phone: defaultAddress.phone, email: defaultAddress.email }
@@ -79,33 +85,13 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const [note, setNote] = useState('')
   const set = (patch: Partial<DeliveryAddress>) => setAddress((a) => ({ ...a, ...patch }))
   const total = naira(goods.reduce((n, l) => n + l.quantity * l.listing.priceNum, 0)).replace(/\.00$/, '')
-  const fieldError = (k: string) =>
-    fieldErrors[k] ? (
-      <p role="alert" className="text-[#b13b3b] text-[12px] leading-[20px]" style={jakarta(400)}>
-        {fieldErrors[k]}
-      </p>
-    ) : null
+  const pickupPlace = `${first.store.businessAddress.area}, ${first.store.businessAddress.region}`
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const a = address
+    if (method === 'pickup') return placePickup()
     // The carrier resolves the address as typed and the API passes it through, so the carrier's rules are checked here.
-    const phone = nigerianPhone(a.phone) ?? ''
-    const problems: Record<string, string> = {}
-    const nameIssue = fullNameProblem(a.firstName, a.lastName)
-    if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
-    const phoneIssue = phoneProblem(a.phone)
-    if (phoneIssue) problems.phone = phoneIssue
-    if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(a.email.trim())) problems.email = 'Enter an email for the delivery updates.'
-    if (!a.region) problems.region = 'Choose the state the goods go to.'
-    const areaIssue = areaProblem(a.area)
-    if (areaIssue) problems.area = areaIssue
-    const streetIssue = streetProblem(a.street)
-    if (streetIssue) problems.street = streetIssue
-    const postalIssue = postalCodeProblem(a.postalCode)
-    if (postalIssue) problems.postalCode = postalIssue
-    if (!pickupDate || pickupDate < earliestPickupDay() || pickupDate > latestPickupDay())
-      problems.pickupDate = lagosHour() >= CARRIER_CUTOFF_HOUR ? 'Carriers take requests until 6 PM Lagos time, so the earliest pickup is tomorrow; pick a day up to a week ahead.' : 'Pick a day from today to a week ahead.'
+    const problems = addressProblems(address, pickupDate)
     setFieldErrors(problems)
     if (Object.keys(problems).length) return setError('Check the highlighted details.')
     setError('')
@@ -113,7 +99,7 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
       const res = await requestQuotes({
         storeId: first.store.id,
         items: goods.map((l) => ({ productId: l.listing.id, quantity: l.quantity })),
-        address: { ...a, area: a.area.trim(), street: a.street.trim(), landmark: a.landmark.trim() || 'Not provided', postalCode: a.postalCode.trim(), firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone, email: a.email.trim() },
+        address: carrierAddress(address),
         pickupDate,
       }).unwrap()
       const items = Array.isArray(res.items) ? res.items : []
@@ -167,6 +153,31 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
         return setError('That offer has expired. Get fresh quotes and choose again.')
       }
       setError(problem.status === 422 ? `${problem.detail || problem.title} Message the seller to sort it out.` : describeError(err))
+    }
+  }
+
+  /** The buyer collects: no quote; the order is created straight away and paid. */
+  async function placePickup() {
+    setError('')
+    try {
+      const order = await createOrder({
+        fulfillmentMethod: 'SELF_PICKUP',
+        clientOrderId: clientOrderId.current,
+        storeId: first.store.id,
+        items: goods.map((l) => ({ productId: l.listing.id, quantity: l.quantity })),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }).unwrap()
+      onOrdered?.(order.id)
+      await payment.pay(order.id)
+    } catch (err) {
+      const problem = toApiError(err)
+      setError(
+        problem.status === 409
+          ? `${problem.detail || 'The listing changed just now: stock, price or minimum quantity.'} Check the listing and try again.`
+          : problem.status === 422
+            ? `${problem.detail || problem.title} Message the seller to sort it out.`
+            : describeError(err),
+      )
     }
   }
 
@@ -273,59 +284,41 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
     )
   }
 
+  const pickup = method === 'pickup'
   return (
-    <Shell title="Where should it go?" onClose={onClose} onSubmit={submit} busy={busy} cta="Get delivery quotes" cancel>
+    <Shell title={pickup ? 'Collect it yourself' : 'Where should it go?'} onClose={onClose} onSubmit={submit} busy={busy || placing} cta={pickup ? 'Place order and pay' : 'Get delivery quotes'} busyLabel={pickup ? 'Placing your order…' : 'Asking the carriers…'} cancel>
       <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-        {what} from {first.store.storeName} · {total} for the goods. Carriers quote the delivery next; you pay only after choosing one.
+        {what} from {first.store.storeName} · {total} for the goods.{' '}
+        {pickup ? `You collect from the seller in ${pickupPlace} once they mark it ready; there is no delivery charge.` : 'Carriers quote the delivery next; you pay only after choosing one.'}
       </p>
-      <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="First name" htmlFor="co-first">
-          <input id="co-first" value={address.firstName} maxLength={80} onChange={(e) => set({ firstName: e.target.value })} className={inputClass} style={jakarta(400)} />
-          {fieldError('firstName')}
-        </Field>
-        <Field label="Last name" htmlFor="co-last">
-          <input id="co-last" value={address.lastName} maxLength={80} onChange={(e) => set({ lastName: e.target.value })} className={inputClass} style={jakarta(400)} />
-          {fieldError('lastName')}
-        </Field>
+      {/* How the goods reach the buyer: a carrier, or the buyer collects from the seller's pickup address. */}
+      <div role="radiogroup" aria-label="How you get it" className="flex gap-[8px] max-md:flex-col">
+        {(
+          [
+            ['delivery', 'Deliver to me', 'A carrier collects from the seller and brings it.'],
+            ['pickup', 'I will collect it', `From the seller in ${pickupPlace}.`],
+          ] as const
+        ).map(([key, label, hint]) => (
+          <label key={key} className={`flex flex-1 cursor-pointer items-start gap-[12px] rounded-[16px] border px-[16px] py-[12px] ${method === key ? 'border-[#007c53] bg-[#f2f8f6]' : 'border-[#e4dede]'}`}>
+            <input type="radio" name="method" value={key} checked={method === key} onChange={() => setMethod(key)} className="mt-[4px] accent-[#007c53]" />
+            <span className="flex flex-col gap-[2px] min-w-0">
+              <span className="text-[#101604] text-[14px] leading-[20px]" style={jakarta(600)}>
+                {label}
+              </span>
+              <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
+                {hint}
+              </span>
+            </span>
+          </label>
+        ))}
       </div>
-      <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="Phone" htmlFor="co-phone">
-          <input id="co-phone" type="tel" value={address.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0803 123 4567" className={inputClass} style={jakarta(400)} />
-          {fieldError('phone')}
+      {pickup ? (
+        <Field label="Note for the seller" htmlFor="co-note-pickup" hint="Optional">
+          <textarea id="co-note-pickup" value={note} maxLength={500} rows={2} onChange={(e) => setNote(e.target.value)} className={`${inputClass} h-auto rounded-[20px] py-[12px]`} style={jakarta(400)} />
         </Field>
-        <Field label="Email" htmlFor="co-email">
-          <input id="co-email" type="email" value={address.email} maxLength={254} onChange={(e) => set({ email: e.target.value })} className={inputClass} style={jakarta(400)} />
-          {fieldError('email')}
-        </Field>
-      </div>
-      {/* The API delivers within Nigeria only today, so the country is not a choice. */}
-      <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="State" htmlFor="co-region">
-          <Select id="co-region" value={address.region} options={regionsOf('NG')} onChange={(v) => set({ region: v })} placeholder="Select state" />
-          {fieldError('region')}
-        </Field>
-        <Field label="Area" htmlFor="co-area">
-          <input id="co-area" value={address.area} maxLength={120} onChange={(e) => set({ area: e.target.value })} placeholder="Lekki Phase 1" className={inputClass} style={jakarta(400)} />
-          {fieldError('area')}
-        </Field>
-      </div>
-      <Field label="Street address" htmlFor="co-street" hint="House or plot number and the road, or a well-known building">
-        <input id="co-street" value={address.street} maxLength={240} onChange={(e) => set({ street: e.target.value })} placeholder="12 Admiralty Way" className={inputClass} style={jakarta(400)} />
-          {fieldError('street')}
-      </Field>
-      <div className="flex gap-[16px] max-md:flex-col">
-        <Field label="Landmark" htmlFor="co-landmark" hint="Optional">
-          <input id="co-landmark" value={address.landmark} maxLength={240} onChange={(e) => set({ landmark: e.target.value })} className={inputClass} style={jakarta(400)} />
-        </Field>
-        <Field label="Postal code" htmlFor="co-postal">
-          <input id="co-postal" value={address.postalCode} maxLength={6} inputMode="numeric" onChange={(e) => set({ postalCode: e.target.value.replace(/\D/g, '') })} placeholder="106104" className={inputClass} style={jakarta(400)} />
-          {fieldError('postalCode')}
-        </Field>
-      </div>
-      <Field label="Earliest pickup day" htmlFor="co-pickup" hint="When the carrier may collect from the seller: up to a week ahead, from today before 6 PM Lagos time, else from tomorrow">
-        <input id="co-pickup" type="date" value={pickupDate} min={earliestPickupDay()} max={latestPickupDay()} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} style={jakarta(400)} />
-          {fieldError('pickupDate')}
-      </Field>
+      ) : (
+        <DeliveryAddressFields address={address} onChange={set} fieldErrors={fieldErrors} pickupDate={pickupDate} onPickupDate={setPickupDate} />
+      )}
       {error && (
         <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
           {error}

@@ -19,11 +19,11 @@ import bagHappyLg from '../../assets/icons/od-bag-happy-lg.svg'
 import bagHappySm from '../../assets/icons/od-bag-happy-sm.svg'
 import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
 import bagCrossSm from '../../assets/icons/od-bag-cross-sm.svg'
-import { useCancelOrderMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary, type Receipt } from '../../feature/orders/ordersApiSlice'
+import { useCancelOrderMutation, useConfirmPickupMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary, type Receipt } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { usePostReviewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { purchaseFromApi } from '../../data/purchases'
-import { awaitingPayment, buyerMoney, cancelMeaning, canCancel, isPaid, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
+import { awaitingPayment, buyerMoney, cancelMeaning, canCancel, isPaid, isSelfPickup, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
 import { initials, naira, type OrderStatus, shortOrderId } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -40,6 +40,9 @@ const STEPS: { label: string; words: string[] }[] = [
   { label: 'Completed', words: ['complet'] },
 ]
 const REACHED: Record<OrderStatus, number> = { new: 2, processing: 3, ready: 4, dispatched: 5, completed: 7, cancelled: 0, declined: 0 }
+/** A self-pickup order has no carrier: READY is followed by the buyer's own confirmation, which completes it. */
+const PICKUP_STEPS: { label: string; words: string[] }[] = [STEPS[0], STEPS[1], STEPS[2], { label: 'Ready to collect', words: ['ready'] }, { label: 'Collected', words: ['complet', 'pickup'] }]
+const PICKUP_REACHED: Record<OrderStatus, number> = { new: 2, processing: 3, ready: 4, dispatched: 4, completed: 5, cancelled: 0, declined: 0 }
 
 const when = (iso: string | null) =>
   iso ? `${new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : 'Done'
@@ -114,12 +117,13 @@ const addressLine = (a: OrderSummary['address']) => (a ? `${a.street}, ${a.area}
 /** The receipt dialog's rows, from the order and the frozen receipt record (`GET /orders/{id}/receipt`). */
 function receiptData(o: OrderSummary, receipt: Receipt | undefined, status: OrderStatus): ReceiptData {
   const money = buyerMoney(o.pricing, o.total)
+  const pickup = isSelfPickup(o)
   const etaBy: Record<OrderStatus, string> = {
     new: o.delivery?.estimate ? `${o.delivery.estimate} once accepted` : 'Once the seller accepts',
     processing: 'Being packed',
-    ready: 'Awaiting the carrier',
+    ready: pickup ? 'Ready to collect' : 'Awaiting the carrier',
     dispatched: o.delivery?.estimate ?? 'With the carrier',
-    completed: 'Delivered',
+    completed: pickup ? 'Collected' : 'Delivered',
     cancelled: 'Cancelled',
     declined: 'Declined',
   }
@@ -131,9 +135,11 @@ function receiptData(o: OrderSummary, receipt: Receipt | undefined, status: Orde
     product: { title: o.item.name, detail: `${o.item.quantity} × ${naira(Number(o.item.priceMinor) / 100)} · ${o.storeName}`, image: o.item.thumbnail ?? '' },
     paidWith: receipt?.provider ? `${receipt.provider[0]}${receipt.provider.slice(1).toLowerCase()}${receipt.environment === 'test' ? ' (test)' : ''}` : 'Paystack',
     reference: receipt?.paymentReference ?? o.id,
-    deliveryTitle: o.delivery?.carrier ? `${o.delivery.carrier} delivery` : status === 'completed' ? 'Delivered' : 'Delivery',
+    deliveryTitle: pickup ? 'Collected from the seller' : o.delivery?.carrier ? `${o.delivery.carrier} delivery` : status === 'completed' ? 'Delivered' : 'Delivery',
     deliveryEta: etaBy[status],
-    nextSteps: ['The seller accepts and packs the order.', 'A carrier is booked once it is ready; you will see the tracking here.', 'Once delivered, you can review the goods.'],
+    nextSteps: pickup
+      ? ['The seller accepts and packs the order.', `Once it is marked ready, collect it from ${o.pickup ? addressLine(o.pickup) : 'the seller'}.`, 'Confirm the collection here; then you can review the goods.']
+      : ['The seller accepts and packs the order.', 'A carrier is booked once it is ready; you will see the tracking here.', 'Once delivered, you can review the goods.'],
   }
 }
 
@@ -154,6 +160,7 @@ export default function PurchaseDetail() {
   const [receiptOpen, setReceiptOpen] = useState(false)
   const receipt = useGetReceiptQuery(id, { skip: !receiptOpen || !summary || !isPaid(summary) })
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation()
+  const [confirmPickup, { isLoading: collecting }] = useConfirmPickupMutation()
   const payment = usePayment()
   const [confirm, setConfirm] = useState(false)
   const [error, setError] = useState('')
@@ -189,8 +196,11 @@ export default function PurchaseDetail() {
   const store = o.item.soldBy
   const status = o.status
   const paid = isPaid(summary)
+  const pickup = isSelfPickup(summary)
+  const steps = pickup ? PICKUP_STEPS : STEPS
   const expired = paymentExpired(summary, now)
-  const reached = paid ? REACHED[status] : 1
+  const reached = paid ? (pickup ? PICKUP_REACHED : REACHED)[status] : 1
+  const collectFrom = summary.pickup ? addressLine(summary.pickup) : 'the seller'
   const placed = new Date(o.placedAt)
   const money = buyerMoney(summary.pricing, summary.total)
   const subtotal = money.goods || o.item.price * o.item.qty
@@ -204,10 +214,12 @@ export default function PurchaseDetail() {
 
   const banners: Record<OrderStatus, Banner> = {
     new: { title: `Waiting for ${store} to accept`, body: `Your payment is verified. The seller has until ${acceptBy || 'the acceptance deadline'} to accept, and you will hear as soon as they do. You can still cancel until then.` },
-    processing: { title: `${store} is preparing your order`, body: 'The seller accepted and is packing it. A carrier is booked as soon as it is marked ready.' },
-    ready: { title: 'Packed and waiting for the carrier', body: 'The seller has it ready. The carrier is booked and collects it next; you will see the tracking here.' },
+    processing: { title: `${store} is preparing your order`, body: pickup ? `The seller accepted and is packing it. You collect it from ${collectFrom} as soon as it is marked ready.` : 'The seller accepted and is packing it. A carrier is booked as soon as it is marked ready.' },
+    ready: pickup
+      ? { title: 'Ready for you to collect', body: `Collect it from ${collectFrom}. Once you have it, confirm here and the order completes.`, action: { label: collecting ? 'Confirming…' : 'I have collected it', onClick: () => void collected(), busy: collecting } }
+      : { title: 'Packed and waiting for the carrier', body: 'The seller has it ready. The carrier is booked and collects it next; you will see the tracking here.' },
     dispatched: { title: 'On its way to you', body: 'The carrier has collected the package. Keep your phone close for the delivery.', art: [truckTimeLg, truckTimeSm] },
-    completed: { title: 'Delivered', body: 'This order is complete. If something is not right, message the seller from here.', art: [bagHappyLg, bagHappySm] },
+    completed: { title: pickup ? 'Collected' : 'Delivered', body: 'This order is complete. If something is not right, message the seller from here.', art: [bagHappyLg, bagHappySm] },
     cancelled: { title: 'Order cancelled', body: summary.refundRequired ? 'This order was cancelled and the refund is being processed.' : 'This order was cancelled.', art: [bagCrossLg, bagCrossSm] },
     declined: { title: 'The seller declined this order', body: 'Your payment is refunded. The listing may be out of stock; try another store.', art: [bagCrossLg, bagCrossSm] },
   }
@@ -222,6 +234,17 @@ export default function PurchaseDetail() {
         }
   } else if (summary.cancellationRequested && !closed) {
     banner = { title: 'Cancellation requested', body: 'The carrier is being asked to cancel the pickup. The order closes and the refund follows once the carrier confirms.' }
+  }
+
+  /** The buyer has the goods in hand: the order completes on their word (`POST /orders/{id}/pickup/confirm`). */
+  async function collected() {
+    setError('')
+    try {
+      await confirmPickup({ id, expectedVersion: summary!.version }).unwrap()
+    } catch (e) {
+      const problem = toApiError(e)
+      setError(problem.status === 409 ? 'This order changed just now. Reload the page and try again.' : describeError(e))
+    }
   }
 
   async function cancel() {
@@ -352,10 +375,10 @@ export default function PurchaseDetail() {
         {!closed && !expired && (
           <div className="relative bg-white rounded-[20px] h-[155px] px-[24px] pt-[24px] max-md:h-auto max-md:px-[16px] max-md:py-[16px]">
             <ol className="relative flex items-start justify-between before:absolute before:left-[49px] before:right-[50px] before:top-[16px] before:h-[2px] before:rounded-full before:bg-[rgba(0,124,83,0.1)] before:content-[''] max-md:flex-col max-md:gap-[16px] max-md:before:hidden">
-              {STEPS.map(({ label, words }, i) => {
+              {steps.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
-                const at = i === 0 ? o.placedAt : i === 1 ? summary.paidAt : i === 5 ? (stepTime(events, ...words) ?? (summary.fulfillmentDelivery?.status === 'DELIVERED' ? (summary.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
+                const at = i === 0 ? o.placedAt : i === 1 ? summary.paidAt : !pickup && i === 5 ? (stepTime(events, ...words) ?? (summary.fulfillmentDelivery?.status === 'DELIVERED' ? (summary.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />
@@ -480,10 +503,10 @@ export default function PurchaseDetail() {
           <div className="flex flex-col gap-[24px] w-[400px] shrink-0 max-lg:w-full">
             <Card title="Seller">
               <Detail text={initials(store)} label="Store" value={store} />
-              {summary.pickup && <Detail icon={truckFastIcon} label="Ships from" value={addressLine(summary.pickup)} />}
+              {summary.pickup && <Detail icon={truckFastIcon} label={pickup ? 'Collect from' : 'Ships from'} value={addressLine(summary.pickup)} />}
             </Card>
             <Card
-              title="Delivery"
+              title={pickup ? 'Collection' : 'Delivery'}
               action={
                 tracking?.url ? (
                   <a href={tracking.url} target="_blank" rel="noreferrer" className="flex items-center gap-[8px] text-[#007c53] text-[12px] leading-[24px]" style={jakarta(500)}>
@@ -493,7 +516,11 @@ export default function PurchaseDetail() {
                 ) : null
               }
             >
-              <Detail icon={truckFastIcon} label={summary.delivery?.estimate ? `Carrier · ${summary.delivery.estimate.toLowerCase()}` : 'Carrier'} value={tracking?.courier || summary.delivery?.carrier || o.delivery.method} />
+              {pickup ? (
+                <Detail icon={routingIcon} label="You collect from the seller" value={collectFrom} />
+              ) : (
+                <Detail icon={truckFastIcon} label={summary.delivery?.estimate ? `Carrier · ${summary.delivery.estimate.toLowerCase()}` : 'Carrier'} value={tracking?.courier || summary.delivery?.carrier || o.delivery.method} />
+              )}
               {summary.address && <Detail icon={routingIcon} label={`Delivering to ${summary.address.firstName} ${summary.address.lastName} · ${summary.address.phone}`} value={addressLine(summary.address)} />}
               {tracking?.number && <Detail icon={routingIcon} label="Tracking number" value={tracking.number} href={tracking.url || undefined} />}
               <Detail icon={cardPosIcon} label={paid ? 'Amount paid' : 'Amount due'} value={naira(total)} />

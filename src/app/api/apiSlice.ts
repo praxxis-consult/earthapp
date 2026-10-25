@@ -94,6 +94,6 @@ export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, ApiProblem> = a
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Account', 'Preferences', 'Onboarding', 'Categories', 'MyProducts', 'Catalog', 'Chats', 'Notifications', 'Shipping', 'Overview', 'Reviews', 'Orders', 'Recipient'],
+  tagTypes: ['Account', 'Preferences', 'Onboarding', 'Categories', 'MyProducts', 'Catalog', 'Chats', 'Notifications', 'Shipping', 'Overview', 'Reviews', 'Orders', 'Recipient', 'Cart', 'Addresses', 'Checkout'],
   endpoints: () => ({}),
 })

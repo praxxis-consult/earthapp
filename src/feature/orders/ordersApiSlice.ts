@@ -80,6 +80,10 @@ export interface OrderExtras {
   delivery?: { provider: string; carrier: string; service: string; estimate: string } | null
   pricing?: OrderPricing
   timeline?: { items: TimelineEvent[] }
+  /** SHIPPING (a carrier delivers) or SELF_PICKUP (the buyer collects from the seller's pickup address); seen 25 October. */
+  deliveryMethod?: 'SHIPPING' | 'SELF_PICKUP' | string | null
+  /** Set when the order was one store of a combined checkout; its payment lives on the checkout. */
+  checkoutId?: string | null
   /** The carrier booking after payment and READY: `{ status, tracking, confirmedPickup, checkedAt }`. */
   fulfillmentDelivery?: { status?: string; tracking?: Record<string, unknown> | null; confirmedPickup?: unknown; checkedAt?: string } | null
 }
@@ -131,6 +135,8 @@ export interface OrderAction {
   reason?: string
 }
 
+export type CreateOrderBody = { quoteId: string; note?: string } | { fulfillmentMethod: 'SELF_PICKUP'; clientOrderId: string; storeId: string; items: { productId: string; quantity: number }[]; note?: string }
+
 type BaseQuery = (url: string) => Promise<{ data?: unknown; error?: ApiProblem }>
 
 const transition = (step: string) => ({
@@ -165,8 +171,8 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
       query: (id) => `/orders/${encodeURIComponent(id)}/receipt`,
       providesTags: (_r, _e, id) => [{ type: 'Orders', id }],
     }),
-    /** No client idempotency key: the same buyer and quote return the same order. */
-    createOrder: builder.mutation<OrderDetailRaw, { quoteId: string; note?: string }>({
+    /** From a carrier quote (the same buyer and quote return the same order), or a self-pickup order under a client id (25 October): no quote, address or carrier fee. */
+    createOrder: builder.mutation<OrderDetailRaw, CreateOrderBody>({
       query: (body) => ({ url: '/orders', method: 'POST', body }),
       invalidatesTags: ['Orders'],
     }),
@@ -183,6 +189,8 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (_r, _e, id) => ['Orders', { type: 'Orders', id }],
     }),
     cancelOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('cancel')),
+    /** A paid self-pickup order marked READY by the seller: the original buyer confirms they collected it, which completes it. */
+    confirmPickup: builder.mutation<OrderDetailRaw, OrderAction>(transition('pickup/confirm')),
     acceptOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('accept')),
     declineOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('decline')),
     readyOrder: builder.mutation<OrderDetailRaw, OrderAction>(transition('ready')),
@@ -201,6 +209,7 @@ export const {
   useLazyGetPaymentQuery,
   useConfirmPaymentMutation,
   useCancelOrderMutation,
+  useConfirmPickupMutation,
   useAcceptOrderMutation,
   useDeclineOrderMutation,
   useReadyOrderMutation,
