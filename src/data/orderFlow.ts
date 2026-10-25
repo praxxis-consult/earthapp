@@ -14,7 +14,7 @@ import type { OrderStatus } from './orders'
 export const PAID_STATES = ['VERIFIED', 'PAID']
 
 /** The buyer collects from the seller's pickup address: no carrier, no dispatch; READY is followed by the buyer's own confirmation. */
-export const isSelfPickup = (o: Pick<OrderSummary, 'deliveryMethod'>): boolean => String(o.deliveryMethod ?? '').toUpperCase() === 'SELF_PICKUP'
+export const isSelfPickup = (o: Pick<OrderSummary, 'fulfillmentMethod' | 'deliveryMethod'>): boolean => String(o.fulfillmentMethod ?? o.deliveryMethod ?? '').toUpperCase() === 'SELF_PICKUP'
 export const isPaid = (o: Pick<OrderSummary, 'paymentStatus'>): boolean => PAID_STATES.includes(String(o.paymentStatus).toUpperCase())
 
 /**

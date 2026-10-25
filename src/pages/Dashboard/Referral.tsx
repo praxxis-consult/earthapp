@@ -101,7 +101,7 @@ export default function Referral() {
                   Invite family &amp; friends to Earth
                 </p>
                 <p className="text-[14px] leading-[24px]" style={{ ...jakarta(400), color: 'rgba(255,255,255,0.75)' }}>
-                  {refs.isLoading ? 'Reading your link…' : refs.error ? describeError(refs.error) : owner ? 'Share it with anyone who would like to buy or sell on Earth.' : 'Referral links are for store owners for now. Open a store and your link appears here.'}
+                  {refs.isLoading ? 'Reading your link…' : refs.error ? describeError(refs.error) : owner ? 'Share it with anyone who would like to buy or sell on Earth.' : 'Referral handles are available to live store owners. Open a store and take it live, and your link appears here.'}
                 </p>
               </div>
             </div>
@@ -145,7 +145,7 @@ export default function Referral() {
             <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]">
               <EmptyBlock
                 title={owner ? 'No referrals yet' : 'No referral link yet'}
-                copy={owner ? 'Everyone who joins Earth through your link will appear here, from the day they join.' : 'Referral links are for store owners for now.'}
+                copy={owner ? 'Everyone who joins Earth through your link will appear here, from the day they join.' : 'Referral handles are available to live store owners.'}
               />
             </div>
           ) : (

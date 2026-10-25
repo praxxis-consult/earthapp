@@ -80,7 +80,8 @@ export interface OrderExtras {
   delivery?: { provider: string; carrier: string; service: string; estimate: string } | null
   pricing?: OrderPricing
   timeline?: { items: TimelineEvent[] }
-  /** SHIPPING (a carrier delivers) or SELF_PICKUP (the buyer collects from the seller's pickup address); seen 25 October. */
+  /** SHIPPING (a carrier delivers) or SELF_PICKUP (the buyer collects from the seller's pickup address). Since Ralph's PR #20 (25 October) `fulfillmentMethod` is the name, with `deliveryMethod` kept as an identical alias. */
+  fulfillmentMethod?: 'SHIPPING' | 'SELF_PICKUP' | string | null
   deliveryMethod?: 'SHIPPING' | 'SELF_PICKUP' | string | null
   /** Set when the order was one store of a combined checkout; its payment lives on the checkout. */
   checkoutId?: string | null

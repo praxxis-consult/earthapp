@@ -101,7 +101,7 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
   async function share() {
     if (seller && !store) return
     // A seller shares the store's marketplace link; a buyer the referral link (859:41044 "Invite family & friends"), which the API gives store owners only.
-    if (!seller && !refs.data?.handle) return setToast({ title: 'No referral link yet', body: refs.error ? 'Your referral link could not be read. Try again in a moment.' : 'Referral links are for store owners for now. Open a store and yours appears here.' })
+    if (!seller && !refs.data?.handle) return setToast({ title: 'No referral link yet', body: refs.error ? 'Your referral link could not be read. Try again in a moment.' : 'Referral handles are available to live store owners. Open a store and take it live, and yours appears here.' })
     const link = seller && store ? `${window.location.origin}/marketplace?store=${store.id}` : `${window.location.origin}/r/${refs.data!.handle}`
     const text = seller && store ? `Shop at ${store.storeName} on Earth` : 'Join me on Earth, the marketplace for farm produce and natural resources'
     const touch = window.matchMedia('(pointer: coarse)').matches
