@@ -64,6 +64,17 @@ export interface ChatThread {
   lastMessage: { id: string; sequence: string; kind: ChatKind; senderId: string; text: string | null } | null
   /** The signed-in account's unread messages in this thread, as a decimal string. */
   unreadCount: string
+  /** On `GET /chats/{id}` only (25 October): the seller's phone when they chose to share it in chat; null otherwise. */
+  sellerPhone?: string | null
+}
+
+/** `GET/PUT /stores/me/chat-contact`: whether the seller shares the account's phone in their chats; a changed phone needs the consent again. */
+export interface ChatContact {
+  version: number
+  sharePhoneInChat: boolean
+  phone: string | null
+  consentedAt: string | null
+  needsRenewal: boolean
 }
 /** `POST /chats`: the thread (new or existing) between the buyer and the store. */
 export interface ChatStart {
@@ -124,6 +135,19 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
     listChats: builder.query<ChatThread[], void>({
       queryFn: (_, __, ___, baseQuery) => allPages<ChatThread>((page) => baseQuery(`/chats?limit=50&page=${page}`)),
       providesTags: ['Chats'],
+    }),
+    /** One thread by id, for a participant (25 October): a deep link to a thread the list has not loaded, and the seller's phone. */
+    getChat: builder.query<ChatThread, string>({
+      query: (id) => `/chats/${encodeURIComponent(id)}`,
+      providesTags: (_r, _e, id) => ['Chats', { type: 'Chats', id }],
+    }),
+    getChatContact: builder.query<ChatContact, void>({
+      query: () => '/stores/me/chat-contact',
+      providesTags: ['Chats'],
+    }),
+    setChatContact: builder.mutation<ChatContact, { expectedVersion: number; sharePhoneInChat: boolean }>({
+      query: (body) => ({ url: '/stores/me/chat-contact', method: 'PUT', body }),
+      invalidatesTags: ['Chats'],
     }),
     /** A thread's whole history (the API pages it newest first; here it reads oldest first). */
     getMessages: builder.query<ChatHistory, string>({
@@ -192,7 +216,7 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useListChatsQuery, useGetMessagesQuery, useLazyNewerMessagesQuery, useSendMessageMutation, useMarkReadMutation, useStartChatMutation } = chatsApiSlice
+export const { useListChatsQuery, useGetChatQuery, useGetChatContactQuery, useSetChatContactMutation, useGetMessagesQuery, useLazyNewerMessagesQuery, useSendMessageMutation, useMarkReadMutation, useStartChatMutation } = chatsApiSlice
 
 /** What a thread's last message reads as in the list. */
 export function previewOf(t: ChatThread): string {

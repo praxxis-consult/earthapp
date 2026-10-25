@@ -13,6 +13,7 @@ import flagUs from '../../assets/icons/signup-flag-us.svg'
 import checkboxOn from '../../assets/icons/checkbox-on.svg'
 import checkboxOff from '../../assets/icons/checkbox-off.svg'
 import { describeError, toApiError, type AccountType } from '../../services/earthApi'
+import { REFERRAL_KEY } from './ReferralLanding'
 import { useCreateAccountMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
@@ -121,6 +122,13 @@ export default function Signup() {
   const [formError, setFormError] = useState('')
   const { open: dialOpen, setOpen: setDialOpen, ref: dialRef } = useMenu()
   const [submitAccount] = useCreateAccountMutation()
+  const referralHandle = (() => {
+    try {
+      return sessionStorage.getItem(REFERRAL_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })()
 
   async function createAccount(e: FormEvent) {
     e.preventDefault()
@@ -146,6 +154,8 @@ export default function Signup() {
         email: email.trim().toLowerCase(),
         phoneNumber: digits ? `${dial.code}${digits.replace(/^0+/, '')}` : null,
         termsConsent: true,
+        // Who sent them: the handle the /r/ link kept, if any.
+        ...(referralHandle ? { referralHandle } : {}),
       }).unwrap()
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase(), accountType: ACCOUNT_TYPE_API[accountType] } })
     } catch (err) {

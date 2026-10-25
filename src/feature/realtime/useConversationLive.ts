@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppSelector } from '../../app/hooks'
-import { TYPING_IDLE_MS, TYPING_SEND_GAP_MS, TYPING_TTL_MS, type LiveEvent, type SyncRequired, type TypingEvent } from './events'
+import { TYPING_IDLE_MS, TYPING_SEND_GAP_MS, TYPING_TTL_MS, type LiveEvent, type PresenceEvent, type SyncRequired, type TypingEvent } from './events'
 import { command, currentSocket, onLive } from './realtimeClient'
 import { selectLive } from './realtimeSlice'
 
@@ -9,6 +9,8 @@ export interface ConversationLive {
   subscribed: boolean
   /** The other side is typing (dropped after 10 s without a fresh signal). */
   peerTyping: boolean
+  /** Whether each participant is online now: asked after each subscription and pushed on change; null while unknown. */
+  online: Record<string, boolean> | null
   /** Call on every keystroke: sends `typing: true` at most every 1.5 s and `false` after a pause. */
   noteTyping: () => void
   /** Call when a message is sent or the composer is cleared. */
@@ -26,6 +28,7 @@ export function useConversationLive(conversationId: string, replay: () => void):
   const live = useAppSelector(selectLive)
   const [subscribed, setSubscribed] = useState(false)
   const [peerTyping, setPeerTyping] = useState(false)
+  const [online, setOnline] = useState<Record<string, boolean> | null>(null)
   const latestReplay = useRef(replay)
   useEffect(() => {
     latestReplay.current = replay
@@ -46,6 +49,13 @@ export function useConversationLive(conversationId: string, replay: () => void):
           if (gone) return
           setSubscribed(true)
           latestReplay.current() // anything that landed while there was no subscription
+          // Presence is ephemeral: asked once the subscription stands, and again after every reconnect.
+          command<PresenceEvent>(socket, 'chat.presence', { conversationId }).then(
+            (p) => {
+              if (!gone) setOnline(Object.fromEntries(p.participants.map((x) => [x.accountId, x.online])))
+            },
+            () => {},
+          )
         },
         () => {
           if (!gone) setSubscribed(false)
@@ -57,6 +67,9 @@ export function useConversationLive(conversationId: string, replay: () => void):
       onLive<SyncRequired>('sync.required', () => void subscribe()),
       onLive<LiveEvent>('chat.message.created', (e) => {
         if (e.resourceId === conversationId) latestReplay.current()
+      }),
+      onLive<PresenceEvent>('chat.presence.updated', (e) => {
+        if (e.resourceId === conversationId) setOnline(Object.fromEntries(e.participants.map((x) => [x.accountId, x.online])))
       }),
       onLive<TypingEvent>('chat.typing', (e) => {
         if (e.resourceId !== conversationId) return
@@ -70,6 +83,7 @@ export function useConversationLive(conversationId: string, replay: () => void):
       offs.forEach((off) => off())
       clearTimeout(ttl)
       setPeerTyping(false)
+      setOnline(null)
       setSubscribed(false)
       sent.current = { at: 0, typing: false }
       if (socket.connected) command(socket, 'chat.unsubscribe', { conversationId }).catch(() => {})
@@ -97,5 +111,5 @@ export function useConversationLive(conversationId: string, replay: () => void):
 
   useEffect(() => () => clearTimeout(idle.current), [])
 
-  return { subscribed, peerTyping, noteTyping, stopTyping }
+  return { subscribed, peerTyping, online, noteTyping, stopTyping }
 }

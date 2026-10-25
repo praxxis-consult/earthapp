@@ -6,7 +6,9 @@ import EmptyBlock from '../../components/ui/EmptyBlock'
 import RecipientStatus from '../../components/ui/RecipientStatus'
 import { useStore } from '../../feature/stores/useStore'
 import { naira } from '../../data/orders'
-import { orderLimit, paid, payouts, pending, received, type Payout } from '../../data/payouts'
+import { useGetPayoutsQuery } from '../../feature/payouts/payoutsApiSlice'
+import { payoutView, received, type Payout } from '../../data/payouts'
+import { describeError } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
 
 const PAGE_SIZE = 10
@@ -14,16 +16,24 @@ const PAGE_SIZE = 10
 /**
  * Figma payout 592:15295: title, Paid (gradient) and Pending cards, the order-limit card with its
  * progress bar and tiers, then the transactions table (240/179/168/168/169/168) and pager.
- * Figures are local until the payouts API exists.
+ * Figures come from `GET /payouts/me` (25 October); while they cannot be read (the provider is
+ * unavailable) the page says so rather than showing zeros.
  */
 export default function Payout() {
   const { store } = useStore()
   const [page, setPage] = useState(1)
+  const summary = useGetPayoutsQuery()
+  const view = summary.data ? payoutView(summary.data) : null
+  const unavailable = Boolean(summary.error)
+  const { paid, pending, payouts } = view ?? { paid: 0, pending: 0, payouts: [] }
+  // Without figures the limit card shows the policy's shape with nothing filled in.
+  const orderLimit = view?.orderLimit ?? { current: 0, inProgress: 0, goodOrders: 0, buyers: 0, tiers: [] as [string, number][] }
   const pageCount = Math.max(1, Math.ceil(payouts.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = payouts.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
-  const left = orderLimit.current - orderLimit.inProgress
-  const pct = Math.min(100, (orderLimit.inProgress / orderLimit.current) * 100)
+  const left = Math.max(0, orderLimit.current - orderLimit.inProgress)
+  const pct = orderLimit.current ? Math.min(100, (orderLimit.inProgress / orderLimit.current) * 100) : 0
+  const figure = (n: number) => (unavailable ? '—' : naira(n))
   const short = (n: number) => '₦' + n.toLocaleString('en-NG')
 
   return (
@@ -37,6 +47,16 @@ export default function Payout() {
             Your share of every order goes straight to your bank account the moment the buyer receives their package.
           </p>
           <RecipientStatus store={store} />
+          {unavailable && (
+            <p role="alert" className="text-[#b13b3b] text-[14px] leading-[24px]" style={jakarta(400)}>
+              Payout figures are unavailable right now ({describeError(summary.error)}). They are not zero; try again in a moment.
+            </p>
+          )}
+          {view?.stale && (
+            <p className="text-[#807e7e] text-[13px] leading-[20px]" style={jakarta(400)}>
+              These figures were last confirmed with the payment provider a while ago and may lag.
+            </p>
+          )}
         </div>
 
         {/* Paid / Pending (594:15599, 594:15603): 136 tall, radius 20, label 14/24, figure 32/48 Bold, note 12/15 */}
@@ -51,7 +71,7 @@ export default function Payout() {
             </p>
             <div className="flex items-start gap-[16px]">
               <p className="text-white text-[32px] leading-[48px]" style={jakarta(700)}>
-                {naira(paid)}
+                {figure(paid)}
               </p>
               <p className="text-[12px] leading-[15px] mt-[22px]" style={{ ...jakarta(400), color: 'rgba(255,255,255,0.75)' }}>
                 all time
@@ -64,7 +84,7 @@ export default function Payout() {
             </p>
             <div className="flex items-start gap-[16px]">
               <p className="text-[#101604] text-[32px] leading-[48px]" style={jakarta(700)}>
-                {naira(pending)}
+                {figure(pending)}
               </p>
               <p className="text-[#807e7e] text-[12px] leading-[15px] mt-[22px]" style={jakarta(400)}>
                 awaiting clearance
@@ -92,7 +112,7 @@ export default function Payout() {
                 className="rounded-[30px] bg-[#f2f8f6] px-[10px] py-[6px] text-[#177b4d] text-[10px] leading-[13px]"
                 style={jakarta(700)}
               >
-                {short(orderLimit.current)}
+                {unavailable ? '—' : short(orderLimit.current)}
               </span>
             </div>
           </div>
@@ -121,13 +141,15 @@ export default function Payout() {
                 {label}
               </span>
               <span className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
-                {typeof value === 'number' ? naira(value) : value}
+                {naira(value)}
               </span>
             </div>
           ))}
-          <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(500)}>
-            You have {orderLimit.goodOrders} good orders from {orderLimit.buyers} different buyers.
-          </p>
+          {view && (
+            <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(500)}>
+              You have {orderLimit.goodOrders} good {orderLimit.goodOrders === 1 ? 'order' : 'orders'} from {orderLimit.buyers} different {orderLimit.buyers === 1 ? 'buyer' : 'buyers'}.
+            </p>
+          )}
         </section>
 
         {/* Transactions (599:18298): 32px below the limit card */}
@@ -136,10 +158,10 @@ export default function Payout() {
             Transactions
           </h2>
           {payouts.length === 0 ? (
-            <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]">
+            <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]" aria-busy={summary.isLoading}>
               <EmptyBlock
-                title="No payouts yet"
-                copy="Your share of each completed order will show here as soon as it is paid out."
+                title={unavailable ? 'Payouts cannot be read right now' : 'No payouts yet'}
+                copy={unavailable ? 'The payment provider did not answer. Your money is not affected; try again in a moment.' : 'Your share of each completed order will show here as soon as it is paid out.'}
               />
             </div>
           ) : (

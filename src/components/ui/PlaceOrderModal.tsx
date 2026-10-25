@@ -10,6 +10,7 @@ import arrowRight from '../../assets/icons/po-arrow-right.svg'
 import type { Listing } from '../../lib/catalog'
 import { naira } from '../../lib/productView'
 import { initials } from '../../data/orders'
+import { storeFacts } from '../../lib/storeStats'
 import { jakarta } from '../../utils/styles'
 
 const TABS = ['Product details', 'Shipping & terms', 'Documents'] as const
@@ -52,7 +53,7 @@ function ProductDetailsTab({ listing: p }: { listing: Listing }) {
               <img src={badgeCheck} alt="" className="size-[16px] shrink-0" />
             </div>
             <span className="text-[#807e7e] text-[12px]" style={jakarta(400)}>
-              Seller on Earth · {s.businessAddress.area}, {s.businessAddress.region} · Member since {monthYear(s.liveAt)}
+              {['Seller on Earth', `${s.businessAddress.area}, ${s.businessAddress.region}`, `Member since ${monthYear(s.liveAt)}`, ...storeFacts(s)].join(' · ')}
             </span>
           </div>
         </div>

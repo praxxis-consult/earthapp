@@ -6,6 +6,7 @@ import { ChangeBankDialog, EditPersonalDialog, EditStoreDialog } from '../../com
 import { to12h } from '../../lib/hours'
 import DeliveryDialog from '../../components/ui/DeliveryDialog'
 import AddressDialog from '../../components/ui/AddressDialog'
+import ChatPhoneCard from '../../components/ui/ChatPhoneCard'
 import EmptyBlock from '../../components/ui/EmptyBlock'
 import { addressLine, useAddresses, type SavedAddress } from '../../lib/addresses'
 import RecipientStatus from '../../components/ui/RecipientStatus'
@@ -321,6 +322,7 @@ export default function Settings() {
                 <PrimaryButton label={shipping.data ? 'Edit delivery' : 'Set up delivery'} onClick={() => store && !shipping.isLoading && setDialog('delivery')} />
               </div>
             </Card>
+            <ChatPhoneCard onError={setError} />
           </div>
         )}
 

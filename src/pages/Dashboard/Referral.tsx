@@ -8,9 +8,8 @@ import linkIcon from '../../assets/icons/ref-link.svg'
 import copyIcon from '../../assets/icons/ref-copy.svg'
 import exportIcon from '../../assets/icons/ref-export.svg'
 import EmptyBlock from '../../components/ui/EmptyBlock'
-import { useStore } from '../../feature/stores/useStore'
-import { useAuth } from '../../feature/authentication/useAuth'
-import { referralLink, referrals } from '../../data/referrals'
+import { useGetReferralsQuery, type ReferredAccount } from '../../feature/referrals/referralsApiSlice'
+import { describeError } from '../../services/earthApi'
 import { jakarta } from '../../utils/styles'
 
 const PAGE_SIZE = 10
@@ -26,12 +25,16 @@ const ROLE_STYLE = {
  * then Activities (490/283/319 columns) and the pager.
  */
 export default function Referral() {
-  const { store } = useStore()
-  const { account } = useAuth()
   const [page, setPage] = useState(1)
   const [copied, setCopied] = useState(false)
-  // A seller shares their store; a buyer, with no store, shares under their own name.
-  const link = referralLink(store?.storeName ?? (account ? `${account.firstName} ${account.lastName}` : undefined))
+  // The handle and the sign-ups come from the API (25 October); handles belong to store owners, so a buyer has none.
+  const refs = useGetReferralsQuery()
+  const handle = refs.data?.handle ?? ''
+  const link = handle ? `${window.location.origin}/r/${handle}` : ''
+  const owner = refs.data !== null
+  const referrals: ReferredAccount[] = refs.data?.items ?? []
+  const when = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const roleOf = (r: ReferredAccount): 'Buyer' | 'Seller' => (r.roles.includes('Seller') ? 'Seller' : 'Buyer')
   const pageCount = Math.max(1, Math.ceil(referrals.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = referrals.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
@@ -66,7 +69,7 @@ export default function Referral() {
             Refer family &amp; friends
           </h1>
           <p className="text-[#807e7e] text-[16px] leading-[24px] max-w-[620px]" style={jakarta(400)}>
-            Share your link. Everyone who joins through it shows up here, from the day they join.
+            Share your link. Everyone who joins through it shows up here, from the day they join; their name, never their email.
           </p>
         </div>
 
@@ -98,10 +101,11 @@ export default function Referral() {
                   Invite family &amp; friends to Earth
                 </p>
                 <p className="text-[14px] leading-[24px]" style={{ ...jakarta(400), color: 'rgba(255,255,255,0.75)' }}>
-                  Share it with anyone who would like to buy or sell on Earth.
+                  {refs.isLoading ? 'Reading your link…' : refs.error ? describeError(refs.error) : owner ? 'Share it with anyone who would like to buy or sell on Earth.' : 'Referral links are for store owners for now. Open a store and your link appears here.'}
                 </p>
               </div>
             </div>
+            {link && (
             <div className="flex items-center gap-[16px] max-md:flex-col max-md:items-stretch max-md:gap-[12px]">
               <button
                 type="button"
@@ -129,6 +133,7 @@ export default function Referral() {
                 </span>
               </button>
             </div>
+            )}
           </div>
         </div>
 
@@ -139,15 +144,15 @@ export default function Referral() {
           {referrals.length === 0 ? (
             <div className="bg-white border border-[#f7f7f7] rounded-[20px] flex items-center justify-center py-[64px] max-md:py-[40px]">
               <EmptyBlock
-                title="No referrals yet"
-                copy="Everyone who joins Earth through your link will appear here, from the day they join."
+                title={owner ? 'No referrals yet' : 'No referral link yet'}
+                copy={owner ? 'Everyone who joins Earth through your link will appear here, from the day they join.' : 'Referral links are for store owners for now.'}
               />
             </div>
           ) : (
             <>
               <DataTable
                 rows={rows}
-                rowKey={(r) => r.email}
+                rowKey={(r) => r.id}
                 columns={[
                   {
                     key: 'user',
@@ -159,7 +164,7 @@ export default function Referral() {
                           {r.name}
                         </p>
                         <p className="text-[#807e7e] text-[14px] leading-[20px] truncate" style={jakarta(400)}>
-                          {r.email}
+                          Joined through your link
                         </p>
                       </div>
                     ),
@@ -173,9 +178,9 @@ export default function Referral() {
                     cell: (r) => (
                       <span
                         className="inline-flex min-w-[74px] justify-center rounded-[30px] px-[10px] py-[6px] text-[11px] leading-[14px]"
-                        style={{ ...jakarta(600), background: ROLE_STYLE[r.as].bg, color: ROLE_STYLE[r.as].color }}
+                        style={{ ...jakarta(600), background: ROLE_STYLE[roleOf(r)].bg, color: ROLE_STYLE[roleOf(r)].color }}
                       >
-                        {r.as}
+                        {roleOf(r)}
                       </span>
                     ),
                   },
@@ -186,7 +191,7 @@ export default function Referral() {
                     align: 'right',
                     cell: (r) => (
                       <p className="text-[#101604] text-[14px] leading-[24px]" style={jakarta(500)}>
-                        {r.date}
+                        {when(r.joinedAt)}
                       </p>
                     ),
                   },

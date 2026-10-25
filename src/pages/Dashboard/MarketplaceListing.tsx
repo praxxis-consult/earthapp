@@ -14,6 +14,7 @@ import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews
 import { useStore } from '../../feature/stores/useStore'
 import { initials } from '../../data/orders'
 import { useCart } from '../../feature/cart/useCart'
+import { storeFacts } from '../../lib/storeStats'
 import { galleryView } from '../../lib/gallery'
 import { soldAsLabel } from '../../lib/productView'
 import { useSaved } from '../../lib/saved'
@@ -422,7 +423,7 @@ export default function MarketplaceListing() {
                     </span>
                   </div>
                   <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                    {product.store.verificationStatus === 'VERIFIED' ? 'Verified seller' : 'Seller on Earth'} · Member since {new Date(product.store.liveAt).getFullYear()} · {product.location}
+                    {[product.store.verificationStatus === 'VERIFIED' ? 'Verified seller' : 'Seller on Earth', `Member since ${new Date(product.store.liveAt).getFullYear()}`, product.location, ...storeFacts(product.store)].join(' · ')}
                   </p>
                 </div>
               </div>

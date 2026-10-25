@@ -22,7 +22,7 @@ import { useAuth } from '../../feature/authentication/useAuth'
 import { useStore } from '../../feature/stores/useStore'
 import { useUnreadChats } from '../../feature/chats/useUnreadChats'
 import { useCart } from '../../feature/cart/useCart'
-import { referralLink } from '../../data/referrals'
+import { useGetReferralsQuery } from '../../feature/referrals/referralsApiSlice'
 import { canSell } from '../../feature/authentication/role'
 import { initials } from '../../data/orders'
 
@@ -86,6 +86,8 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
   const unreadChats = useUnreadChats()
   // The Cart badge: lines waiting in the account's cart on the API.
   const cartCount = useCart().count
+  // A buyer's referral handle, when the API has one for them (store owners only today).
+  const refs = useGetReferralsQuery(undefined, { skip: !account || canSell(account) })
   const { store } = useStore()
   const [copied, setCopied] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
@@ -98,8 +100,9 @@ export default function DashboardSidebar({ inDrawer = false, onClose }: Dashboar
    */
   async function share() {
     if (seller && !store) return
-    // A seller shares the store's marketplace link; a buyer the referral link (859:41044 "Invite family & friends").
-    const link = seller && store ? `${window.location.origin}/marketplace?store=${store.id}` : referralLink(account ? `${account.firstName} ${account.lastName}` : undefined)
+    // A seller shares the store's marketplace link; a buyer the referral link (859:41044 "Invite family & friends"), which the API gives store owners only.
+    if (!seller && !refs.data?.handle) return setToast({ title: 'No referral link yet', body: refs.error ? 'Your referral link could not be read. Try again in a moment.' : 'Referral links are for store owners for now. Open a store and yours appears here.' })
+    const link = seller && store ? `${window.location.origin}/marketplace?store=${store.id}` : `${window.location.origin}/r/${refs.data!.handle}`
     const text = seller && store ? `Shop at ${store.storeName} on Earth` : 'Join me on Earth, the marketplace for farm produce and natural resources'
     const touch = window.matchMedia('(pointer: coarse)').matches
     let copiedNow = false

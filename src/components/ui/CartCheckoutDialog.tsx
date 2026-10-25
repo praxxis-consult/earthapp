@@ -8,7 +8,7 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCheckout } from '../../feature/checkout/useCheckout'
 import type { CheckoutStore } from '../../feature/checkout/checkoutApiSlice'
 import { addressProblems, carrierAddress, lagosDay } from '../../lib/address'
-import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
+import { capacityMessage, quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
@@ -112,12 +112,11 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
             setFieldErrors((f) => ({ ...f, ...refusal.fields }))
             return [g.storeId, { items: [], receivedAt: Date.now(), problem: refusal.message }] as const
           }
-          const capacity = (problem as unknown as { parcelCapacity?: { maxWeightGrams?: string; basketWeightGrams?: string } }).parcelCapacity
           const text =
             problem.status === 404
               ? 'This seller has not set up delivery yet. Collect from them instead, or message them.'
-              : problem.status === 409 && capacity?.maxWeightGrams
-                ? `These lines weigh about ${Math.round(Number(capacity.basketWeightGrams ?? 0) / 1000)} kg and this seller ships up to ${Math.round(Number(capacity.maxWeightGrams) / 1000)} kg in one order. Order less from them, or collect instead.`
+              : problem.status === 409 && capacityMessage(problem, 'cart')
+                ? capacityMessage(problem, 'cart')!
                 : problem.status === 409
                   ? `${problem.detail || problem.title} Message the seller to sort it out.`
                   : problem.status === 503

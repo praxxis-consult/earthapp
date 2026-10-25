@@ -7,7 +7,7 @@ import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../.
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
 import { addressProblems, carrierAddress, lagosDay } from '../../lib/address'
-import { quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
+import { capacityMessage, quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
 import { naira } from '../../lib/productView'
@@ -104,7 +104,7 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
       }).unwrap()
       const items = Array.isArray(res.items) ? res.items : []
       if (!items.length) return setError('No carrier can deliver this order to that address right now. Try another address or day.')
-      setQuotes({ items, receivedAt: Date.now() })
+      setQuotes({ items, receivedAt: now })
       setChosen(items[0].id)
     } catch (err) {
       const problem = toApiError(err)
@@ -128,10 +128,11 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
           : problem.status === 503
             ? 'The carriers are not answering right now. Try again in a moment.'
             : problem.status === 409 && problem.code === 'shipping-conflict'
-              ? // The seller's delivery setup does not cover this basket: too heavy for their package, their own goods, or a pickup that does not match. The weight one is the buyer's to change.
-                /parcel|capacity|weight|heav/i.test(problem.detail + problem.title)
-                ? `${what}${weightKg ? ` (about ${weightKg} kg)` : ''} is more than this seller’s packaging takes in one order. Order fewer, or message the seller about a larger one.`
-                : `${problem.detail || problem.title} Message the seller to sort it out.`
+              ? // The seller's delivery setup does not cover this basket: too heavy for their package (the API says by how much), their own goods, or a pickup that does not match.
+                (capacityMessage(problem) ??
+                  (/parcel|capacity|weight|heav/i.test(problem.detail + problem.title)
+                    ? `${what}${weightKg ? ` (about ${weightKg} kg)` : ''} is more than this seller’s packaging takes in one order. Order fewer, collect it yourself, or message the seller about a larger one.`
+                    : `${problem.detail || problem.title} Message the seller to sort it out.`))
               : describeError(err),
       )
     }

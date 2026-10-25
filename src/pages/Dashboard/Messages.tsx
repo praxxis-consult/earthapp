@@ -28,8 +28,7 @@ import {
   useMarkReadMutation,
   useSendMessageMutation,
   type ChatMessage,
-  type ChatThread,
-} from '../../feature/chats/chatsApiSlice'
+  type ChatThread, useGetChatQuery } from '../../feature/chats/chatsApiSlice'
 import { useAppSelector } from '../../app/hooks'
 import { selectLive } from '../../feature/realtime/realtimeSlice'
 import { useConversationLive } from '../../feature/realtime/useConversationLive'
@@ -92,8 +91,11 @@ export default function Messages() {
   const list = threads.data ?? []
   // The thread named in the URL (a notification lands here), else the newest.
   const wanted = searchParams.get('chat')
-  const activeId = (wanted && list.some((t) => t.id === wanted) ? wanted : list[0]?.id) ?? ''
-  const active = list.find((t) => t.id === activeId)
+  // A thread the list has not loaded (a deep link) is read on its own; the read also carries the seller's phone when they share it.
+  const activeId = (wanted && (list.some((t) => t.id === wanted) || !threads.data) ? wanted : list[0]?.id) ?? ''
+  const one = useGetChatQuery(activeId, { skip: !activeId })
+  const active = list.find((t) => t.id === activeId) ?? one.data
+  const sellerPhone = one.data?.id === activeId ? (one.data.sellerPhone ?? null) : null
   const history = useGetMessagesQuery(activeId, { skip: !activeId })
   const [poll] = useLazyNewerMessagesQuery()
   const [send, sending] = useSendMessageMutation()
@@ -124,7 +126,10 @@ export default function Messages() {
     const { chatId, lastSequence } = position.current
     if (chatId && lastSequence !== null) poll({ chatId, afterSequence: lastSequence })
   }, [poll])
-  const { subscribed, peerTyping, noteTyping, stopTyping } = useConversationLive(activeId, replay)
+  const { subscribed, peerTyping, online, noteTyping, stopTyping } = useConversationLive(activeId, replay)
+  // The other side's presence, when the live channel knows it (null while it does not).
+  const peerId = active ? (active.seller.id === me ? active.buyer.id : active.seller.id) : ''
+  const peerOnline = online && peerId in online ? online[peerId] : null
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -467,16 +472,23 @@ export default function Messages() {
                     <p className="text-[#101604] text-[16px] leading-[20px] truncate" style={jakarta(600)}>
                       {counterpart(active)}
                     </p>
-                    {/* The frame shows an online dot here; the API has no presence, so the line names the listing, or says when the other side is typing. */}
-                    <p className={`text-[12px] leading-[15px] truncate ${peerTyping ? 'text-[#007c53]' : 'text-[#807e7e]'}`} style={jakarta(peerTyping ? 600 : 400)} aria-live="polite">
-                      {peerTyping ? 'Typing…' : active.seller.id === me ? `Buyer · ${active.storeName}` : active.seller.name}
+                    {/* The frame's online dot: presence from the live channel; typing wins while it lasts; otherwise who they are. */}
+                    <p className={`flex items-center gap-[6px] text-[12px] leading-[15px] truncate ${peerTyping ? 'text-[#007c53]' : 'text-[#807e7e]'}`} style={jakarta(peerTyping ? 600 : 400)} aria-live="polite">
+                      {peerOnline !== null && !peerTyping && <span aria-hidden="true" className={`inline-block size-[8px] shrink-0 rounded-full ${peerOnline ? 'bg-[#2fb36b]' : 'bg-[#c9c9c9]'}`} />}
+                      <span className="truncate">{peerTyping ? 'Typing…' : peerOnline === true ? 'Online' : peerOnline === false ? 'Offline' : active.seller.id === me ? `Buyer · ${active.storeName}` : active.seller.name}</span>
                     </p>
                   </div>
                 </div>
-                {/* The call button (584:11283) stays as designed; the API shares no phone numbers, so it says so. */}
-                <button type="button" disabled title="Phone numbers are not shared yet" aria-label={`Call ${counterpart(active)}`} className="flex items-center justify-center size-[36px] rounded-[18px] bg-[#f7f7f7] disabled:opacity-60">
-                  <img src={callIcon} alt="" className="size-[16px]" />
-                </button>
+                {/* The call button (584:11283): the seller's number when they chose to share it in chat (25 October); otherwise it says why it is off. */}
+                {sellerPhone ? (
+                  <a href={`tel:${sellerPhone}`} title={`Call ${sellerPhone}`} aria-label={`Call ${counterpart(active)} on ${sellerPhone}`} className="flex items-center justify-center size-[36px] rounded-[18px] bg-[#f2f8f6]">
+                    <img src={callIcon} alt="" className="size-[16px]" />
+                  </a>
+                ) : (
+                  <button type="button" disabled title={active.seller.id === me ? 'Buyers’ numbers are not shared' : 'This seller has not shared a phone number'} aria-label={`Call ${counterpart(active)}`} className="flex items-center justify-center size-[36px] rounded-[18px] bg-[#f7f7f7] disabled:opacity-60">
+                    <img src={callIcon} alt="" className="size-[16px]" />
+                  </button>
+                )}
               </header>
 
               <div ref={pane} className="flex-1 overflow-y-auto p-[24px] flex flex-col gap-[24px] max-md:p-[16px]" aria-busy={history.isLoading}>
