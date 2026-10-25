@@ -103,7 +103,8 @@ export default function Messages() {
   const [uploadImage] = useUploadImageMutation()
   const [loadMine] = useLazyGetMyProductsQuery()
   // Below lg the list and the conversation are two screens; opening a chat moves to the second.
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
+  // A thread named in the URL (a notification, a deep link) opens on the conversation screen; otherwise the list.
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>(() => (new URLSearchParams(window.location.search).get('chat') ? 'chat' : 'list'))
   const [tab, setTab] = useState<'all' | 'unread'>('all')
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState('')
