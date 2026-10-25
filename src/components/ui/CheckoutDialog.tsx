@@ -6,6 +6,7 @@ import pickupIcon from '../../assets/icons/co-pickup.svg'
 import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { NEW_ADDRESS, resolveAddress, useAddresses } from '../../lib/addresses'
+import { signupAddress } from '../../lib/signupAddress'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
@@ -78,7 +79,7 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const { list: saved, defaultAddress } = useAddresses()
   const [pickedAddress, setPickedAddress] = useState<string | null>(null)
   const picked = pickedAddress ?? defaultAddress?.id ?? NEW_ADDRESS
-  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [error, setError] = useState('')
   // One line under a field, from the checks here or from the API's `errors[].path` (`address.postalCode`).

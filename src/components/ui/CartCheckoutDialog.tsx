@@ -7,6 +7,7 @@ import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import type { CheckoutLine } from './CheckoutDialog'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { NEW_ADDRESS, resolveAddress, useAddresses } from '../../lib/addresses'
+import { signupAddress } from '../../lib/signupAddress'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCheckout } from '../../feature/checkout/useCheckout'
 import type { CheckoutStore } from '../../feature/checkout/checkoutApiSlice'
@@ -68,7 +69,7 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
   const [step, setStep] = useState<Step>('method')
   const [methods, setMethods] = useState<Record<string, Method>>(() => Object.fromEntries(groups.map((g) => [g.storeId, 'delivery'])))
   const [notes, setNotes] = useState<Record<string, string>>({})
-  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
