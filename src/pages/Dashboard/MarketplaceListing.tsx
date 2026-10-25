@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import ImageViewer from '../../components/ui/ImageViewer'
-import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import CheckoutDialog from '../../components/ui/CheckoutDialog'
 import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import Toast from '../../components/ui/Toast'
 import { ReviewsPanel, ShippingPanel } from '../../components/marketplace/ListingPanels'
@@ -67,7 +67,7 @@ export default function MarketplaceListing() {
   const [qty, setQty] = useState<{ id: string; qty: number } | null>(null)
   const [front, setFront] = useState<{ id: string; at: number } | null>(null)
   const [viewing, setViewing] = useState<number | null>(null)
-  // "Place order" on a marketplace card lands here with ?order=1 and opens the order review at once.
+  // "Place order" on a marketplace card lands here with ?order=1 and opens the delivery choice straight away.
   const [ordering, setOrdering] = useState(() => params.get('order') === '1')
   const [actionError, setActionError] = useState('')
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
@@ -434,7 +434,7 @@ export default function MarketplaceListing() {
         </div>
       </div>
 
-      {ordering && !mine && <PlaceOrderModal listing={product} quantity={quantity} onClose={closeOrder} />}
+      {ordering && !mine && <CheckoutDialog listing={product} quantity={quantity} onClose={closeOrder} />}
       {viewing !== null && <ImageViewer images={product.images} start={viewing} title={product.title} onClose={() => setViewing(null)} />}
       {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
     </DashboardLayout>

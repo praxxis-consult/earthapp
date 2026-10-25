@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import CheckoutDialog from '../../components/ui/CheckoutDialog'
 import ImageViewer from '../../components/ui/ImageViewer'
 import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import { useStore } from '../../feature/stores/useStore'
@@ -398,7 +398,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {ordering && <PlaceOrderModal listing={product} quantity={quantity} onClose={() => setWants(null)} />}
+      {ordering && <CheckoutDialog listing={product} quantity={quantity} onClose={() => setWants(null)} />}
       {viewing !== null && <ImageViewer images={product.images} start={viewing} title={product.title} onClose={() => setViewing(null)} />}
       <SignInDialogs open={signInOpen} onClose={() => setWants(null)} redirectTo={location.pathname} />
     </div>
