@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Field, Shell, inputClass } from './SettingsDialogs'
 import DeliveryAddressFields from './DeliveryAddressFields'
+import OptionRow from './OptionRow'
+import pickupIcon from '../../assets/icons/co-pickup.svg'
+import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import type { CheckoutLine } from './CheckoutDialog'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useAddresses } from '../../lib/addresses'
@@ -198,25 +201,10 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
             </p>
             {views.length ? (
               <div role="radiogroup" aria-label={`Carrier offers for ${g.storeName}`} className="flex flex-col gap-[8px]">
-                {views.map((v) => {
-                  const active = v.id === chosen[g.storeId]
-                  return (
-                    <label key={v.id} className={`flex items-center gap-[12px] rounded-[16px] border px-[16px] py-[12px] cursor-pointer ${active ? 'border-[#007c53] bg-[#f2f8f6]' : 'border-[#e4dede]'}`}>
-                      <input type="radio" name={`quote-${g.storeId}`} value={v.id} checked={active} onChange={() => setChosen((c) => ({ ...c, [g.storeId]: v.id }))} disabled={left <= 0} className="accent-[#007c53]" />
-                      <span className="flex flex-col gap-[2px] min-w-0 flex-1">
-                        <span className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
-                          {v.name}
-                        </span>
-                        <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                          {v.eta ? `Delivers ${v.eta.replace(/^within\s+/i, 'within ')}` : 'Delivery time not given'}
-                        </span>
-                      </span>
-                      <span className="text-[#101604] text-[14px] leading-[20px] shrink-0" style={jakarta(600)}>
-                        {v.delivery ? `${v.delivery} delivery` : 'Priced at payment'}
-                      </span>
-                    </label>
-                  )
-                })}
+                {views.map((v) => (
+                  <OptionRow key={v.id} name={`quote-${g.storeId}`} value={v.id} checked={v.id === chosen[g.storeId]} onChange={() => setChosen((c) => ({ ...c, [g.storeId]: v.id }))} disabled={left <= 0} icon={truckIcon} title={v.name} subtitle={v.eta ? `Delivers ${v.eta.replace(/^within\s+/i, 'within ')}` : 'Delivery time not given'} price={v.delivery || 'Priced at payment'} />
+                ))}
+                <OptionRow name={`quote-${g.storeId}`} value="pickup" checked={false} onChange={() => { setMethods((m) => ({ ...m, [g.storeId]: 'pickup' })); setQuotes((q) => { const { [g.storeId]: _gone, ...rest } = q; return rest }) }} icon={pickupIcon} title="Pickup" subtitle={`Pick your package yourself in ${g.pickupPlace}`} price="Free" />
               </div>
             ) : (
               <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
@@ -302,25 +290,9 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
               {g.lines.length} {g.lines.length === 1 ? 'listing' : 'listings'} · {money(goodsOf(g))}
             </p>
           </div>
-          <div role="radiogroup" aria-label={`How you get the order from ${g.storeName}`} className="flex gap-[8px] max-md:flex-col">
-            {(
-              [
-                ['delivery', 'Deliver to me', 'A carrier collects and brings it.'],
-                ['pickup', 'I will collect it', `From the seller in ${g.pickupPlace}.`],
-              ] as const
-            ).map(([key, label, hint]) => (
-              <label key={key} className={`flex flex-1 cursor-pointer items-start gap-[12px] rounded-[12px] border px-[12px] py-[10px] ${methods[g.storeId] === key ? 'border-[#007c53] bg-[#f2f8f6]' : 'border-[#e4dede]'}`}>
-                <input type="radio" name={`method-${g.storeId}`} value={key} checked={methods[g.storeId] === key} onChange={() => setMethods((m) => ({ ...m, [g.storeId]: key }))} className="mt-[3px] accent-[#007c53]" />
-                <span className="flex flex-col gap-[2px] min-w-0">
-                  <span className="text-[#101604] text-[13px] leading-[18px]" style={jakarta(600)}>
-                    {label}
-                  </span>
-                  <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                    {hint}
-                  </span>
-                </span>
-              </label>
-            ))}
+          <div role="radiogroup" aria-label={`How you get the order from ${g.storeName}`} className="flex flex-col gap-[8px]">
+            <OptionRow name={`method-${g.storeId}`} value="delivery" checked={methods[g.storeId] === 'delivery'} onChange={() => setMethods((m) => ({ ...m, [g.storeId]: 'delivery' }))} icon={truckIcon} title="Delivery" subtitle="A carrier brings it to your door" price="Quoted next" />
+            <OptionRow name={`method-${g.storeId}`} value="pickup" checked={methods[g.storeId] === 'pickup'} onChange={() => setMethods((m) => ({ ...m, [g.storeId]: 'pickup' }))} icon={pickupIcon} title="Pickup" subtitle={`Pick your package yourself in ${g.pickupPlace}`} price="Free" />
           </div>
           <Field label="Note for this seller" htmlFor={`cc-note-${g.storeId}`} hint="Optional">
             <textarea id={`cc-note-${g.storeId}`} value={notes[g.storeId] ?? ''} maxLength={500} rows={1} onChange={(e) => setNotes((n) => ({ ...n, [g.storeId]: e.target.value }))} className={`${inputClass} h-auto rounded-[20px] py-[12px]`} style={jakarta(400)} />

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Field, Shell, inputClass } from './SettingsDialogs'
 import DeliveryAddressFields from './DeliveryAddressFields'
+import OptionRow from './OptionRow'
+import pickupIcon from '../../assets/icons/co-pickup.svg'
+import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useAddresses } from '../../lib/addresses'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
@@ -213,33 +216,12 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
         <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
           {what} · {total} for the goods. Pick who delivers it; the price and total are per offer. {expired ? 'These offers have expired.' : `Offers expire in ${mmss(left)}.`}
         </p>
+        {/* Each carrier offer and, last, collecting it yourself, as the frame's option rows (880:50442). */}
         <div role="radiogroup" aria-label="Carrier offers" className="flex flex-col gap-[8px]">
-          {views.map((v) => {
-            const active = v.id === chosen
-            return (
-              <label key={v.id} className={`flex items-center gap-[12px] rounded-[16px] border px-[16px] py-[12px] cursor-pointer ${active ? 'border-[#007c53] bg-[#f2f8f6]' : 'border-[#e4dede]'}`}>
-                <input type="radio" name="quote" value={v.id} checked={active} onChange={() => setChosen(v.id)} disabled={expired} className="accent-[#007c53]" />
-                <span className="flex flex-col gap-[2px] min-w-0 flex-1">
-                  <span className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
-                    {v.name}
-                  </span>
-                  <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                    {v.eta ? `Delivers ${v.eta.replace(/^within\s+/i, 'within ')}` : 'Delivery time not given'}
-                  </span>
-                </span>
-                <span className="flex flex-col items-end gap-[2px] shrink-0">
-                  <span className="text-[#101604] text-[14px] leading-[20px]" style={jakarta(600)}>
-                    {v.delivery ? `${v.delivery} delivery` : 'Priced at payment'}
-                  </span>
-                  {v.total && (
-                    <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                      {v.total} in all
-                    </span>
-                  )}
-                </span>
-              </label>
-            )
-          })}
+          {views.map((v) => (
+            <OptionRow key={v.id} name="quote" value={v.id} checked={v.id === chosen} onChange={() => setChosen(v.id)} disabled={expired} icon={truckIcon} title={v.name} subtitle={v.eta ? `Delivers ${v.eta.replace(/^within\s+/i, 'within ')}` : 'Delivery time not given'} price={v.delivery || 'Priced at payment'} />
+          ))}
+          <OptionRow name="quote" value="pickup" checked={false} onChange={() => { setMethod('pickup'); setQuotes(null) }} icon={pickupIcon} title="Pickup" subtitle={`Pick your package yourself in ${pickupPlace}`} price="Free" />
         </div>
         {picked && (picked.total || picked.goods) && (
           /* The chosen offer's breakdown, on the payment-summary lines the order pages use */
@@ -292,26 +274,10 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
         {what} from {first.store.storeName} · {total} for the goods.{' '}
         {pickup ? `You collect from the seller in ${pickupPlace} once they mark it ready; there is no delivery charge.` : 'Carriers quote the delivery next; you pay only after choosing one.'}
       </p>
-      {/* How the goods reach the buyer: a carrier, or the buyer collects from the seller's pickup address. */}
-      <div role="radiogroup" aria-label="How you get it" className="flex gap-[8px] max-md:flex-col">
-        {(
-          [
-            ['delivery', 'Deliver to me', 'A carrier collects from the seller and brings it.'],
-            ['pickup', 'I will collect it', `From the seller in ${pickupPlace}.`],
-          ] as const
-        ).map(([key, label, hint]) => (
-          <label key={key} className={`flex flex-1 cursor-pointer items-start gap-[12px] rounded-[16px] border px-[16px] py-[12px] ${method === key ? 'border-[#007c53] bg-[#f2f8f6]' : 'border-[#e4dede]'}`}>
-            <input type="radio" name="method" value={key} checked={method === key} onChange={() => setMethod(key)} className="mt-[4px] accent-[#007c53]" />
-            <span className="flex flex-col gap-[2px] min-w-0">
-              <span className="text-[#101604] text-[14px] leading-[20px]" style={jakarta(600)}>
-                {label}
-              </span>
-              <span className="text-[#807e7e] text-[12px] leading-[16px]" style={jakarta(400)}>
-                {hint}
-              </span>
-            </span>
-          </label>
-        ))}
+      {/* How the goods reach the buyer (880:50442 rows): a carrier, quoted after the address, or the buyer collects for free. */}
+      <div role="radiogroup" aria-label="How you get it" className="flex flex-col gap-[8px]">
+        <OptionRow name="method" value="delivery" checked={!pickup} onChange={() => setMethod('delivery')} icon={truckIcon} title="Delivery" subtitle="A carrier brings it to your door" price="Quoted next" />
+        <OptionRow name="method" value="pickup" checked={pickup} onChange={() => setMethod('pickup')} icon={pickupIcon} title="Pickup" subtitle={`Pick your package yourself in ${pickupPlace}`} price="Free" />
       </div>
       {pickup ? (
         <Field label="Note for the seller" htmlFor="co-note-pickup" hint="Optional">
