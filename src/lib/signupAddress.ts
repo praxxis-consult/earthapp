@@ -9,11 +9,15 @@ const KEY = 'earth.signup-address'
 export interface SignupAddress {
   street: string
   landmark: string
+  /** Filled when the address came from the map pin; '' when typed. */
+  area?: string
+  region?: string
+  postalCode?: string
 }
 
 export function rememberSignupAddress(a: SignupAddress) {
   try {
-    if (a.street.trim() || a.landmark.trim()) sessionStorage.setItem(KEY, JSON.stringify({ street: a.street.trim(), landmark: a.landmark.trim() }))
+    if (a.street.trim() || a.landmark.trim()) sessionStorage.setItem(KEY, JSON.stringify({ street: a.street.trim(), landmark: a.landmark.trim(), area: a.area?.trim() ?? '', region: a.region ?? '', postalCode: a.postalCode?.trim() ?? '' }))
   } catch {
     /* storage blocked */
   }
@@ -25,12 +29,13 @@ export function signupAddress(): SignupAddress {
     const raw = sessionStorage.getItem(KEY)
     if (raw) {
       const a = JSON.parse(raw) as Partial<SignupAddress>
-      return { street: typeof a.street === 'string' ? a.street : '', landmark: typeof a.landmark === 'string' ? a.landmark : '' }
+      const str = (v: unknown) => (typeof v === 'string' ? v : '')
+      return { street: str(a.street), landmark: str(a.landmark), area: str(a.area), region: str(a.region), postalCode: str(a.postalCode) }
     }
   } catch {
     /* storage blocked or malformed */
   }
-  return { street: '', landmark: '' }
+  return { street: '', landmark: '', area: '', region: '', postalCode: '' }
 }
 
 export function forgetSignupAddress() {

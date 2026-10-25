@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../../components/layout/AuthLayout'
 import { BackButton } from '../../components/layout/OnboardingHeader'
@@ -13,7 +13,10 @@ import flagUs from '../../assets/icons/signup-flag-us.svg'
 import checkboxOn from '../../assets/icons/checkbox-on.svg'
 import checkboxOff from '../../assets/icons/checkbox-off.svg'
 import gpsIcon from '../../assets/icons/su-gps.svg'
-import { rememberSignupAddress } from '../../lib/signupAddress'
+import { rememberSignupAddress, type SignupAddress } from '../../lib/signupAddress'
+import type { GeoAddress } from '../../lib/geocode'
+
+const MapPickerDialog = lazy(() => import('../../components/ui/MapPickerDialog'))
 import { describeError, toApiError, type AccountType } from '../../services/earthApi'
 import { REFERRAL_KEY } from './ReferralLanding'
 import { useCreateAccountMutation } from '../../feature/authentication/authApiSlice'
@@ -119,6 +122,15 @@ export default function Signup() {
   // Address and landmark (create acc 805:7443, 828:27004/27013): the API's account has no fields for them yet, so they are kept for the first address the buyer needs.
   const [street, setStreet] = useState('')
   const [landmark, setLandmark] = useState('')
+  // What the map pin resolved beyond the street line (area, state, postal code), kept with the sign-up address.
+  const [pinned, setPinned] = useState<Pick<SignupAddress, 'area' | 'region' | 'postalCode'>>({})
+  const [mapOpen, setMapOpen] = useState(false)
+  function fromMap(a: GeoAddress) {
+    setMapOpen(false)
+    setStreet([a.street, a.area, a.region].filter(Boolean).join(', '))
+    setPinned({ area: a.area, region: a.region, postalCode: a.postalCode })
+    if (a.landmark && !landmark) setLandmark(a.landmark)
+  }
   const [dial, setDial] = useState(DIAL_CODES[0])
   const [agreed, setAgreed] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
@@ -162,7 +174,7 @@ export default function Signup() {
         // Who sent them: the handle the /r/ link kept, if any.
         ...(referralHandle ? { referralHandle } : {}),
       }).unwrap()
-      rememberSignupAddress({ street, landmark })
+      rememberSignupAddress({ street: pinned.region ? street.split(',')[0] : street, landmark, ...pinned })
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase(), accountType: ACCOUNT_TYPE_API[accountType] } })
     } catch (err) {
       const e = toApiError(err)
@@ -281,7 +293,7 @@ export default function Signup() {
             <FieldError id="phone-error" message={errors.phoneNumber} />
           </div>
 
-          {/* Address (828:27004): 14/24 label, the field with "Select from map" at its right (gps 20 + 12/24 green, 8 apart). No map or geocoder on the API yet, so the link is inert and says so. */}
+          {/* Address (828:27004): 14/24 label, the field with "Select from map" at its right (gps 20 + 12/24 green, 8 apart); the map resolves a pin to street, area, state and postal code. */}
           <div className="flex flex-col gap-[8px] items-start w-full">
             <label htmlFor="signup-street" className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full" style={jakarta(500)}>
               Address
@@ -298,12 +310,12 @@ export default function Signup() {
                 style={jakarta(400)}
                 autoComplete="street-address"
               />
-              <span className="flex shrink-0 items-center gap-[8px] opacity-60" title="Picking from a map is not available yet; type the address" aria-disabled="true">
+              <button type="button" onClick={() => setMapOpen(true)} className="flex shrink-0 items-center gap-[8px] max-md:min-h-[44px]" aria-label="Select from map">
                 <img src={gpsIcon} alt="" className="size-[20px]" />
                 <span className="text-[#007c53] text-[12px] leading-[24px] whitespace-nowrap max-sm:hidden" style={jakarta(500)}>
                   Select from map
                 </span>
-              </span>
+              </button>
             </div>
           </div>
 
@@ -383,6 +395,11 @@ export default function Signup() {
       </form>
 
       <SignInDialogs open={loginOpen} initialEmail={email} onClose={() => setLoginOpen(false)} />
+      {mapOpen && (
+        <Suspense fallback={null}>
+          <MapPickerDialog onPick={fromMap} onClose={() => setMapOpen(false)} />
+        </Suspense>
+      )}
     </AuthLayout>
   )
 }
