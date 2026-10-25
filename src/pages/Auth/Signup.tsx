@@ -12,7 +12,10 @@ import chevronDown16 from '../../assets/icons/signup-chevron-down-16.svg'
 import flagUs from '../../assets/icons/signup-flag-us.svg'
 import checkboxOn from '../../assets/icons/checkbox-on.svg'
 import checkboxOff from '../../assets/icons/checkbox-off.svg'
+import gpsIcon from '../../assets/icons/su-gps.svg'
+import { rememberSignupAddress } from '../../lib/signupAddress'
 import { describeError, toApiError, type AccountType } from '../../services/earthApi'
+import { REFERRAL_KEY } from './ReferralLanding'
 import { useCreateAccountMutation } from '../../feature/authentication/authApiSlice'
 import { jakarta } from '../../utils/styles'
 
@@ -102,7 +105,7 @@ function TextField({
 }
 
 /**
- * Figma "create acc" (393:2975): Back + "Get Started" at 120/120, the form 40px below (account
+ * Figma "create acc" (805:7443, formerly 393:2975): Back + "Get Started" at 120/120, the form 40px below (account
  * type, first and last name side by side, email, phone with a dial-code picker, the terms
  * checkbox), then "Create Account" 64px below and "Have an account already? Log in".
  */
@@ -113,6 +116,9 @@ export default function Signup() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  // Address and landmark (create acc 805:7443, 828:27004/27013): the API's account has no fields for them yet, so they are kept for the first address the buyer needs.
+  const [street, setStreet] = useState('')
+  const [landmark, setLandmark] = useState('')
   const [dial, setDial] = useState(DIAL_CODES[0])
   const [agreed, setAgreed] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
@@ -121,6 +127,13 @@ export default function Signup() {
   const [formError, setFormError] = useState('')
   const { open: dialOpen, setOpen: setDialOpen, ref: dialRef } = useMenu()
   const [submitAccount] = useCreateAccountMutation()
+  const referralHandle = (() => {
+    try {
+      return sessionStorage.getItem(REFERRAL_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })()
 
   async function createAccount(e: FormEvent) {
     e.preventDefault()
@@ -146,7 +159,10 @@ export default function Signup() {
         email: email.trim().toLowerCase(),
         phoneNumber: digits ? `${dial.code}${digits.replace(/^0+/, '')}` : null,
         termsConsent: true,
+        // Who sent them: the handle the /r/ link kept, if any.
+        ...(referralHandle ? { referralHandle } : {}),
       }).unwrap()
+      rememberSignupAddress({ street, landmark })
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase(), accountType: ACCOUNT_TYPE_API[accountType] } })
     } catch (err) {
       const e = toApiError(err)
@@ -263,6 +279,54 @@ export default function Signup() {
               />
             </div>
             <FieldError id="phone-error" message={errors.phoneNumber} />
+          </div>
+
+          {/* Address (828:27004): 14/24 label, the field with "Select from map" at its right (gps 20 + 12/24 green, 8 apart). No map or geocoder on the API yet, so the link is inert and says so. */}
+          <div className="flex flex-col gap-[8px] items-start w-full">
+            <label htmlFor="signup-street" className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full" style={jakarta(500)}>
+              Address
+            </label>
+            <div className="bg-[#f7f7f7] flex gap-[8px] h-[48px] items-center px-[16px] py-[8px] rounded-[30px] w-full">
+              <input
+                id="signup-street"
+                type="text"
+                value={street}
+                maxLength={240}
+                onChange={(e) => setStreet(e.target.value)}
+                placeholder="Enter address"
+                className="flex-1 min-w-0 bg-transparent text-[14px] leading-[24px] text-[#101604] outline-none placeholder:text-[#807e7e]"
+                style={jakarta(400)}
+                autoComplete="street-address"
+              />
+              <span className="flex shrink-0 items-center gap-[8px] opacity-60" title="Picking from a map is not available yet; type the address" aria-disabled="true">
+                <img src={gpsIcon} alt="" className="size-[20px]" />
+                <span className="text-[#007c53] text-[12px] leading-[24px] whitespace-nowrap max-sm:hidden" style={jakarta(500)}>
+                  Select from map
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Landmark (828:27013): 14/24 label, the field, then the 14/17.6 hint 16 below */}
+          <div className="flex flex-col gap-[16px] items-start w-full">
+            <div className="flex flex-col gap-[8px] items-start w-full">
+              <label htmlFor="signup-landmark" className="text-[#101604] text-[14px] leading-[24px] tracking-[-0.28px] w-full" style={jakarta(500)}>
+                Landmark
+              </label>
+              <input
+                id="signup-landmark"
+                type="text"
+                value={landmark}
+                maxLength={240}
+                onChange={(e) => setLandmark(e.target.value)}
+                placeholder="e.g. Opp. Mobil filling station"
+                className="bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] py-[8px] text-[14px] leading-[24px] text-[#101604] outline-none placeholder:text-[#807e7e]"
+                style={jakarta(400)}
+              />
+            </div>
+            <p className="text-[#807e7e] text-[14px] leading-[17.6px]" style={jakarta(400)}>
+              Something a delivery agent can ask a passer-by.
+            </p>
           </div>
 
           {/* Terms (394:3189): 20px checkbox, 8px gap, 14/20 copy */}

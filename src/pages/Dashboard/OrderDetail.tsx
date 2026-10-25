@@ -32,7 +32,7 @@ import {
   type OrderSummary,
 } from '../../feature/orders/ordersApiSlice'
 import { orderFromOverview } from '../../data/overview'
-import { isPaid, paymentExpired, sellerMoney, stepTime, trackingView } from '../../data/orderFlow'
+import { isPaid, isSelfPickup, paymentExpired, sellerMoney, stepTime, trackingView } from '../../data/orderFlow'
 import { findOrder, initials, naira, orderTotal, type Order, type OrderStatus, shortOrderId } from '../../data/orders'
 import { describeError, toApiError } from '../../services/earthApi'
 import { jakarta, CTA_BG, CTA_TEXT_BG } from '../../utils/styles'
@@ -57,6 +57,9 @@ const REACHED: Record<OrderStatus, number> = {
   cancelled: 0,
   declined: 0,
 }
+/** A self-pickup order (25 October) has no carrier: after READY the buyer confirms the collection, which completes it. */
+const PICKUP_STEPS: { label: string; words: string[] }[] = [STEPS[0], STEPS[1], STEPS[2], { label: 'Ready to collect', words: ['ready'] }, { label: 'Collected by buyer', words: ['complet', 'pickup'] }]
+const PICKUP_REACHED: Record<OrderStatus, number> = { new: 2, processing: 3, ready: 4, dispatched: 4, completed: 5, cancelled: 0, declined: 0 }
 
 const when = (iso: string | null) =>
   iso ? `${new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : 'Done'
@@ -193,8 +196,10 @@ export default function OrderDetail() {
   const status = o.status
   const buyer = firstName(o.buyer.name)
   const paid = summary ? isPaid(summary) : true
+  const pickup = summary ? isSelfPickup(summary) : false
+  const steps = pickup ? PICKUP_STEPS : STEPS
   const expired = summary ? paymentExpired(summary) : false
-  const reached = paid ? REACHED[status] : 1
+  const reached = paid ? (pickup ? PICKUP_REACHED : REACHED)[status] : 1
   const closed = status === 'cancelled' || status === 'declined'
   const placed = new Date(o.placedAt)
   const tracking = trackingView(summary?.fulfillmentDelivery)
@@ -240,11 +245,18 @@ export default function OrderDetail() {
         ? { title: 'This order was never paid', body: 'The buyer’s fifteen-minute payment window closed. Nothing to do; the stock is released.', art: [bagCrossLg, bagCrossSm] }
         : { title: 'Waiting for the buyer to pay', body: 'The buyer has fifteen minutes to pay. There is nothing to do until the payment is verified; do not hand out goods for an unpaid order.' },
     processing: {
-      title: 'Pack the order and mark it ready',
-      body: 'Marking it ready books the carrier to collect from your pickup address. Label the package with the order ID and take a photo of it.',
+      title: pickup ? 'Pack the order and mark it ready to collect' : 'Pack the order and mark it ready',
+      body: pickup
+        ? `${buyer} collects this order from your pickup address: marking it ready tells them to come. Label the package with the order ID and take a photo of it.`
+        : 'Marking it ready books the carrier to collect from your pickup address. Label the package with the order ID and take a photo of it.',
       actions: { label: 'Mark as ready', icon: truckIcon, busy, onClick: () => setDialog('evidence') },
     },
-    ready: {
+    ready: pickup
+      ? {
+          title: `Waiting for ${buyer} to collect`,
+          body: 'The buyer has been told the order is ready at your pickup address. Hand it over only to them; the order completes when they confirm the collection here.',
+        }
+      : {
       title: tracking ? 'The carrier is booked' : summary?.delivery?.carrier ? `Booking ${summary.delivery.carrier}` : 'Booking the carrier',
       body: tracking
         ? `${tracking.courier || 'The carrier'} collects from your pickup address${tracking.number ? ` (tracking ${tracking.number})` : ''}. Mark the order dispatched once the carrier has collected the package.`
@@ -258,7 +270,7 @@ export default function OrderDetail() {
       actions: { label: 'Mark as completed', icon: checksIcon, busy, onClick: () => void run(complete) },
     },
     completed: {
-      title: 'Order delivered successfully',
+      title: pickup ? 'Order collected by the buyer' : 'Order delivered successfully',
       body: `${buyer} has received the package. Your share was split to your bank at payment; it lands on Paystack’s settlement schedule.`,
       art: [bagHappyLg, bagHappySm],
     },
@@ -392,10 +404,10 @@ export default function OrderDetail() {
           <div className="relative bg-white rounded-[20px] h-[155px] px-[24px] pt-[24px] max-md:h-auto max-md:px-[16px] max-md:py-[16px]">
             {/* The rule behind the badges: 49px in from the list's edges, through the 32px badges' centres; below md the list is a column and the rule goes. */}
             <ol className="relative flex items-start justify-between before:absolute before:left-[49px] before:right-[50px] before:top-[16px] before:h-[2px] before:rounded-full before:bg-[rgba(0,124,83,0.1)] before:content-[''] max-md:flex-col max-md:gap-[16px] max-md:before:hidden">
-              {STEPS.map(({ label, words }, i) => {
+              {steps.map(({ label, words }, i) => {
                 const done = i < reached
                 const next = i === reached
-                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : i === 5 ? (stepTime(events, ...words) ?? (summary?.fulfillmentDelivery?.status === 'DELIVERED' ? (summary?.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
+                const at = i === 0 ? o.placedAt : i === 1 ? (summary?.paidAt ?? null) : !pickup && i === 5 ? (stepTime(events, ...words) ?? (summary?.fulfillmentDelivery?.status === 'DELIVERED' ? (summary?.fulfillmentDelivery.checkedAt ?? null) : null)) : stepTime(events, ...words)
                 return (
                   <li key={label} className="relative flex w-[87px] flex-col items-center gap-[16px] max-md:w-full max-md:flex-row max-md:gap-[12px]">
                     <img src={done ? stepDoneIcon : stepTodoIcon} alt={done ? 'Done' : next ? 'Next' : 'Not yet'} className="size-[32px] shrink-0" />

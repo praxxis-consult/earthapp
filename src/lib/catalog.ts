@@ -11,6 +11,15 @@ export interface PublicStore {
   liveAt: string
   /** UNVERIFIED until Earth checks the seller's identity. */
   verificationStatus?: string
+  /** Statistics (25 October): projections are asynchronous, so a null or a pending status is "not known yet", never zero. Counts are decimal strings. */
+  completedOrders?: string | null
+  typicalReplyTimeSeconds?: number | null
+  replyTimeSampleCount?: string | null
+  replyTimeStatus?: 'AVAILABLE' | 'PENDING' | 'INSUFFICIENT_DATA' | string | null
+  statisticsStatus?: 'READY' | 'PENDING' | string | null
+  statisticsAsOf?: string | null
+  ratingAverage?: string | number | null
+  ratingCount?: string | null
 }
 
 /** What the marketplace cards, product page and order page render. */

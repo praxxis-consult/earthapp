@@ -71,3 +71,40 @@ export function fullNameProblem(first: string, last: string): string | null {
   if (!/[a-z]{2,}/i.test(last.trim())) return 'Enter the last name; the carrier wants the full name.'
   return null
 }
+
+/** Every check the carriers' rules impose on a delivery address (and the pickup day when one is asked), as one line per field. */
+export function addressProblems(a: DeliveryAddressLike, pickupDate?: string, now = Date.now()): Record<string, string> {
+  const problems: Record<string, string> = {}
+  const nameIssue = fullNameProblem(a.firstName, a.lastName)
+  if (nameIssue) problems[/first/.test(nameIssue) ? 'firstName' : 'lastName'] = nameIssue
+  const phoneIssue = phoneProblem(a.phone)
+  if (phoneIssue) problems.phone = phoneIssue
+  if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(a.email.trim())) problems.email = 'Enter an email for the delivery updates.'
+  if (!a.region) problems.region = 'Choose the state the goods go to.'
+  const areaIssue = areaProblem(a.area)
+  if (areaIssue) problems.area = areaIssue
+  const streetIssue = streetProblem(a.street)
+  if (streetIssue) problems.street = streetIssue
+  const postalIssue = postalCodeProblem(a.postalCode)
+  if (postalIssue) problems.postalCode = postalIssue
+  if (pickupDate !== undefined && (!pickupDate || pickupDate < earliestPickupDay(now) || pickupDate > latestPickupDay(now)))
+    problems.pickupDate = lagosHour(now) >= CARRIER_CUTOFF_HOUR ? 'Carriers take requests until 6 PM Lagos time, so the earliest pickup is tomorrow; pick a day up to a week ahead.' : 'Pick a day from today to a week ahead.'
+  return problems
+}
+
+/** The address as the carriers take it: trimmed, the phone in +234 form, a landmark where none was given. */
+export function carrierAddress<T extends DeliveryAddressLike>(a: T): T {
+  return { ...a, area: a.area.trim(), street: a.street.trim(), landmark: a.landmark.trim() || 'Not provided', postalCode: a.postalCode.trim(), firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone: nigerianPhone(a.phone) ?? a.phone, email: a.email.trim() }
+}
+
+interface DeliveryAddressLike {
+  region: string
+  area: string
+  street: string
+  landmark: string
+  postalCode: string
+  firstName: string
+  lastName: string
+  phone: string
+  email: string
+}

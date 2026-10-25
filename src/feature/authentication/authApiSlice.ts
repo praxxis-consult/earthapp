@@ -10,9 +10,11 @@ export interface CreateAccountBody {
   /** Optional on the API and in the design; null when the field is left empty. */
   phoneNumber: string | null
   termsConsent: true
+  /** The store handle the visitor arrived with (`/r/<handle>`), counted on that store's referrals. */
+  referralHandle?: string
 }
 
-/** Accounts and one-time codes. Confirmation does not sign in; LOGIN does and sets the refresh cookie. */
+/** Accounts and one-time codes. A first confirmation signs in, as LOGIN does; both set the refresh cookie. */
 export const authApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     createAccount: builder.mutation<{ status: 'accepted' }, CreateAccountBody>({
@@ -24,8 +26,17 @@ export const authApiSlice = apiSlice.injectEndpoints({
     resendOtp: builder.mutation<{ status: 'accepted' }, { email: string; intent: OtpIntent }>({
       query: (body) => ({ url: '/auth/otp/resend', method: 'POST', body }),
     }),
-    confirmAccount: builder.mutation<{ status: 'confirmed' }, { email: string; code: string }>({
+    /** The first successful confirmation signs the account in (25 October: credentials and the refresh cookie); a replay answers `{ status: 'confirmed' }` only. */
+    confirmAccount: builder.mutation<Partial<Credentials> & { status?: 'confirmed'; tokenType?: 'Bearer' }, { email: string; code: string }>({
       query: ({ email, code }) => ({ url: '/auth/otp/verify', method: 'POST', body: { email, intent: 'ACCOUNT_CONFIRMATION', code } }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          if (data.accessToken && data.expiresAt) dispatch(setCredentials({ accessToken: data.accessToken, expiresAt: data.expiresAt }))
+        } catch {
+          /* the caller reports the failure */
+        }
+      },
     }),
     login: builder.mutation<Credentials & { tokenType: 'Bearer' }, { email: string; code: string }>({
       query: ({ email, code }) => ({ url: '/auth/otp/verify', method: 'POST', body: { email, intent: 'LOGIN', code } }),

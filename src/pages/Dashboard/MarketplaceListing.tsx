@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import ImageViewer from '../../components/ui/ImageViewer'
-import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import CheckoutDialog from '../../components/ui/CheckoutDialog'
 import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import Toast from '../../components/ui/Toast'
 import { ReviewsPanel, ShippingPanel } from '../../components/marketplace/ListingPanels'
@@ -13,7 +13,8 @@ import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useGetReviewsQuery, useRecordViewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { initials } from '../../data/orders'
-import { useCart } from '../../lib/cart'
+import { useCart } from '../../feature/cart/useCart'
+import { storeFacts } from '../../lib/storeStats'
 import { galleryView } from '../../lib/gallery'
 import { soldAsLabel } from '../../lib/productView'
 import { useSaved } from '../../lib/saved'
@@ -51,7 +52,7 @@ export default function MarketplaceListing() {
   const { account } = useAuth()
   const { store: ownStore } = useStore()
   const saved = useSaved(account?.id)
-  const cart = useCart(account?.id)
+  const cart = useCart()
   const [startChat, { isLoading: openingChat }] = useStartChatMutation()
   const product = useGetListingQuery(id ?? '', { skip: !id }).currentData
   const reviewsQuery = useGetReviewsQuery(id ?? '', { skip: !id })
@@ -66,7 +67,7 @@ export default function MarketplaceListing() {
   const [qty, setQty] = useState<{ id: string; qty: number } | null>(null)
   const [front, setFront] = useState<{ id: string; at: number } | null>(null)
   const [viewing, setViewing] = useState<number | null>(null)
-  // "Place order" on a marketplace card lands here with ?order=1 and opens the order review at once.
+  // "Place order" on a marketplace card lands here with ?order=1 and opens the delivery choice straight away.
   const [ordering, setOrdering] = useState(() => params.get('order') === '1')
   const [actionError, setActionError] = useState('')
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
@@ -140,9 +141,14 @@ export default function MarketplaceListing() {
       setActionError(describeError(e))
     }
   }
-  function addToCart() {
-    const now = cart.add(product!, quantity)
-    setToast({ title: inCart ? 'Cart updated' : 'Added to cart', body: `${plural(now, product!.unit)} of ${product!.title} from ${product!.store.storeName}. Check out from Cart when you are ready.` })
+  async function addToCart() {
+    setActionError('')
+    try {
+      const now = await cart.add(product!, quantity)
+      setToast({ title: inCart ? 'Cart updated' : 'Added to cart', body: `${plural(now, product!.unit)} of ${product!.title} from ${product!.store.storeName}. Check out from Cart when you are ready.` })
+    } catch (e) {
+      setActionError(describeError(e))
+    }
   }
   function closeOrder() {
     setOrdering(false)
@@ -417,7 +423,7 @@ export default function MarketplaceListing() {
                     </span>
                   </div>
                   <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                    {product.store.verificationStatus === 'VERIFIED' ? 'Verified seller' : 'Seller on Earth'} · Member since {new Date(product.store.liveAt).getFullYear()} · {product.location}
+                    {[product.store.verificationStatus === 'VERIFIED' ? 'Verified seller' : 'Seller on Earth', `Member since ${new Date(product.store.liveAt).getFullYear()}`, product.location, ...storeFacts(product.store)].join(' · ')}
                   </p>
                 </div>
               </div>
@@ -428,7 +434,7 @@ export default function MarketplaceListing() {
         </div>
       </div>
 
-      {ordering && !mine && <PlaceOrderModal listing={product} quantity={quantity} onClose={closeOrder} />}
+      {ordering && !mine && <CheckoutDialog listing={product} quantity={quantity} onClose={closeOrder} />}
       {viewing !== null && <ImageViewer images={product.images} start={viewing} title={product.title} onClose={() => setViewing(null)} />}
       {toast && <Toast title={toast.title} body={toast.body} onDone={() => setToast(null)} />}
     </DashboardLayout>

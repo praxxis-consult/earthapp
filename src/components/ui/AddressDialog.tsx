@@ -5,6 +5,7 @@ import type { DeliveryAddress } from '../../feature/delivery/deliveryApiSlice'
 import { regionsOf } from '../../data/locations'
 import { areaProblem, fullNameProblem, nigerianPhone, phoneProblem, postalCodeProblem, streetProblem } from '../../lib/address'
 import type { SavedAddress } from '../../lib/addresses'
+import { signupAddress } from '../../lib/signupAddress'
 import { jakarta } from '../../utils/styles'
 
 interface AddressDialogProps {
@@ -26,7 +27,8 @@ export default function AddressDialog({ initial, firstOne, onClose, onSaved }: A
   const [address, setAddress] = useState<DeliveryAddress>(
     initial
       ? { country: 'NG', region: initial.region, area: initial.area, street: initial.street, landmark: initial.landmark, postalCode: initial.postalCode, firstName: initial.firstName, lastName: initial.lastName, phone: initial.phone, email: initial.email }
-      : { country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
+      : // A new address starts from what the buyer typed at sign-up, when anything.
+        { country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
   )
   const [makeDefault, setMakeDefault] = useState(initial ? initial.isDefault : firstOne)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})

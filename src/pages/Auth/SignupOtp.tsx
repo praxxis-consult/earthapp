@@ -10,12 +10,14 @@ import OtpModal from '../../components/ui/OtpModal'
 import otpBg from '../../assets/images/signup-otp-bg.png'
 import { describeError, type AccountType } from '../../services/earthApi'
 import { useConfirmAccountMutation, useRequestOtpMutation, useResendOtpMutation } from '../../feature/authentication/authApiSlice'
+import { useAuth } from '../../feature/authentication/useAuth'
 import { jakarta } from '../../utils/styles'
 
 /**
  * Figma "create acc auth" (394:3195). Confirms a new account with the ACCOUNT_CONFIRMATION code.
- * The API does not sign the person in on confirmation, so the modal's button requests a LOGIN
- * code and shows the sign-in code step before onboarding (a seller) or the dashboard (a buyer) opens.
+ * Since 25 October the first confirmation signs the person in, so the modal's button goes straight
+ * to onboarding (a seller) or the dashboard (a buyer); a confirmation that answered without
+ * credentials (a replay) still falls back to the LOGIN code step.
  */
 export default function SignupOtp() {
   const navigate = useNavigate()
@@ -36,6 +38,8 @@ export default function SignupOtp() {
   const [resendOtp] = useResendOtpMutation()
   const [confirmAccount] = useConfirmAccountMutation()
   const [requestOtp] = useRequestOtpMutation()
+  const { status: authStatus, reload } = useAuth()
+  const signedIn = authStatus === 'authenticated'
   const canResend = seconds === 0 && !busy
 
   if (!email) return <Navigate to="/signup" replace />
@@ -65,7 +69,9 @@ export default function SignupOtp() {
     setBusy(true)
     setError('')
     try {
-      await confirmAccount({ email, code: otp }).unwrap()
+      const res = await confirmAccount({ email, code: otp }).unwrap()
+      // A first confirmation answers credentials: the account is read so the session stands before the modal's button is pressed.
+      if (res.accessToken) await reload().catch(() => {})
       setShowAccountCreated(true)
     } catch (err) {
       setError(describeError(err))
@@ -77,6 +83,7 @@ export default function SignupOtp() {
 
   async function setupStore() {
     setShowAccountCreated(false)
+    if (signedIn) return navigate(seller ? '/onboarding/store' : '/dashboard', { replace: true })
     setBusy(true)
     try {
       await requestOtp({ email, intent: 'LOGIN' }).unwrap()

@@ -25,12 +25,34 @@ const COUNT_POLL_MS = 30_000
  * What a notification reads as, and where it leads, from its category and the thing it is
  * about. A buyer's order opens on their purchases page; a seller's on the orders page.
  */
+/** The order and payment kinds the API sends (25 October), in the words of whoever is reading: [seller title, seller body, buyer title, buyer body]. */
+function orderWords(kind: string, seller: boolean): { title: string; body: string } {
+  const words: Record<string, [string, string, string, string]> = {
+    'order.created': ['New order', 'A buyer has placed an order with you; it shows once their payment is verified.', 'Order placed', 'Your order is in. Pay within fifteen minutes to keep it.'],
+    'payment.verified': ['Payment confirmed', 'The buyer has paid. Accept the order to start packing.', 'Payment confirmed', 'Your payment is verified; the seller has been told.'],
+    'order.accept': ['Order accepted', 'You accepted this order.', 'Seller accepted', 'The seller accepted your order and is preparing it.'],
+    'order.decline': ['Order declined', 'You declined this order; the buyer is refunded.', 'Order declined', 'The seller declined your order. Your payment is refunded.'],
+    'order.ready': ['Marked ready', 'The order is packed and ready.', 'Ready', 'Your order is packed: the carrier collects it next, or it is ready for you to collect.'],
+    'order.dispatch': ['Dispatched', 'The carrier has collected the package.', 'On its way', 'The carrier has collected your order.'],
+    'order.complete': ['Order completed', 'The buyer has received the order.', 'Delivered', 'Your order is complete. You can review the goods.'],
+    'order.cancel': ['Cancellation requested', 'The buyer asked to cancel this order.', 'Cancellation requested', 'Your cancellation is being processed.'],
+    'order.cancel.confirmed': ['Order cancelled', 'This order is cancelled.', 'Order cancelled', 'Your order is cancelled and the refund follows.'],
+    'order.expired': ['Order expired', 'The buyer did not pay in time; the stock is released.', 'Order expired', 'The payment window closed before you paid. Nothing was charged.'],
+    'order.claim.created': ['Claim opened', 'The buyer opened a claim on this order.', 'Claim opened', 'Your claim is with Earth.'],
+    'order.claim.resolved': ['Claim resolved', 'A claim on this order was resolved.', 'Claim resolved', 'Your claim has been resolved.'],
+    'payment.refunded': ['Refund sent', 'The buyer has been refunded.', 'Refund sent', 'Your refund has been sent.'],
+  }
+  const w = words[kind]
+  if (!w) return { title: 'Order update', body: 'One of your orders moved on.' }
+  return seller ? { title: w[0], body: w[1] } : { title: w[2], body: w[3] }
+}
+
 function describe(n: Notification, seller: boolean): { title: string; body: string; to: string | null } {
   switch (n.category) {
     case 'chatMessages':
       return { title: 'New message', body: `${seller ? 'A buyer' : 'A seller'} wrote to you. Open the chat to reply.`, to: `/dashboard/messages?chat=${n.resourceId}` }
     case 'orderUpdates':
-      return { title: 'Order update', body: 'One of your orders moved on.', to: `${seller ? '/dashboard/orders' : '/dashboard/purchases'}/${n.resourceId}` }
+      return { ...orderWords(n.kind, seller), to: `${seller ? '/dashboard/orders' : '/dashboard/purchases'}/${n.resourceId}` }
     case 'security':
       return { title: 'Security notice', body: 'Something changed on your account.', to: '/dashboard/settings' }
     default:

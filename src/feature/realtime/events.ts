@@ -54,6 +54,13 @@ export interface TypingEvent {
   typing: boolean
   timestamp: string
 }
+/** `chat.presence` (the command's answer) and `chat.presence.updated` (pushed to subscribers): who in a thread is online now. Ephemeral; asked again after a reconnect. */
+export interface PresenceEvent {
+  schemaVersion: 1
+  resourceId: string
+  participants: { accountId: string; online: boolean }[]
+  timestamp: string
+}
 /** `sync.required`: the client must refresh over HTTP and subscribe its open conversations again. */
 export interface SyncRequired {
   schemaVersion: 1

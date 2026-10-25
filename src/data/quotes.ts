@@ -8,6 +8,8 @@ export interface QuoteView {
   name: string
   /** What the buyer pays for the delivery: the carrier's charge plus Earth's delivery markup, as "₦4,095.96"; '' when unknown. */
   delivery: string
+  /** The same in naira, for adding offers across stores; undefined when unknown. */
+  deliveryNum: number | undefined
   /** Everything the buyer pays with this offer, goods included; '' when unknown. */
   total: string
   /** The goods alone, as the quote prices them; '' when unknown. */
@@ -48,12 +50,27 @@ export function quoteView(q: Quote, index: number): QuoteView {
     id: q.id,
     name: name && !/^\d+$/.test(name) ? name : `Carrier option ${index + 1}`,
     delivery: money(delivery),
+    deliveryNum: delivery === null ? undefined : delivery / 100,
     total: money(total),
     goods: money(goods),
     expiresAt: str(first(q, ['expiresAt', 'expiry', 'validUntil'])) || null,
     eta: str(first(q, ['deliveryEstimate', 'estimatedDelivery', 'deliveryEta', 'eta'])),
     acceptMinutes,
   }
+}
+
+/**
+ * A 409 `delivery/shipping-conflict` on a quote with the API's numbers (25 October): the basket's
+ * weight against the seller's parcel limit, in whole kilograms; null when the problem carries none.
+ */
+export function capacityMessage(problem: object, how: 'single' | 'cart' = 'single'): string | null {
+  const cap = (problem as { parcelCapacity?: { maxWeightGrams?: string; basketWeightGrams?: string } }).parcelCapacity
+  if (!cap?.maxWeightGrams) return null
+  const kg = (g: string | undefined) => Math.max(1, Math.round(Number(g ?? 0) / 1000))
+  const limit = `this seller ships up to ${kg(cap.maxWeightGrams)} kg in one order`
+  return how === 'cart'
+    ? `These lines weigh about ${kg(cap.basketWeightGrams)} kg and ${limit}. Order less from them, or collect instead.`
+    : `This order weighs about ${kg(cap.basketWeightGrams)} kg and ${limit}. Order fewer, collect it yourself, or message the seller about a larger package.`
 }
 
 /** Seconds left on an offer, from its own expiry or the walkthrough's two minutes from when it arrived. */

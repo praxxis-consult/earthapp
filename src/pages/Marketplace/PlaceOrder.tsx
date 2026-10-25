@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useGetListingQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { naira } from '../../lib/productView'
-import PlaceOrderModal from '../../components/ui/PlaceOrderModal'
+import CheckoutDialog from '../../components/ui/CheckoutDialog'
 import SignInDialogs from '../../components/ui/SignInDialogs'
 import arrowLeft from '../../assets/icons/po-arrow-left.svg'
 import arrowRight from '../../assets/icons/po-arrow-right.svg'
@@ -320,7 +320,7 @@ export default function PlaceOrder() {
         </div>
       </div>
 
-      {modalOpen && <PlaceOrderModal listing={product} quantity={qty} onClose={() => setWantsOrder(false)} />}
+      {modalOpen && <CheckoutDialog listing={product} quantity={qty} onClose={() => setWantsOrder(false)} />}
       <SignInDialogs open={signInOpen} onClose={() => setWantsOrder(false)} redirectTo={location.pathname} />
     </div>
   )

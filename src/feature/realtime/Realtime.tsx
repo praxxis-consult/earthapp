@@ -3,7 +3,7 @@ import { apiSlice, refreshOnce } from '../../app/api/apiSlice'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { store } from '../../app/store'
 import { selectAuth } from '../authentication/authSlice'
-import { DURABLE_EVENTS, MAX_SERVER_DISCONNECTS, SYNC_TAGS, SeenEvents, refusal, reopenDelayMs, tagsFor, type LiveEvent, type LiveTag, type SyncRequired, type TypingEvent } from './events'
+import { DURABLE_EVENTS, MAX_SERVER_DISCONNECTS, SYNC_TAGS, SeenEvents, refusal, reopenDelayMs, tagsFor, type LiveEvent, type LiveTag, type PresenceEvent, type SyncRequired, type TypingEvent } from './events'
 import { emitLive, openSocket, setSocketToken } from './realtimeClient'
 import { setLive } from './realtimeSlice'
 
@@ -96,6 +96,7 @@ export default function Realtime() {
       if (document.visibilityState === 'visible' && !socket.active) socket.connect()
     }
     const onTyping = (event: TypingEvent) => emitLive('chat.typing', event)
+    const onPresence = (event: PresenceEvent) => emitLive('chat.presence.updated', event)
     const durable = DURABLE_EVENTS.map((name) => {
       const handler = (event: LiveEvent, acknowledge?: () => void) => {
         acknowledge?.() // receipt only, within the service's 5 s; reading is reported separately
@@ -112,6 +113,7 @@ export default function Realtime() {
     socket.on('disconnect', onDisconnect)
     socket.on('sync.required', onSync)
     socket.on('chat.typing', onTyping)
+    socket.on('chat.presence.updated', onPresence)
     document.addEventListener('visibilitychange', onVisible)
     socket.connect()
 
@@ -125,6 +127,7 @@ export default function Realtime() {
       socket.off('disconnect', onDisconnect)
       socket.off('sync.required', onSync)
       socket.off('chat.typing', onTyping)
+      socket.off('chat.presence.updated', onPresence)
       for (const { name, handler } of durable) socket.off(name, handler)
       socket.disconnect()
       dispatch(setLive(false))
