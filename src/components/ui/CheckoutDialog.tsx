@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Field, Shell, inputClass } from './SettingsDialogs'
-import DeliveryAddressFields from './DeliveryAddressFields'
+import AddressStep from './AddressStep'
 import OptionRow from './OptionRow'
 import pickupIcon from '../../assets/icons/co-pickup.svg'
 import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useAddresses } from '../../lib/addresses'
+import { NEW_ADDRESS, resolveAddress, useAddresses } from '../../lib/addresses'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCreateOrderMutation } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
@@ -55,6 +55,7 @@ function useNow(): number {
  * follows the 648px form dialog (639:24245).
  */
 type Method = 'delivery' | 'pickup'
+type Step = 'method' | 'address'
 export default function CheckoutDialog({ listing, quantity, lines, onOrdered, onClose }: CheckoutDialogProps) {
   const { account } = useAuth()
   const goods: CheckoutLine[] = lines && lines.length ? lines : [{ listing: listing!, quantity: quantity ?? 1 }]
@@ -69,15 +70,15 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const payment = usePayment()
   const now = useNow()
   const [method, setMethod] = useState<Method>('delivery')
+  // First how it reaches the buyer, then (for delivery) where; the offers follow once quotes exist.
+  const [step, setStep] = useState<Step>('method')
   // One client id per dialog, so a retried self-pickup order is the same order, not a second one.
   const clientOrderId = useRef(crypto.randomUUID())
-  // The default delivery address saved under Account settings starts the form off; otherwise the account's own details do.
-  const { defaultAddress } = useAddresses()
-  const [address, setAddress] = useState<DeliveryAddress>(() =>
-    defaultAddress
-      ? { country: 'NG', region: defaultAddress.region, area: defaultAddress.area, street: defaultAddress.street, landmark: defaultAddress.landmark, postalCode: defaultAddress.postalCode, firstName: defaultAddress.firstName, lastName: defaultAddress.lastName, phone: defaultAddress.phone, email: defaultAddress.email }
-      : { country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
-  )
+  // The addresses saved under Account settings are offered to pick, the default one preselected; the typed form starts from the account's own details.
+  const { list: saved, defaultAddress } = useAddresses()
+  const [pickedAddress, setPickedAddress] = useState<string | null>(null)
+  const picked = pickedAddress ?? defaultAddress?.id ?? NEW_ADDRESS
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [error, setError] = useState('')
   // One line under a field, from the checks here or from the API's `errors[].path` (`address.postalCode`).
@@ -93,16 +94,21 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (method === 'pickup') return placePickup()
+    if (step === 'method') {
+      setError('')
+      return setStep('address')
+    }
     // The carrier resolves the address as typed and the API passes it through, so the carrier's rules are checked here.
-    const problems = addressProblems(address, pickupDate)
+    const chosenAddress = resolveAddress(saved, picked, address)
+    const problems = addressProblems(chosenAddress, pickupDate)
     setFieldErrors(problems)
-    if (Object.keys(problems).length) return setError('Check the highlighted details.')
+    if (Object.keys(problems).length) return setError(picked === NEW_ADDRESS ? 'Check the highlighted details.' : 'That saved address is missing something the carriers need; edit it under Account settings or type one here.')
     setError('')
     try {
       const res = await requestQuotes({
         storeId: first.store.id,
         items: goods.map((l) => ({ productId: l.listing.id, quantity: l.quantity })),
-        address: carrierAddress(address),
+        address: carrierAddress(chosenAddress),
         pickupDate,
       }).unwrap()
       const items = Array.isArray(res.items) ? res.items : []
@@ -128,7 +134,9 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
       setError(
         problem.status === 404
           ? 'This seller has not set up delivery yet, so no carrier can quote the order. Message them to arrange it.'
-          : problem.status === 503
+          : problem.status === 503 && problem.code === 'provider-account-unavailable'
+            ? 'Earth’s delivery provider account needs attention before carriers can quote (the provider refused the request). You can still collect from the seller, or try again later.'
+            : problem.status === 503
             ? 'The carriers are not answering right now. Try again in a moment.'
             : problem.status === 409 && problem.code === 'shipping-conflict'
               ? // The seller's delivery setup does not cover this basket: too heavy for their package (the API says by how much), their own goods, or a pickup that does not match.
@@ -268,23 +276,43 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   }
 
   const pickup = method === 'pickup'
+  if (step === 'address')
+    return (
+      <Shell title="Where should it go?" onClose={onClose} onSubmit={submit} busy={busy} cta="Get delivery quotes" busyLabel="Asking the carriers…" cancel>
+        <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
+          {saved.length ? 'Pick a saved address or type one.' : 'Where the carrier should bring it.'} The carriers quote the delivery next; you pay only after choosing one.
+        </p>
+        <AddressStep saved={saved} picked={picked} onPick={setPickedAddress} address={address} onChange={set} fieldErrors={fieldErrors} pickupDate={pickupDate} onPickupDate={setPickupDate} />
+        <button type="button" onClick={() => { setStep('method'); setError('') }} className="text-left text-[#007c53] text-[13px] leading-[20px]" style={jakarta(500)}>
+          Back
+        </button>
+        {error && (
+          <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>
+            {error}
+          </p>
+        )}
+      </Shell>
+    )
+
   return (
-    <Shell title={pickup ? 'Collect it yourself' : 'Where should it go?'} onClose={onClose} onSubmit={submit} busy={busy || placing} cta={pickup ? 'Place order and pay' : 'Get delivery quotes'} busyLabel={pickup ? 'Placing your order…' : 'Asking the carriers…'} cancel>
+    <Shell title="How do you want it?" onClose={onClose} onSubmit={submit} busy={placing} cta={pickup ? 'Place order and pay' : 'Continue'} busyLabel="Placing your order…" cancel>
       <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
-        {what} from {first.store.storeName} · {total} for the goods.{' '}
-        {pickup ? `You collect from the seller in ${pickupPlace} once they mark it ready; there is no delivery charge.` : 'Carriers quote the delivery next; you pay only after choosing one.'}
+        {what} from {first.store.storeName} · {total} for the goods.
       </p>
       {/* How the goods reach the buyer (880:50442 rows): a carrier, quoted after the address, or the buyer collects for free. */}
       <div role="radiogroup" aria-label="How you get it" className="flex flex-col gap-[8px]">
         <OptionRow name="method" value="delivery" checked={!pickup} onChange={() => setMethod('delivery')} icon={truckIcon} title="Delivery" subtitle="A carrier brings it to your door" price="Quoted next" />
         <OptionRow name="method" value="pickup" checked={pickup} onChange={() => setMethod('pickup')} icon={pickupIcon} title="Pickup" subtitle={`Pick your package yourself in ${pickupPlace}`} price="Free" />
       </div>
-      {pickup ? (
-        <Field label="Note for the seller" htmlFor="co-note-pickup" hint="Optional">
-          <textarea id="co-note-pickup" value={note} maxLength={500} rows={2} onChange={(e) => setNote(e.target.value)} className={`${inputClass} h-auto rounded-[20px] py-[12px]`} style={jakarta(400)} />
-        </Field>
-      ) : (
-        <DeliveryAddressFields address={address} onChange={set} fieldErrors={fieldErrors} pickupDate={pickupDate} onPickupDate={setPickupDate} />
+      {pickup && (
+        <>
+          <p className="text-[#807e7e] text-[13px] leading-[20px]" style={jakarta(400)}>
+            You collect from the seller in {pickupPlace} once they mark it ready; there is no delivery charge.
+          </p>
+          <Field label="Note for the seller" htmlFor="co-note-pickup" hint="Optional">
+            <textarea id="co-note-pickup" value={note} maxLength={500} rows={2} onChange={(e) => setNote(e.target.value)} className={`${inputClass} h-auto rounded-[20px] py-[12px]`} style={jakarta(400)} />
+          </Field>
+        </>
       )}
       {error && (
         <p role="alert" className="text-[#b13b3b] text-[13px] leading-[20px]" style={jakarta(400)}>

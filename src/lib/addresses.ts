@@ -8,6 +8,16 @@ export type SavedAddress = DeliveryAddress & { id: string; version: number; labe
 
 export const flatten = (a: ApiAddress): SavedAddress => ({ ...a.address, country: 'NG', id: a.id, version: a.version, label: a.label, isDefault: a.isDefault })
 
+/** The choice on the checkout's address step: a saved address by id, or a new one typed there. */
+export const NEW_ADDRESS = 'new'
+
+/** The address the carriers get: the saved one picked, or the typed one. */
+export function resolveAddress(saved: SavedAddress[], picked: string, typed: DeliveryAddress): DeliveryAddress {
+  const s = picked === NEW_ADDRESS ? undefined : saved.find((a) => a.id === picked)
+  if (!s) return typed
+  return { country: 'NG', region: s.region, area: s.area, street: s.street, landmark: s.landmark, postalCode: s.postalCode, firstName: s.firstName, lastName: s.lastName, phone: s.phone, email: s.email }
+}
+
 /** "7 Adebola Street, Surulere, Lagos" as the list shows it. */
 export const addressLine = (a: DeliveryAddress) => [a.street, a.area, a.region].filter(Boolean).join(', ')
 

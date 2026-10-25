@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Field, Shell, inputClass } from './SettingsDialogs'
-import DeliveryAddressFields from './DeliveryAddressFields'
+import AddressStep from './AddressStep'
 import OptionRow from './OptionRow'
 import pickupIcon from '../../assets/icons/co-pickup.svg'
 import truckIcon from '../../assets/icons/od-truck-fast.svg'
 import type { CheckoutLine } from './CheckoutDialog'
 import { useAuth } from '../../feature/authentication/useAuth'
-import { useAddresses } from '../../lib/addresses'
+import { NEW_ADDRESS, resolveAddress, useAddresses } from '../../lib/addresses'
 import { useRequestQuotesMutation, type DeliveryAddress, type Quote } from '../../feature/delivery/deliveryApiSlice'
 import { useCheckout } from '../../feature/checkout/useCheckout'
 import type { CheckoutStore } from '../../feature/checkout/checkoutApiSlice'
@@ -57,7 +57,9 @@ function useNow(): number {
  */
 export default function CartCheckoutDialog({ groups, cartVersion, onClose }: CartCheckoutDialogProps) {
   const { account } = useAuth()
-  const { defaultAddress } = useAddresses()
+  const { list: saved, defaultAddress } = useAddresses()
+  const [pickedAddress, setPickedAddress] = useState<string | null>(null)
+  const picked = pickedAddress ?? defaultAddress?.id ?? NEW_ADDRESS
   const [requestQuotes, { isLoading: quoting }] = useRequestQuotesMutation()
   const checkout = useCheckout()
   const now = useNow()
@@ -66,11 +68,7 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
   const [step, setStep] = useState<Step>('method')
   const [methods, setMethods] = useState<Record<string, Method>>(() => Object.fromEntries(groups.map((g) => [g.storeId, 'delivery'])))
   const [notes, setNotes] = useState<Record<string, string>>({})
-  const [address, setAddress] = useState<DeliveryAddress>(() =>
-    defaultAddress
-      ? { country: 'NG', region: defaultAddress.region, area: defaultAddress.area, street: defaultAddress.street, landmark: defaultAddress.landmark, postalCode: defaultAddress.postalCode, firstName: defaultAddress.firstName, lastName: defaultAddress.lastName, phone: defaultAddress.phone, email: defaultAddress.email }
-      : { country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
-  )
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', street: '', landmark: '', postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
@@ -91,11 +89,12 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
 
   async function askCarriers(e: FormEvent) {
     e.preventDefault()
-    const problems = addressProblems(address, pickupDate)
+    const chosenAddress = resolveAddress(saved, picked, address)
+    const problems = addressProblems(chosenAddress, pickupDate)
     setFieldErrors(problems)
-    if (Object.keys(problems).length) return setError('Check the highlighted details.')
+    if (Object.keys(problems).length) return setError(picked === NEW_ADDRESS ? 'Check the highlighted details.' : 'That saved address is missing something the carriers need; edit it under Account settings or type one here.')
     setError('')
-    const clean = carrierAddress(address)
+    const clean = carrierAddress(chosenAddress)
     const results = await Promise.all(
       delivered.map(async (g) => {
         try {
@@ -122,7 +121,9 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
                 ? capacityMessage(problem, 'cart')!
                 : problem.status === 409
                   ? `${problem.detail || problem.title} Message the seller to sort it out.`
-                  : problem.status === 503
+                  : problem.status === 503 && problem.code === 'provider-account-unavailable'
+                    ? 'Earth’s delivery provider account needs attention before carriers can quote. Collect from this seller instead, or try again later.'
+                    : problem.status === 503
                     ? 'The carriers are not answering right now. Try again in a moment.'
                     : describeError(err)
           return [g.storeId, { items: [], receivedAt: Date.now(), problem: text }] as const
@@ -263,7 +264,7 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
         <p className="text-[#807e7e] text-[14px] leading-[24px]" style={jakarta(400)}>
           One address for the {delivered.length === 1 ? 'delivered order' : `${delivered.length} delivered orders`}; each store’s carrier quotes its own delivery next, and you pay only after choosing.
         </p>
-        <DeliveryAddressFields address={address} onChange={(patch) => setAddress((a) => ({ ...a, ...patch }))} fieldErrors={fieldErrors} idPrefix="cc" pickupDate={pickupDate} onPickupDate={setPickupDate} />
+        <AddressStep saved={saved} picked={picked} onPick={setPickedAddress} address={address} onChange={(patch) => setAddress((a) => ({ ...a, ...patch }))} fieldErrors={fieldErrors} pickupDate={pickupDate} onPickupDate={setPickupDate} idPrefix="cc" />
         <button type="button" onClick={() => setStep('method')} className="text-left text-[#007c53] text-[13px] leading-[20px]" style={jakarta(500)}>
           Back to how you get each order
         </button>
