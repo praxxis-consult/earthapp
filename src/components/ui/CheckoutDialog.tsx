@@ -14,8 +14,10 @@ import { addressProblems, carrierAddress, lagosDay } from '../../lib/address'
 import { capacityMessage, quoteRefusal, quoteView, secondsLeft } from '../../data/quotes'
 import { mmss } from '../../data/orderFlow'
 import type { Listing } from '../../lib/catalog'
+import { plural } from '../../lib/listing'
 import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
+import { purchaseRule, purchaseRuleMessage, type ProductNamer } from '../../lib/purchaseRule'
 import { jakarta } from '../../utils/styles'
 
 /** One listing and how many of it. */
@@ -62,7 +64,7 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const goods: CheckoutLine[] = lines && lines.length ? lines : [{ listing: listing!, quantity: quantity ?? 1 }]
   const first = goods[0].listing
   const units = goods.reduce((n, l) => n + l.quantity, 0)
-  const unitWord = (l: CheckoutLine) => `${l.quantity} ${l.listing.unit}${l.quantity === 1 ? '' : 's'}`
+  const unitWord = (l: CheckoutLine) => plural(l.quantity, l.listing.unit)
   /** "5 bags of Ofada Rice", or "3 listings (8 items)" for a cart. */
   const what = goods.length === 1 ? `${unitWord(goods[0])} of ${first.title}` : `${goods.length} listings (${units} items)`
   const weightKg = Math.round(goods.reduce((g, l) => g + l.quantity * l.listing.weightGrams, 0) / 1000)
@@ -79,7 +81,7 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const { list: saved, defaultAddress } = useAddresses()
   const [pickedAddress, setPickedAddress] = useState<string | null>(null)
   const picked = pickedAddress ?? defaultAddress?.id ?? NEW_ADDRESS
-  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(account?.signupAddressDraft), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [error, setError] = useState('')
   // One line under a field, from the checks here or from the API's `errors[].path` (`address.postalCode`).
@@ -91,6 +93,11 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
   const set = (patch: Partial<DeliveryAddress>) => setAddress((a) => ({ ...a, ...patch }))
   const total = naira(goods.reduce((n, l) => n + l.quantity * l.listing.priceNum, 0)).replace(/\.00$/, '')
   const pickupPlace = `${first.store.businessAddress.area}, ${first.store.businessAddress.region}`
+  // A refused order names the product by id; the lines here give it its title and unit.
+  const nameOf: ProductNamer = (productId) => {
+    const l = goods.find((x) => x.listing.id === productId)
+    return l ? { title: l.listing.title, unit: l.listing.unit } : undefined
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -161,9 +168,10 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
     } catch (err) {
       const problem = toApiError(err)
       if (problem.status === 409 || problem.status === 404) {
-        // The offer ran out (or the basket changed underneath it): fresh quotes are the only way on.
+        // The offer ran out, or the basket changed underneath it (the API names the rule): fresh quotes are the only way on.
         setQuotes(null)
-        return setError('That offer has expired. Get fresh quotes and choose again.')
+        const rule = purchaseRule(problem)
+        return setError(rule ? `${purchaseRuleMessage(rule, nameOf)} Then get fresh quotes.` : 'That offer has expired. Get fresh quotes and choose again.')
       }
       setError(problem.status === 422 ? `${problem.detail || problem.title} Message the seller to sort it out.` : describeError(err))
     }
@@ -184,8 +192,11 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
       await payment.pay(order.id)
     } catch (err) {
       const problem = toApiError(err)
+      const rule = problem.status === 409 ? purchaseRule(problem) : null
       setError(
-        problem.status === 409
+        rule
+          ? purchaseRuleMessage(rule, nameOf)
+          : problem.status === 409
           ? `${problem.detail || 'The listing changed just now: stock, price or minimum quantity.'} Check the listing and try again.`
           : problem.status === 422
             ? `${problem.detail || problem.title} Message the seller to sort it out.`

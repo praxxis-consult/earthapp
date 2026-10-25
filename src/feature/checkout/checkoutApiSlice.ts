@@ -1,4 +1,5 @@
 import { apiSlice } from '../../app/api/apiSlice'
+import type { PurchaseRule } from '../../lib/purchaseRule'
 
 export type CheckoutStatus = 'PREPARING' | 'READY' | 'BINDING' | 'SUBMITTING' | 'PENDING' | 'APPLYING' | 'PAID' | 'CANCELLING' | 'CANCELLED' | 'NEEDS_ATTENTION'
 
@@ -21,6 +22,8 @@ export interface Checkout {
   expiresAt: string
   /** Why it was cancelled, e.g. `financial/invalid` or `orders/state-conflict`. */
   problemType: string | null
+  /** For a purchase conflict, which rule which product broke, with its numbers; null otherwise. */
+  failure: PurchaseRule | null
   orders: { storeId: string; orderId: string | null; fulfillmentMethod: 'SHIPPING' | 'SELF_PICKUP'; prepared: boolean; paymentApplied: boolean; cancelled: boolean }[]
 }
 

@@ -28,7 +28,7 @@ export default function AddressDialog({ initial, firstOne, onClose, onSaved }: A
     initial
       ? { country: 'NG', region: initial.region, area: initial.area, street: initial.street, landmark: initial.landmark, postalCode: initial.postalCode, firstName: initial.firstName, lastName: initial.lastName, phone: initial.phone, email: initial.email }
       : // A new address starts from what the buyer typed at sign-up, when anything.
-        { country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
+        { country: 'NG', region: '', area: '', ...signupAddress(account?.signupAddressDraft), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' },
   )
   const [makeDefault, setMakeDefault] = useState(initial ? initial.isDefault : firstOne)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})

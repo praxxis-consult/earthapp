@@ -10,7 +10,7 @@ const account = (accountType: Account['accountType']): Account => ({
   email: 'ada@example.com',
   phoneNumber: null,
   status: 'CONFIRMED',
-  confirmedAt: '2026-10-18T00:00:00Z',
+  signupAddressDraft: null, confirmedAt: '2026-10-18T00:00:00Z',
 })
 
 describe('account roles', () => {

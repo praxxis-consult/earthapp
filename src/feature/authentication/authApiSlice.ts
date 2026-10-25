@@ -12,6 +12,9 @@ export interface CreateAccountBody {
   termsConsent: true
   /** The store handle the visitor arrived with (`/r/<handle>`), counted on that store's referrals. */
   referralHandle?: string
+  /** The address and landmark the create-account form asks for (25 October): kept on the account as a draft until a delivery address is saved. Sent only when typed; the API refuses empty strings. */
+  address?: string
+  landmark?: string
 }
 
 /** Accounts and one-time codes. A first confirmation signs in, as LOGIN does; both set the refresh cookie. */

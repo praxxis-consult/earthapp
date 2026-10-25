@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useCreateCheckoutMutation, useLazyGetCheckoutQuery, useStartCheckoutPaymentMutation, type Checkout, type CheckoutStore } from './checkoutApiSlice'
 import { toApiError } from '../../services/earthApi'
+import { purchaseRule, purchaseRuleMessage, type ProductNamer } from '../../lib/purchaseRule'
 
 export type CheckoutPhase = { phase: 'idle' } | { phase: 'preparing' } | { phase: 'paying' } | { phase: 'redirecting' } | { phase: 'error'; message: string }
 
@@ -29,8 +30,11 @@ const POLL_MS = 2000
 const READY_WAIT_MS = 90_000
 const LINK_WAIT_MS = 90_000
 
-/** What a cancelled checkout's `problemType` means to the buyer. */
-export function checkoutProblem(type: string | null | undefined): string {
+/** What a cancelled checkout means to the buyer: the rule and product its `failure` names when it has one, else its `problemType`. */
+export function checkoutProblem(checkout: Pick<Checkout, 'problemType'> & Partial<Pick<Checkout, 'failure'>>, nameOf?: ProductNamer): string {
+  const rule = purchaseRule(checkout.failure)
+  if (rule) return purchaseRuleMessage(rule, nameOf)
+  const type = checkout.problemType
   if (type === 'financial/invalid') return 'One of these orders is more than its seller can take in a single order right now. Order less from that store, or split it into smaller orders.'
   if (type === 'orders/state-conflict') return 'Something in the cart changed just now: stock, a price or a minimum quantity. Check the lines and try again.'
   return `This checkout could not be prepared${type ? ` (${type})` : ''}. Try again in a moment.`
@@ -43,7 +47,7 @@ export function checkoutProblem(type: string | null | undefined): string {
  * retried forever. The client checkout id is kept per attempt so a retry of the same body is
  * exactly that, not a second checkout.
  */
-export function useCheckout() {
+export function useCheckout(nameOf?: ProductNamer) {
   const [create] = useCreateCheckoutMutation()
   const [startPayment] = useStartCheckoutPaymentMutation()
   const [read] = useLazyGetCheckoutQuery()
@@ -75,7 +79,7 @@ export function useCheckout() {
         if (run !== active.current) return
         checkout = await read(id, false).unwrap()
       }
-      if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout.problemType))
+      if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf))
       if (checkout.status === 'NEEDS_ATTENTION') return fail('This checkout needs attention from Earth before it can go ahead. Please message support with the reference ' + checkout.reference + '.')
       if (checkout.status === 'PREPARING') return fail('The sellers’ stock is taking longer than usual to reserve. Try again in a moment; nothing was charged.')
       setState({ phase: 'paying' })
@@ -89,7 +93,7 @@ export function useCheckout() {
       }
       const linkUntil = Date.now() + LINK_WAIT_MS
       while (!checkout.authorizationUrl && Date.now() < linkUntil) {
-        if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout.problemType))
+        if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf))
         if (checkout.status === 'NEEDS_ATTENTION') return fail('This payment needs attention from Earth before it can go ahead. Please message support with the reference ' + checkout.reference + '.')
         await new Promise((r) => setTimeout(r, POLL_MS))
         if (run !== active.current) return
@@ -99,7 +103,7 @@ export function useCheckout() {
       setState({ phase: 'redirecting' })
       window.location.assign(checkout.authorizationUrl)
     },
-    [create, startPayment, read],
+    [create, startPayment, read, nameOf],
   )
 
   const reset = useCallback(() => {

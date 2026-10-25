@@ -27,12 +27,19 @@ export interface Account {
   phoneNumber: string | null
   status: 'CONFIRMED'
   confirmedAt: string
+  /** What the buyer typed for an address at sign-up (25 October): kept until a complete delivery address is saved, then cleared with a PATCH. */
+  signupAddressDraft: SignupAddressDraft | null
 }
-/** `PATCH /accounts/me`: the name and the optional phone; the email is the sign-in and stays. */
+export interface SignupAddressDraft {
+  address: string | null
+  landmark: string | null
+}
+/** `PATCH /accounts/me`: the name and the optional phone; the email is the sign-in and stays. `signupAddressDraft` can only be cleared. */
 export interface AccountPatch {
   firstName?: string
   lastName?: string
   phoneNumber?: string | null
+  signupAddressDraft?: null
 }
 
 /* ---------- notification preferences ---------- */
