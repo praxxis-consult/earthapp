@@ -30,11 +30,26 @@ const POLL_MS = 2000
 const READY_WAIT_MS = 90_000
 const LINK_WAIT_MS = 90_000
 
-/** What a cancelled checkout means to the buyer: the rule and product its `failure` names when it has one, else its `problemType`. */
-export function checkoutProblem(checkout: Pick<Checkout, 'problemType'> & Partial<Pick<Checkout, 'failure'>>, nameOf?: ProductNamer): string {
+/** A store's name from its id, for a cancelled checkout; undefined when the caller has no cart to look in. */
+export type StoreNamer = (storeId: string) => string | undefined
+
+const listNames = (names: string[]) => (names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`)
+
+/**
+ * What a cancelled checkout means to the buyer: the rule and product its `failure` names when it
+ * has one, else its `problemType`. `payments/evidence-invalid` is the worker giving up on a store's
+ * payment (seen on QA: a live store whose owner has no payout recipient); the store left
+ * unprepared is the one it stopped at, so it is named.
+ */
+export function checkoutProblem(checkout: Pick<Checkout, 'problemType'> & Partial<Pick<Checkout, 'failure' | 'orders'>>, nameOf?: ProductNamer, storeOf?: StoreNamer): string {
   const rule = purchaseRule(checkout.failure)
   if (rule) return purchaseRuleMessage(rule, nameOf)
   const type = checkout.problemType
+  if (type === 'payments/evidence-invalid') {
+    const stuck = (checkout.orders ?? []).filter((o) => !o.prepared).map((o) => storeOf?.(o.storeId)).filter((n): n is string => !!n)
+    const who = stuck.length ? listNames(stuck) : 'One of these stores'
+    return `${who} cannot take a payment right now, so this checkout was cancelled. Remove ${stuck.length === 1 ? 'its' : 'their'} lines to pay for the rest, or try again later.`
+  }
   if (type === 'financial/invalid') return 'One of these orders is more than its seller can take in a single order right now. Order less from that store, or split it into smaller orders.'
   if (type === 'orders/state-conflict') return 'Something in the cart changed just now: stock, a price or a minimum quantity. Check the lines and try again.'
   return `This checkout could not be prepared${type ? ` (${type})` : ''}. Try again in a moment.`
@@ -47,7 +62,7 @@ export function checkoutProblem(checkout: Pick<Checkout, 'problemType'> & Partia
  * retried forever. The client checkout id is kept per attempt so a retry of the same body is
  * exactly that, not a second checkout.
  */
-export function useCheckout(nameOf?: ProductNamer) {
+export function useCheckout(nameOf?: ProductNamer, storeOf?: StoreNamer) {
   const [create] = useCreateCheckoutMutation()
   const [startPayment] = useStartCheckoutPaymentMutation()
   const [read] = useLazyGetCheckoutQuery()
@@ -79,7 +94,7 @@ export function useCheckout(nameOf?: ProductNamer) {
         if (run !== active.current) return
         checkout = await read(id, false).unwrap()
       }
-      if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf))
+      if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf, storeOf))
       if (checkout.status === 'NEEDS_ATTENTION') return fail('This checkout needs attention from Earth before it can go ahead. Please message support with the reference ' + checkout.reference + '.')
       if (checkout.status === 'PREPARING') return fail('The sellers’ stock is taking longer than usual to reserve. Try again in a moment; nothing was charged.')
       setState({ phase: 'paying' })
@@ -93,7 +108,7 @@ export function useCheckout(nameOf?: ProductNamer) {
       }
       const linkUntil = Date.now() + LINK_WAIT_MS
       while (!checkout.authorizationUrl && Date.now() < linkUntil) {
-        if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf))
+        if (checkout.status === 'CANCELLED' || checkout.status === 'CANCELLING') return fail(checkoutProblem(checkout, nameOf, storeOf))
         if (checkout.status === 'NEEDS_ATTENTION') return fail('This payment needs attention from Earth before it can go ahead. Please message support with the reference ' + checkout.reference + '.')
         await new Promise((r) => setTimeout(r, POLL_MS))
         if (run !== active.current) return
@@ -103,7 +118,7 @@ export function useCheckout(nameOf?: ProductNamer) {
       setState({ phase: 'redirecting' })
       window.location.assign(checkout.authorizationUrl)
     },
-    [create, startPayment, read, nameOf],
+    [create, startPayment, read, nameOf, storeOf],
   )
 
   const reset = useCallback(() => {
