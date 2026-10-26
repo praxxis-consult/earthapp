@@ -26,5 +26,12 @@ export const SHIPPING_TERMS = [
 /** A row that scrolls sideways on phones (thumbnails, tabs) with the scrollbar hidden. */
 export const SCROLL_MD = 'max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden'
 
-export const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`
+/** A unit's plural: "bags", "boxes", "tons"; symbols and short abbreviations ("kg", "g", "L", "pcs") stay as they are. */
+export const unitWord = (n: number, unit: string) => {
+  const u = unit.trim()
+  if (n === 1 || !u || u.length <= 2 || /[^a-z]$/i.test(u) || /s$/i.test(u)) return u
+  return /(x|s|z|ch|sh)$/i.test(u) ? `${u}es` : `${u}s`
+}
+/** "20 bags", "1 bag", "20 kg". */
+export const plural = (n: number, unit: string) => `${n} ${unitWord(n, unit)}`
 

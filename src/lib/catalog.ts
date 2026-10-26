@@ -1,4 +1,5 @@
 import type { Category, Product as ApiProduct } from '../services/earthApi'
+import { plural } from './listing'
 import { nairaFromMinor } from './productView'
 
 /** A LIVE store as the public endpoints return it. */
@@ -66,7 +67,7 @@ export function toListing(p: ApiProduct, store: PublicStore, categories: Categor
     location: `${store.businessAddress.area}, ${store.businessAddress.region}`,
     region: store.businessAddress.region,
     country: store.businessAddress.country,
-    quantity: `${available} ${unit}${available === 1 ? '' : 's'}`,
+    quantity: plural(available, unit),
     available,
     moq: p.moq ?? 1,
     weightGrams: p.approximateWeightGrams ?? 0,

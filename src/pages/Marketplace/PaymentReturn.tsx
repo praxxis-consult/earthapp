@@ -54,7 +54,7 @@ export default function PaymentReturn() {
         setResult({ paid: true, title: 'Payment successful', body: `Your payment is verified and ${n === 1 ? 'your order is' : `your ${n} orders are`} with the ${n === 1 ? 'seller' : 'sellers'}. Each one accepts and prepares its own order; follow them under My orders.` })
         // The cart the checkout froze is done with; a cart changed since keeps its lines (409 is left alone).
         saveCart({ expectedVersion: c.cartVersion, items: [] }).unwrap().catch(() => {})
-      } else if (c.status === 'CANCELLED') setResult({ paid: false, title: 'This checkout was cancelled', body: checkoutProblem(c.problemType) })
+      } else if (c.status === 'CANCELLED') setResult({ paid: false, title: 'This checkout was cancelled', body: checkoutProblem(c) })
       else if (c.status === 'NEEDS_ATTENTION') setResult({ paid: false, title: 'Needs attention', body: `This payment needs attention from Earth. Please message support with the reference ${c.reference}.` })
       else setResult({ paid: false, title: 'Not confirmed yet', body: 'Paystack has not confirmed this payment. If you paid, give it a moment and check again.' })
     } catch (e) {

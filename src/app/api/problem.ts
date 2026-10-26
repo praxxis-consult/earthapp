@@ -6,7 +6,12 @@ export interface Problem {
   detail?: string
   correlationId?: string
   errors?: { path?: string; code?: string }[]
+  /** Extension members (RFC 9457 §3.2): `parcelCapacity` on a shipping conflict, `rule` on a purchase conflict, and so on. */
+  [member: string]: unknown
 }
+
+/** The members every problem has; anything else is an extension the caller may read. */
+const STANDARD_MEMBERS = new Set(['type', 'title', 'status', 'detail', 'instance', 'correlationId', 'errors'])
 
 /** What RTK Query keeps in state for a failed call: plain data, so it serialises. */
 export interface ApiProblem {
@@ -23,6 +28,8 @@ export class ApiError extends Error {
   correlationId?: string
   errors: { path?: string; code?: string }[]
   retryAfter?: number
+  /** The problem's extension members, as sent: `{ rule: 'moq', minimumQuantity: 20, … }`. */
+  members: Record<string, unknown>
 
   constructor(status: number, problem: Partial<Problem>, retryAfter?: number) {
     super(problem.detail || problem.title || `Request failed (${status})`)
@@ -33,6 +40,7 @@ export class ApiError extends Error {
     this.correlationId = problem.correlationId
     this.errors = problem.errors ?? []
     this.retryAfter = retryAfter
+    this.members = Object.fromEntries(Object.entries(problem).filter(([k]) => !STANDARD_MEMBERS.has(k)))
   }
 
   /** The last path segment of the problem type, e.g. "code-invalid", "rate-limited". */
@@ -47,6 +55,9 @@ export class ApiError extends Error {
     return out
   }
 }
+
+/** The extension members of whatever a caller holds: an ApiError's, or the plain problem body itself. */
+export const problemMembers = (e: unknown): Record<string, unknown> => (e instanceof ApiError ? e.members : typeof e === 'object' && e !== null ? (e as Record<string, unknown>) : {})
 
 const isProblem = (e: unknown): e is ApiProblem =>
   typeof e === 'object' && e !== null && 'status' in e && typeof (e as ApiProblem).status === 'number' && 'data' in e

@@ -173,6 +173,9 @@ export default function Signup() {
         termsConsent: true,
         // Who sent them: the handle the /r/ link kept, if any.
         ...(referralHandle ? { referralHandle } : {}),
+        // The address and landmark go with the account as a draft (the API's limits are 500 and 240 characters).
+        ...(street.trim() ? { address: street.trim().slice(0, 500) } : {}),
+        ...(landmark.trim() ? { landmark: landmark.trim().slice(0, 240) } : {}),
       }).unwrap()
       rememberSignupAddress({ street: pinned.region ? street.split(',')[0] : street, landmark, ...pinned })
       navigate('/signup/verify', { state: { email: email.trim().toLowerCase(), accountType: ACCOUNT_TYPE_API[accountType] } })

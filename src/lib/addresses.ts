@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useAuth } from '../feature/authentication/useAuth'
+import { useUpdateMeMutation } from '../feature/authentication/authApiSlice'
+import { forgetSignupAddress } from './signupAddress'
 import { useAddAddressMutation, useListAddressesQuery, useRemoveAddressMutation, useUpdateAddressMutation, type ApiAddress } from '../feature/accounts/addressesApiSlice'
 import type { DeliveryAddress } from '../feature/delivery/deliveryApiSlice'
 
@@ -38,8 +40,10 @@ const EMPTY: SavedAddress[] = []
  * off. Every write answers a promise; the page shows what went wrong.
  */
 export function useAddresses() {
-  const { status } = useAuth()
+  const { status, account } = useAuth()
   const signedIn = status === 'authenticated'
+  const hasDraft = Boolean(account?.signupAddressDraft)
+  const [updateMe] = useUpdateMeMutation()
   const query = useListAddressesQuery(undefined, { skip: !signedIn })
   const [addMutation] = useAddAddressMutation()
   const [updateMutation] = useUpdateAddressMutation()
@@ -48,8 +52,14 @@ export function useAddresses() {
   const versionOf = useCallback((id: string) => list.find((a) => a.id === id)?.version ?? 0, [list])
 
   const add = useCallback(
-    (a: DeliveryAddress, isDefault?: boolean) => addMutation({ id: newId(), label: null, address: a, isDefault: Boolean(isDefault) || list.length === 0 }).unwrap(),
-    [addMutation, list.length],
+    async (a: DeliveryAddress, isDefault?: boolean) => {
+      const saved = await addMutation({ id: newId(), label: null, address: a, isDefault: Boolean(isDefault) || list.length === 0 }).unwrap()
+      // A complete address is saved: the sign-up draft has done its job, here and on the account.
+      forgetSignupAddress()
+      if (hasDraft) updateMe({ signupAddressDraft: null }).unwrap().catch(() => {})
+      return saved
+    },
+    [addMutation, list.length, hasDraft, updateMe],
   )
   const update = useCallback((id: string, a: DeliveryAddress) => updateMutation({ id, expectedVersion: versionOf(id), address: a }).unwrap(), [updateMutation, versionOf])
   const makeDefault = useCallback((id: string) => updateMutation({ id, expectedVersion: versionOf(id), isDefault: true }).unwrap(), [updateMutation, versionOf])

@@ -1,3 +1,4 @@
+import { problemMembers } from '../app/api/problem'
 import type { Quote } from '../feature/delivery/deliveryApiSlice'
 import { naira } from './orders'
 
@@ -64,7 +65,7 @@ export function quoteView(q: Quote, index: number): QuoteView {
  * weight against the seller's parcel limit, in whole kilograms; null when the problem carries none.
  */
 export function capacityMessage(problem: object, how: 'single' | 'cart' = 'single'): string | null {
-  const cap = (problem as { parcelCapacity?: { maxWeightGrams?: string; basketWeightGrams?: string } }).parcelCapacity
+  const cap = problemMembers(problem).parcelCapacity as { maxWeightGrams?: string; basketWeightGrams?: string } | undefined
   if (!cap?.maxWeightGrams) return null
   const kg = (g: string | undefined) => Math.max(1, Math.round(Number(g ?? 0) / 1000))
   const limit = `this seller ships up to ${kg(cap.maxWeightGrams)} kg in one order`

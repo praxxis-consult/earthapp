@@ -1,8 +1,11 @@
+import type { SignupAddressDraft } from '../services/earthApi'
+
 /**
- * The address and landmark a buyer types at sign-up (create acc 805:7443). The API's account
- * has no address fields, so they are kept in this browser's session and offered back the first
- * time an address is needed: the checkout's typed address and the Add address dialog start from
- * them. They go with the sign-up as soon as the API takes them.
+ * The address and landmark a buyer types at sign-up (create acc 805:7443). They go with the
+ * account as `signupAddressDraft` (25 October), which follows the buyer to any device until a
+ * complete delivery address is saved. This browser's session also keeps them, with the area,
+ * state and postal code a map pin gave, so the first address form on this device starts from
+ * the structured pieces rather than one line.
  */
 const KEY = 'earth.signup-address'
 
@@ -23,8 +26,8 @@ export function rememberSignupAddress(a: SignupAddress) {
   }
 }
 
-/** What sign-up kept, if anything; empty strings otherwise. */
-export function signupAddress(): SignupAddress {
+/** What sign-up kept on this device, else the account's draft (one address line and a landmark); empty strings otherwise. */
+export function signupAddress(draft?: SignupAddressDraft | null): SignupAddress {
   try {
     const raw = sessionStorage.getItem(KEY)
     if (raw) {
@@ -35,7 +38,7 @@ export function signupAddress(): SignupAddress {
   } catch {
     /* storage blocked or malformed */
   }
-  return { street: '', landmark: '', area: '', region: '', postalCode: '' }
+  return { street: draft?.address ?? '', landmark: draft?.landmark ?? '', area: '', region: '', postalCode: '' }
 }
 
 export function forgetSignupAddress() {

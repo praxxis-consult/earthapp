@@ -16,6 +16,7 @@ import { capacityMessage, quoteRefusal, quoteView, secondsLeft } from '../../dat
 import { mmss } from '../../data/orderFlow'
 import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
+import type { ProductNamer } from '../../lib/purchaseRule'
 import { jakarta } from '../../utils/styles'
 
 /** One store of the cart, with its lines resolved to listings. */
@@ -62,14 +63,19 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
   const [pickedAddress, setPickedAddress] = useState<string | null>(null)
   const picked = pickedAddress ?? defaultAddress?.id ?? NEW_ADDRESS
   const [requestQuotes, { isLoading: quoting }] = useRequestQuotesMutation()
-  const checkout = useCheckout()
+  // A refused checkout names the product by id; the lines here give it its title and unit.
+  const nameOf: ProductNamer = (productId) => {
+    const l = groups.flatMap((g) => g.lines).find((x) => x.listing.id === productId)
+    return l ? { title: l.listing.title, unit: l.listing.unit } : undefined
+  }
+  const checkout = useCheckout(nameOf)
   const now = useNow()
   // One client id per dialog: a retry of the same checkout is the same checkout.
   const clientCheckoutId = useRef(crypto.randomUUID())
   const [step, setStep] = useState<Step>('method')
   const [methods, setMethods] = useState<Record<string, Method>>(() => Object.fromEntries(groups.map((g) => [g.storeId, 'delivery'])))
   const [notes, setNotes] = useState<Record<string, string>>({})
-  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
+  const [address, setAddress] = useState<DeliveryAddress>(() => ({ country: 'NG', region: '', area: '', ...signupAddress(account?.signupAddressDraft), postalCode: '', firstName: account?.firstName ?? '', lastName: account?.lastName ?? '', phone: account?.phoneNumber ?? '', email: account?.email ?? '' }))
   const [pickupDate, setPickupDate] = useState(tomorrow)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')

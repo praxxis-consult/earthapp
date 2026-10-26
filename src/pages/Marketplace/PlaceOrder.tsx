@@ -1,3 +1,4 @@
+import { plural } from '../../lib/listing'
 import Skeleton, { LoadingRegion } from '../../components/ui/Skeleton'
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -66,7 +67,7 @@ export default function PlaceOrder() {
   const MIN_QTY = product.moq
   const THUMBNAILS = product.images
   const unit = product.unit
-  const units = (n: number) => `${n} ${unit}${n === 1 ? '' : 's'}`
+  const units = (n: number) => plural(n, unit)
   const estimatedValue = naira(qty * product.priceNum).replace(/\.00$/, '')
   const mainImage = THUMBNAILS[activeThumb] ?? product.image ?? ''
   const inStock = product.available > 0
