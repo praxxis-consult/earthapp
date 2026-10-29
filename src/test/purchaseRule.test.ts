@@ -36,6 +36,16 @@ describe('purchase conflict rule', () => {
     expect(checkoutProblem({ problemType: 'orders/state-conflict', failure: null })).toContain('Something in the cart changed just now')
     expect(checkoutProblem({ problemType: 'financial/invalid' })).toContain('more than its seller can take')
   })
+  it('names the store a payment could not be prepared for, or says one of them when it has no cart', () => {
+    const orders = [
+      { storeId: 'a', orderId: 'o1', fulfillmentMethod: 'SELF_PICKUP' as const, prepared: true, paymentApplied: false, cancelled: false },
+      { storeId: 'b', orderId: 'o2', fulfillmentMethod: 'SELF_PICKUP' as const, prepared: false, paymentApplied: false, cancelled: false },
+    ]
+    const storeOf = (id: string) => ({ a: 'Akpolo Agro & Mine', b: 'Betta Store' })[id]
+    expect(checkoutProblem({ problemType: 'payments/evidence-invalid', failure: null, orders }, undefined, storeOf)).toBe('Betta Store cannot take a payment right now, so this checkout was cancelled. Remove its lines to pay for the rest, or try again later.')
+    expect(checkoutProblem({ problemType: 'payments/evidence-invalid', failure: null, orders: orders.map((o) => ({ ...o, prepared: false })) }, undefined, storeOf)).toMatch(/^Akpolo Agro & Mine and Betta Store cannot take a payment right now.*Remove their lines/)
+    expect(checkoutProblem({ problemType: 'payments/evidence-invalid', failure: null, orders })).toMatch(/^One of these stores cannot take a payment right now/)
+  })
   it('pluralises unit words but never symbols or abbreviations', () => {
     expect([plural(20, 'kg'), plural(1, 'bag'), plural(20, 'bag'), plural(3, 'box'), plural(2, 'ton'), plural(5, 'pcs'), plural(4, 'L')]).toEqual(['20 kg', '1 bag', '20 bags', '3 boxes', '2 tons', '5 pcs', '4 L'])
     expect(purchaseRuleMessage({ rule: 'moq', productId: 'p', minimumQuantity: 20, requestedQuantity: 1 }, () => ({ title: 'Copper Ore', unit: 'kg' }))).toBe('Copper Ore: the minimum order is 20 kg and you asked for 1 kg. Raise the quantity to at least 20 kg and try again.')

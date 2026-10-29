@@ -3,7 +3,7 @@ import { ApiError } from '../../app/api/problem'
 import { COMMAND_TIMEOUT_MS } from './events'
 
 /** The API origin of the deployed site; its CORS list names the site, so the socket can go there directly. */
-const PRODUCTION_API_ORIGIN = 'https://earthapi.loodit.com'
+const PRODUCTION_API_ORIGIN = 'https://earthapi.hellosquare.app'
 
 /**
  * Where the socket connects. The realtime service shares the API's origin. In development that is

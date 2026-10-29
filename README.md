@@ -185,7 +185,7 @@ Open the URL Vite prints (http://localhost:5173 by default; add `-- --port 5179`
 
 | Variable | Where | Meaning |
 | --- | --- | --- |
-| `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to `https://earthapi.loodit.com`, the same origin `vercel.json` rewrites to |
+| `EARTH_API_TARGET` | shell, before `npm run dev` | The API origin the dev proxy forwards `/v1` to (no path). Defaults to `https://earthapi.hellosquare.app`, the same origin `vercel.json` rewrites to |
 | `EARTH_REALTIME_TARGET` | shell, before `npm run dev` | The realtime service (Socket.IO) the dev proxy forwards `/socket.io` to. Defaults to the API target, which serves it on the same origin |
 | `VITE_REALTIME_URL` | build environment (Vercel) | Overrides where a production build opens the socket. Unset, it connects to the API origin directly (the browser speaks CORS and WSS to it, so its CORS list must name the site) |
 | `/v1` rewrite | `vercel.json` | Where production forwards `/v1`. Change it to point a deployment at another API |

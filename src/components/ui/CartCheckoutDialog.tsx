@@ -68,7 +68,8 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
     const l = groups.flatMap((g) => g.lines).find((x) => x.listing.id === productId)
     return l ? { title: l.listing.title, unit: l.listing.unit } : undefined
   }
-  const checkout = useCheckout(nameOf)
+  const storeOf = (storeId: string) => groups.find((g) => g.storeId === storeId)?.storeName
+  const checkout = useCheckout(nameOf, storeOf)
   const now = useNow()
   // One client id per dialog: a retry of the same checkout is the same checkout.
   const clientCheckoutId = useRef(crypto.randomUUID())
