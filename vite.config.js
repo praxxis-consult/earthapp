@@ -7,7 +7,7 @@ import { defineConfig, loadEnv } from 'vite'
 // The prefix is kept as /v1 for the same cookie.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const target = env.EARTH_API_TARGET || 'https://earthapi.loodit.com'
+  const target = env.EARTH_API_TARGET || 'https://earthapi.hellosquare.app'
   const host = new URL(target).host
   // The realtime service (Socket.IO) shares the API's origin unless it is given one of its own.
   const realtime = env.EARTH_REALTIME_TARGET || target

@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/v1/:path*",
-      "destination": "https://earthapi.loodit.com/v1/:path*"
+      "destination": "https://earthapi.hellosquare.app/v1/:path*"
     },
     {
       "source": "/((?!v1/).*)",
