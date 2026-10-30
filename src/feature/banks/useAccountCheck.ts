@@ -18,10 +18,20 @@ interface CheckInput {
 }
 
 /**
- * Asks the API (Paystack behind it) for the name on a bank account. The name is shown as the
- * bank holds it and saved as is; the product decision (17 Oct) is that the account need not be
- * in the seller's own name. `unavailable` means the lookup could not be reached (404, 501 or
- * 503); the seller is told to try again, never to type the name.
+ * What a failed lookup means to the seller. `unavailable` is the API's own trouble (no lookup
+ * for the country, the provider down, or the route rate-limited): try again, never type the name.
+ * 400 and 422 are the provider saying no such account.
+ */
+export function checkFailure(err: { status?: number; message: string }): Exclude<AccountCheck, { status: 'idle' | 'checking' | 'matched' }> {
+  if (err.status === 404 || err.status === 429 || err.status === 501 || err.status === 503) return { status: 'unavailable' }
+  if (err.status === 422 || err.status === 400) return { status: 'failed', message: 'The bank could not find an account with that number.' }
+  return { status: 'failed', message: err.message }
+}
+
+/**
+ * Asks the API for the name on a bank account; it checks with Moniepoint for Nigeria and
+ * Paystack for Ghana. The name is shown as the bank holds it and saved as is; the product
+ * decision (17 Oct) is that the account need not be in the seller's own name.
  */
 export function useAccountCheck() {
   const [resolve] = useLazyResolveAccountQuery()
@@ -36,11 +46,7 @@ export function useAccountCheck() {
         setCheck(next)
         return next
       } catch (e) {
-        const err = toApiError(e)
-        const next: AccountCheck =
-          err.status === 404 || err.status === 501 || err.status === 503
-            ? { status: 'unavailable' }
-            : { status: 'failed', message: err.status === 422 || err.status === 400 ? 'The bank could not find an account with that number.' : err.message }
+        const next = checkFailure(toApiError(e))
         setCheck(next)
         return next
       }
