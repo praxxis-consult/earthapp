@@ -69,6 +69,8 @@ export interface Identity {
   type: IdentityType
   number: string
 }
+/** Who the API asks for the name on an account: Moniepoint for Nigeria, Paystack for Ghana (its own rule; the app never picks). */
+export type BankProvider = 'MONIEPOINT' | 'PAYSTACK'
 export interface Bank {
   country: string
   bankName: string
@@ -76,6 +78,8 @@ export interface Bank {
   bankCode?: string
   accountNumber: string
   accountName: string
+  /** Which provider checked the account, set by the API when it saves the bank; sent back as read. */
+  provider?: BankProvider
 }
 /** When the store is open: ISO weekday 1 (Monday) to 7, up to two intervals a day, "HH:MM" (closes may be "24:00"). */
 export interface OpeningHours {
@@ -90,7 +94,10 @@ export interface Onboarding {
   status: 'DRAFT' | 'LIVE' | 'SUSPENDED'
   version: number
   liveAt: string | null
-  verificationStatus: 'UNVERIFIED'
+  verificationStatus: 'UNVERIFIED' | 'VERIFIED'
+  /** Whether the saved bank account passed the provider's name check (it only does when the store goes LIVE). */
+  bankVerificationStatus?: 'UNVERIFIED' | 'VERIFIED'
+  verifiedAt?: string | null
   identity?: Identity
   bank?: Bank
   selfieUrl?: string

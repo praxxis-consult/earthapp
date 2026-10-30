@@ -489,7 +489,8 @@ export default function Settings() {
                 }}
               />
             </div>
-            {store?.bank && (
+            {/* The API checks the account when the store goes live; a draft's bank is only saved */}
+            {store?.bank && store.bankVerificationStatus !== 'UNVERIFIED' && (
               <div className="flex items-center gap-[4px]">
                 <img src={verifiedIcon} alt="" className="size-[20px]" />
                 <p className="text-[#007c53] text-[14px] leading-[18px]" style={jakarta(500)}>
