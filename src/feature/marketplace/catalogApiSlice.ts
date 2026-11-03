@@ -109,4 +109,4 @@ export const catalogApiSlice = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useListCatalogQuery, useListStoreQuery, useGetListingQuery } = catalogApiSlice
+export const { useListCatalogQuery, useListStoreQuery, useLazyListStoreQuery, useGetListingQuery } = catalogApiSlice

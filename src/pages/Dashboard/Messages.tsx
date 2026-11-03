@@ -14,9 +14,10 @@ import receiptIcon from '../../assets/icons/msg-receipt.svg'
 import paidIcon from '../../assets/icons/msg-paid-check.svg'
 import arrowRightIcon from '../../assets/icons/msg-arrow-right.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
-import { describeError, toApiError, type Product } from '../../services/earthApi'
+import { describeError, toApiError } from '../../services/earthApi'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useLazyGetMyProductsQuery } from '../../feature/products/productsApiSlice'
+import { useLazyListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { canSell } from '../../feature/authentication/role'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
@@ -102,6 +103,7 @@ export default function Messages() {
   const [markRead] = useMarkReadMutation()
   const [uploadImage] = useUploadImageMutation()
   const [loadMine] = useLazyGetMyProductsQuery()
+  const [loadStore] = useLazyListStoreQuery()
   // Below lg the list and the conversation are two screens; opening a chat moves to the second.
   // A thread named in the URL (a notification, a deep link) opens on the conversation screen; otherwise the list.
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(() => (new URLSearchParams(window.location.search).get('chat') ? 'chat' : 'list'))
@@ -112,7 +114,8 @@ export default function Messages() {
   const [busy, setBusy] = useState(false)
   const pane = useRef<HTMLDivElement>(null)
   const { open: attachOpen, setOpen: setAttachOpen, ref: attachRef } = useMenu()
-  const [picker, setPicker] = useState<Product[] | null>(null)
+  /** The listings the attach menu offers: the seller's own, or the store's when this account is the buyer. */
+  const [picker, setPicker] = useState<{ id: string; label: string }[] | null>(null)
 
   /** The other side of a thread: the buyer when this account sells, the store when it buys. */
   const counterpart = (t: ChatThread) => (t.seller.id === me ? t.buyer.name : t.storeName)
@@ -130,6 +133,8 @@ export default function Messages() {
   const { subscribed, peerTyping, online, noteTyping, stopTyping } = useConversationLive(activeId, replay)
   // The other side's presence, when the live channel knows it (null while it does not).
   const peerId = active ? (active.seller.id === me ? active.buyer.id : active.seller.id) : ''
+  /** This account is the buyer in the open thread (the store is the other side). */
+  const buying = !!active && active.seller.id !== me
   const peerOnline = online && peerId in online ? online[peerId] : null
 
   const shown = useMemo(() => {
@@ -177,15 +182,27 @@ export default function Messages() {
     }
   }
 
+  /**
+   * A product card can go either way: a seller sends one of their listings, a buyer points at
+   * one of the store's. The thread says which side this account is on, so the picker loads the
+   * matching catalogue rather than always the account's own (a buyer has none).
+   */
   async function openPicker() {
     setAttachOpen(false)
+    if (!active) return
     setPicker([])
-    setPicker(await loadMine('PUBLISHED').unwrap().catch(() => []))
+    if (active.seller.id === me) {
+      const mine = await loadMine('PUBLISHED').unwrap().catch(() => [])
+      setPicker(mine.map((p) => ({ id: p.id, label: `${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}` })))
+    } else {
+      const store = await loadStore(active.storeId).unwrap().catch(() => null)
+      setPicker((store?.listings ?? []).map((l) => ({ id: l.id, label: `${l.title} · ${l.price}` })))
+    }
   }
 
-  function sendProduct(p: Product) {
+  function sendProduct(id: string) {
     setPicker(null)
-    void deliver({ kind: 'PRODUCT', productId: p.id })
+    void deliver({ kind: 'PRODUCT', productId: id })
   }
 
   /**
@@ -590,13 +607,16 @@ export default function Messages() {
       {picker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-[16px]" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setPicker(null)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <MenuList width={Math.min(375, window.innerWidth - 32)} hint={picker.length ? 'Choose a listing to send' : 'Loading your listings…'}>
+            <MenuList
+              width={Math.min(375, window.innerWidth - 32)}
+              hint={picker.length ? (buying ? 'Choose a product to ask about' : 'Choose a listing to send') : buying ? 'Loading the store’s listings…' : 'Loading your listings…'}
+            >
               {picker.map((p) => (
-                <MenuItem key={p.id} label={`${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}`} selected={false} onSelect={() => sendProduct(p)} />
+                <MenuItem key={p.id} label={p.label} selected={false} onSelect={() => sendProduct(p.id)} />
               ))}
               {picker.length === 0 && (
                 <p className="px-[16px] py-[12px] text-[#807e7e] text-[14px] leading-[20px]" style={jakarta(400)}>
-                  Publish a listing first, then you can send it here.
+                  {buying ? 'This store has no listings yet.' : 'Publish a listing first, then you can send it here.'}
                 </p>
               )}
             </MenuList>
