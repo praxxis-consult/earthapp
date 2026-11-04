@@ -115,7 +115,8 @@ export default function Messages() {
   const pane = useRef<HTMLDivElement>(null)
   const { open: attachOpen, setOpen: setAttachOpen, ref: attachRef } = useMenu()
   /** The listings the attach menu offers: the seller's own, or the store's when this account is the buyer. */
-  const [picker, setPicker] = useState<{ id: string; label: string }[] | null>(null)
+  // null: closed; 'loading': open, the listings on their way; a list: open with the listings (maybe none).
+  const [picker, setPicker] = useState<{ id: string; label: string }[] | 'loading' | null>(null)
 
   /** The other side of a thread: the buyer when this account sells, the store when it buys. */
   const counterpart = (t: ChatThread) => (t.seller.id === me ? t.buyer.name : t.storeName)
@@ -190,7 +191,7 @@ export default function Messages() {
   async function openPicker() {
     setAttachOpen(false)
     if (!active) return
-    setPicker([])
+    setPicker('loading')
     if (active.seller.id === me) {
       const mine = await loadMine('PUBLISHED').unwrap().catch(() => [])
       setPicker(mine.map((p) => ({ id: p.id, label: `${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}` })))
@@ -609,12 +610,13 @@ export default function Messages() {
           <div onClick={(e) => e.stopPropagation()}>
             <MenuList
               width={Math.min(375, window.innerWidth - 32)}
-              hint={picker.length ? (buying ? 'Choose a product to ask about' : 'Choose a listing to send') : buying ? 'Loading the store’s listings…' : 'Loading your listings…'}
+              hint={picker === 'loading' ? (buying ? 'Loading the store’s listings…' : 'Loading your listings…') : buying ? 'Choose a product to ask about' : 'Choose a listing to send'}
             >
-              {picker.map((p) => (
-                <MenuItem key={p.id} label={p.label} selected={false} onSelect={() => sendProduct(p.id)} />
-              ))}
-              {picker.length === 0 && (
+              {picker !== 'loading' &&
+                picker.map((p) => (
+                  <MenuItem key={p.id} label={p.label} selected={false} onSelect={() => sendProduct(p.id)} />
+                ))}
+              {picker !== 'loading' && picker.length === 0 && (
                 <p className="px-[16px] py-[12px] text-[#807e7e] text-[14px] leading-[20px]" style={jakarta(400)}>
                   {buying ? 'This store has no listings yet.' : 'Publish a listing first, then you can send it here.'}
                 </p>
