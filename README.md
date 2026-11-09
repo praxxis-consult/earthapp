@@ -11,9 +11,9 @@ A Nigeria-first marketplace for farm produce and raw commodities, with the same 
 [![Vite 8](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-RTK_Query-764abc?logo=redux&logoColor=white)](https://redux-toolkit.js.org)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://earthapp.vercel.app)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://www.earthmarket.app)
 
-[Live app](https://earthapp.vercel.app) · [Repository](https://github.com/praxxis-consult/earthapp) · [Report an issue](https://github.com/praxxis-consult/earthapp/issues)
+[Live app](https://www.earthmarket.app) · [Repository](https://github.com/praxxis-consult/earthapp) · [Report an issue](https://github.com/praxxis-consult/earthapp/issues)
 
 </div>
 
