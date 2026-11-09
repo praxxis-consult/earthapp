@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import EmptyBlock from '../../components/ui/EmptyBlock'
@@ -265,72 +265,81 @@ export default function Messages() {
   function bubble(m: ChatMessage, name: string) {
     const mine = m.senderId === me
     const p = m.payload
+    // Every kind of message sits in the same frame: the other party's avatar on the left, mine on the
+    // right, the time underneath, so a card says who sent it as clearly as a text bubble does.
+    const frame = (inner: ReactNode) => (
+      <div className={`flex items-end gap-[12px] ${mine ? 'justify-end' : ''}`}>
+        {!mine && <Avatar name={name} size={40} />}
+        <div className={`flex flex-col gap-[4px] min-w-0 max-w-full ${mine ? 'items-end' : ''}`}>
+          {inner}
+          <span className="text-[#807e7e] text-[11px] leading-[14px]" style={jakarta(400)}>
+            {timeOf(m.createdAt)}
+          </span>
+        </div>
+      </div>
+    )
     if ('invoice' in p) {
       const inv = p.invoice
-      return (
-        <div className={`flex ${mine ? 'justify-end' : ''}`}>
-          <div className="w-[368px] max-w-full rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
-            <div className="flex items-center gap-[12px] bg-[#edf7f3] p-[14px]">
-              <span className="flex items-center justify-center size-[32px] rounded-[10px] bg-white">
-                <img src={receiptIcon} alt="" className="size-[16px]" />
+      return frame(
+        <div className="w-[368px] max-w-full rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
+          <div className="flex items-center gap-[12px] bg-[#edf7f3] p-[14px]">
+            <span className="flex items-center justify-center size-[32px] rounded-[10px] bg-white">
+              <img src={receiptIcon} alt="" className="size-[16px]" />
+            </span>
+            <div className="flex flex-col gap-[3px] flex-1 min-w-0">
+              <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(700)}>
+                Invoice #{inv.invoiceNumber}
+              </p>
+              <p className="text-[#807e7e] text-[11px] leading-[14px] truncate" style={jakarta(400)}>
+                {inv.summary.map((s) => `${s.quantity} × ${s.name}`).join(' · ')}
+              </p>
+            </div>
+            {inv.paid && (
+              <span className="flex items-center gap-[4px] rounded-[30px] bg-[#aee74a] px-[8px] py-[4px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
+                <img src={paidIcon} alt="" className="size-[16px]" />
+                PAID
               </span>
-              <div className="flex flex-col gap-[3px] flex-1 min-w-0">
-                <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(700)}>
-                  Invoice #{inv.invoiceNumber}
-                </p>
-                <p className="text-[#807e7e] text-[11px] leading-[14px] truncate" style={jakarta(400)}>
-                  {inv.summary.map((s) => `${s.quantity} × ${s.name}`).join(' · ')}
-                </p>
-              </div>
-              {inv.paid && (
-                <span className="flex items-center gap-[4px] rounded-[30px] bg-[#aee74a] px-[8px] py-[4px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
-                  <img src={paidIcon} alt="" className="size-[16px]" />
-                  PAID
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-[14px]">
-              <div className="flex flex-col gap-[2px]">
-                <p className="text-[#807e7e] text-[10px] leading-[13px]" style={jakarta(400)}>
-                  Amount Paid
-                </p>
-                <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
-                  {nairaFromMinor(inv.amount).replace(/\.00$/, '')}
-                </p>
-              </div>
-              <button type="button" onClick={() => navigate(`/dashboard/orders/${inv.orderId}`)} className="text-[#007c53] text-[12px] leading-[15px]" style={jakarta(600)}>
-                View order
-              </button>
-            </div>
+            )}
           </div>
-        </div>
+          <div className="flex items-center justify-between p-[14px]">
+            <div className="flex flex-col gap-[2px]">
+              <p className="text-[#807e7e] text-[10px] leading-[13px]" style={jakarta(400)}>
+                Amount Paid
+              </p>
+              <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
+                {nairaFromMinor(inv.amount).replace(/\.00$/, '')}
+              </p>
+            </div>
+            <button type="button" onClick={() => navigate(`/dashboard/orders/${inv.orderId}`)} className="text-[#007c53] text-[12px] leading-[15px]" style={jakarta(600)}>
+              View order
+            </button>
+          </div>
+        </div>,
       )
     }
     if ('product' in p) {
       const prod = p.product
-      return (
-        <div className={`flex ${mine ? 'justify-end' : ''}`}>
-          <div className="w-[423px] max-w-full rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px] max-sm:flex-wrap">
-            <img src={prod.image ?? productThumb} alt="" className="size-[48px] rounded-[12px] object-cover shrink-0" />
-            <div className="flex flex-col gap-[4px] flex-1 min-w-0">
-              <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
-                {prod.name}
-              </p>
-              <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                Sold by {prod.storeId === active?.storeId ? active.storeName : 'the store'}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-[4px] shrink-0">
-              <p className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
-                {nairaFromMinor(prod.price)}
-              </p>
-              <button type="button" onClick={() => navigate(productHref(prod))} className="flex items-center gap-[8px] text-[#177b4d] text-[10px] leading-[13px]" style={jakarta(600)}>
-                View product
-                <img src={arrowRightIcon} alt="" className="size-[16px]" />
-              </button>
-            </div>
+      return frame(
+        <div className="w-[423px] max-w-full rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px] max-sm:flex-wrap">
+          <img src={prod.image ?? productThumb} alt="" className="size-[48px] rounded-[12px] object-cover shrink-0" />
+          <div className="flex flex-col gap-[4px] flex-1 min-w-0">
+            <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
+              {prod.name}
+            </p>
+            <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
+              Sold by {prod.storeId === active?.storeId ? active.storeName : 'the store'}
+            </p>
           </div>
-        </div>
+          <div className="flex flex-col items-end gap-[4px] shrink-0">
+            <p className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
+              {nairaFromMinor(prod.price)}
+            </p>
+            <button type="button" onClick={() => navigate(productHref(prod))} className="flex items-center gap-[8px] text-[#177b4d] text-[10px] leading-[13px]" style={jakarta(600)}>
+              View product
+              <img src={arrowRightIcon} alt="" className="size-[16px]" />
+            </button>
+          </div>
+        </div>,
       )
     }
     if ('assets' in p) {
