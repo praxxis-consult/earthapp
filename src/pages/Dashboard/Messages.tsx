@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import EmptyBlock from '../../components/ui/EmptyBlock'
@@ -14,9 +14,10 @@ import receiptIcon from '../../assets/icons/msg-receipt.svg'
 import paidIcon from '../../assets/icons/msg-paid-check.svg'
 import arrowRightIcon from '../../assets/icons/msg-arrow-right.svg'
 import productThumb from '../../assets/images/db-product-thumb.png'
-import { describeError, toApiError, type Product } from '../../services/earthApi'
+import { describeError, toApiError } from '../../services/earthApi'
 import { useAuth } from '../../feature/authentication/useAuth'
 import { useLazyGetMyProductsQuery } from '../../feature/products/productsApiSlice'
+import { useLazyListStoreQuery } from '../../feature/marketplace/catalogApiSlice'
 import { useStore } from '../../feature/stores/useStore'
 import { canSell } from '../../feature/authentication/role'
 import { useUploadImageMutation } from '../../feature/uploads/uploadsApiSlice'
@@ -102,6 +103,7 @@ export default function Messages() {
   const [markRead] = useMarkReadMutation()
   const [uploadImage] = useUploadImageMutation()
   const [loadMine] = useLazyGetMyProductsQuery()
+  const [loadStore] = useLazyListStoreQuery()
   // Below lg the list and the conversation are two screens; opening a chat moves to the second.
   // A thread named in the URL (a notification, a deep link) opens on the conversation screen; otherwise the list.
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(() => (new URLSearchParams(window.location.search).get('chat') ? 'chat' : 'list'))
@@ -112,7 +114,9 @@ export default function Messages() {
   const [busy, setBusy] = useState(false)
   const pane = useRef<HTMLDivElement>(null)
   const { open: attachOpen, setOpen: setAttachOpen, ref: attachRef } = useMenu()
-  const [picker, setPicker] = useState<Product[] | null>(null)
+  /** The listings the attach menu offers: the seller's own, or the store's when this account is the buyer. */
+  // null: closed; 'loading': open, the listings on their way; a list: open with the listings (maybe none).
+  const [picker, setPicker] = useState<{ id: string; label: string }[] | 'loading' | null>(null)
 
   /** The other side of a thread: the buyer when this account sells, the store when it buys. */
   const counterpart = (t: ChatThread) => (t.seller.id === me ? t.buyer.name : t.storeName)
@@ -130,6 +134,8 @@ export default function Messages() {
   const { subscribed, peerTyping, online, noteTyping, stopTyping } = useConversationLive(activeId, replay)
   // The other side's presence, when the live channel knows it (null while it does not).
   const peerId = active ? (active.seller.id === me ? active.buyer.id : active.seller.id) : ''
+  /** This account is the buyer in the open thread (the store is the other side). */
+  const buying = !!active && active.seller.id !== me
   const peerOnline = online && peerId in online ? online[peerId] : null
 
   const shown = useMemo(() => {
@@ -177,15 +183,27 @@ export default function Messages() {
     }
   }
 
+  /**
+   * A product card can go either way: a seller sends one of their listings, a buyer points at
+   * one of the store's. The thread says which side this account is on, so the picker loads the
+   * matching catalogue rather than always the account's own (a buyer has none).
+   */
   async function openPicker() {
     setAttachOpen(false)
-    setPicker([])
-    setPicker(await loadMine('PUBLISHED').unwrap().catch(() => []))
+    if (!active) return
+    setPicker('loading')
+    if (active.seller.id === me) {
+      const mine = await loadMine('PUBLISHED').unwrap().catch(() => [])
+      setPicker(mine.map((p) => ({ id: p.id, label: `${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}` })))
+    } else {
+      const store = await loadStore(active.storeId).unwrap().catch(() => null)
+      setPicker((store?.listings ?? []).map((l) => ({ id: l.id, label: `${l.title} · ${l.price}` })))
+    }
   }
 
-  function sendProduct(p: Product) {
+  function sendProduct(id: string) {
     setPicker(null)
-    void deliver({ kind: 'PRODUCT', productId: p.id })
+    void deliver({ kind: 'PRODUCT', productId: id })
   }
 
   /**
@@ -247,72 +265,81 @@ export default function Messages() {
   function bubble(m: ChatMessage, name: string) {
     const mine = m.senderId === me
     const p = m.payload
+    // Every kind of message sits in the same frame: the other party's avatar on the left, mine on the
+    // right, the time underneath, so a card says who sent it as clearly as a text bubble does.
+    const frame = (inner: ReactNode) => (
+      <div className={`flex items-end gap-[12px] ${mine ? 'justify-end' : ''}`}>
+        {!mine && <Avatar name={name} size={40} />}
+        <div className={`flex flex-col gap-[4px] min-w-0 max-w-full ${mine ? 'items-end' : ''}`}>
+          {inner}
+          <span className="text-[#807e7e] text-[11px] leading-[14px]" style={jakarta(400)}>
+            {timeOf(m.createdAt)}
+          </span>
+        </div>
+      </div>
+    )
     if ('invoice' in p) {
       const inv = p.invoice
-      return (
-        <div className={`flex ${mine ? 'justify-end' : ''}`}>
-          <div className="w-[368px] max-w-full rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
-            <div className="flex items-center gap-[12px] bg-[#edf7f3] p-[14px]">
-              <span className="flex items-center justify-center size-[32px] rounded-[10px] bg-white">
-                <img src={receiptIcon} alt="" className="size-[16px]" />
+      return frame(
+        <div className="w-[368px] max-w-full rounded-[16px] bg-white overflow-hidden shadow-[0_8px_30px_rgba(16,22,4,0.06)]">
+          <div className="flex items-center gap-[12px] bg-[#edf7f3] p-[14px]">
+            <span className="flex items-center justify-center size-[32px] rounded-[10px] bg-white">
+              <img src={receiptIcon} alt="" className="size-[16px]" />
+            </span>
+            <div className="flex flex-col gap-[3px] flex-1 min-w-0">
+              <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(700)}>
+                Invoice #{inv.invoiceNumber}
+              </p>
+              <p className="text-[#807e7e] text-[11px] leading-[14px] truncate" style={jakarta(400)}>
+                {inv.summary.map((s) => `${s.quantity} × ${s.name}`).join(' · ')}
+              </p>
+            </div>
+            {inv.paid && (
+              <span className="flex items-center gap-[4px] rounded-[30px] bg-[#aee74a] px-[8px] py-[4px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
+                <img src={paidIcon} alt="" className="size-[16px]" />
+                PAID
               </span>
-              <div className="flex flex-col gap-[3px] flex-1 min-w-0">
-                <p className="text-[#101604] text-[12px] leading-[15px]" style={jakarta(700)}>
-                  Invoice #{inv.invoiceNumber}
-                </p>
-                <p className="text-[#807e7e] text-[11px] leading-[14px] truncate" style={jakarta(400)}>
-                  {inv.summary.map((s) => `${s.quantity} × ${s.name}`).join(' · ')}
-                </p>
-              </div>
-              {inv.paid && (
-                <span className="flex items-center gap-[4px] rounded-[30px] bg-[#aee74a] px-[8px] py-[4px] text-[#0c2310] text-[11px] leading-[14px]" style={jakarta(600)}>
-                  <img src={paidIcon} alt="" className="size-[16px]" />
-                  PAID
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-[14px]">
-              <div className="flex flex-col gap-[2px]">
-                <p className="text-[#807e7e] text-[10px] leading-[13px]" style={jakarta(400)}>
-                  Amount Paid
-                </p>
-                <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
-                  {nairaFromMinor(inv.amount).replace(/\.00$/, '')}
-                </p>
-              </div>
-              <button type="button" onClick={() => navigate(`/dashboard/orders/${inv.orderId}`)} className="text-[#007c53] text-[12px] leading-[15px]" style={jakarta(600)}>
-                View order
-              </button>
-            </div>
+            )}
           </div>
-        </div>
+          <div className="flex items-center justify-between p-[14px]">
+            <div className="flex flex-col gap-[2px]">
+              <p className="text-[#807e7e] text-[10px] leading-[13px]" style={jakarta(400)}>
+                Amount Paid
+              </p>
+              <p className="text-[#101604] text-[16px] leading-[20px]" style={jakarta(700)}>
+                {nairaFromMinor(inv.amount).replace(/\.00$/, '')}
+              </p>
+            </div>
+            <button type="button" onClick={() => navigate(`/dashboard/orders/${inv.orderId}`)} className="text-[#007c53] text-[12px] leading-[15px]" style={jakarta(600)}>
+              View order
+            </button>
+          </div>
+        </div>,
       )
     }
     if ('product' in p) {
       const prod = p.product
-      return (
-        <div className={`flex ${mine ? 'justify-end' : ''}`}>
-          <div className="w-[423px] max-w-full rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px] max-sm:flex-wrap">
-            <img src={prod.image ?? productThumb} alt="" className="size-[48px] rounded-[12px] object-cover shrink-0" />
-            <div className="flex flex-col gap-[4px] flex-1 min-w-0">
-              <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
-                {prod.name}
-              </p>
-              <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
-                Sold by {prod.storeId === active?.storeId ? active.storeName : 'the store'}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-[4px] shrink-0">
-              <p className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
-                {nairaFromMinor(prod.price)}
-              </p>
-              <button type="button" onClick={() => navigate(productHref(prod))} className="flex items-center gap-[8px] text-[#177b4d] text-[10px] leading-[13px]" style={jakarta(600)}>
-                View product
-                <img src={arrowRightIcon} alt="" className="size-[16px]" />
-              </button>
-            </div>
+      return frame(
+        <div className="w-[423px] max-w-full rounded-[16px] bg-white p-[16px] shadow-[0_8px_30px_rgba(16,22,4,0.06)] flex items-center gap-[14px] max-sm:flex-wrap">
+          <img src={prod.image ?? productThumb} alt="" className="size-[48px] rounded-[12px] object-cover shrink-0" />
+          <div className="flex flex-col gap-[4px] flex-1 min-w-0">
+            <p className="text-[#101604] text-[14px] leading-[20px] truncate" style={jakarta(600)}>
+              {prod.name}
+            </p>
+            <p className="text-[#807e7e] text-[12px] leading-[20px]" style={jakarta(400)}>
+              Sold by {prod.storeId === active?.storeId ? active.storeName : 'the store'}
+            </p>
           </div>
-        </div>
+          <div className="flex flex-col items-end gap-[4px] shrink-0">
+            <p className="text-[#101604] text-[14px] leading-[18px]" style={jakarta(700)}>
+              {nairaFromMinor(prod.price)}
+            </p>
+            <button type="button" onClick={() => navigate(productHref(prod))} className="flex items-center gap-[8px] text-[#177b4d] text-[10px] leading-[13px]" style={jakarta(600)}>
+              View product
+              <img src={arrowRightIcon} alt="" className="size-[16px]" />
+            </button>
+          </div>
+        </div>,
       )
     }
     if ('assets' in p) {
@@ -590,13 +617,17 @@ export default function Messages() {
       {picker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-[16px]" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setPicker(null)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <MenuList width={Math.min(375, window.innerWidth - 32)} hint={picker.length ? 'Choose a listing to send' : 'Loading your listings…'}>
-              {picker.map((p) => (
-                <MenuItem key={p.id} label={`${p.productName ?? 'Product'} · ${nairaFromMinor(p.price ?? 0)}`} selected={false} onSelect={() => sendProduct(p)} />
-              ))}
-              {picker.length === 0 && (
+            <MenuList
+              width={Math.min(375, window.innerWidth - 32)}
+              hint={picker === 'loading' ? (buying ? 'Loading the store’s listings…' : 'Loading your listings…') : buying ? 'Choose a product to ask about' : 'Choose a listing to send'}
+            >
+              {picker !== 'loading' &&
+                picker.map((p) => (
+                  <MenuItem key={p.id} label={p.label} selected={false} onSelect={() => sendProduct(p.id)} />
+                ))}
+              {picker !== 'loading' && picker.length === 0 && (
                 <p className="px-[16px] py-[12px] text-[#807e7e] text-[14px] leading-[20px]" style={jakarta(400)}>
-                  Publish a listing first, then you can send it here.
+                  {buying ? 'This store has no listings yet.' : 'Publish a listing first, then you can send it here.'}
                 </p>
               )}
             </MenuList>
