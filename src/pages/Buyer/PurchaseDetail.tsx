@@ -21,6 +21,7 @@ import bagCrossLg from '../../assets/icons/od-bag-cross-lg.svg'
 import bagCrossSm from '../../assets/icons/od-bag-cross-sm.svg'
 import { useCancelOrderMutation, useConfirmPickupMutation, useGetOrderQuery, useGetReceiptQuery, useGetTimelineQuery, type OrderSummary, type Receipt } from '../../feature/orders/ordersApiSlice'
 import { usePayment } from '../../feature/orders/usePayment'
+import { PAYMENTS_LIVE } from '../../lib/launch'
 import { usePostReviewMutation } from '../../feature/reviews/reviewsApiSlice'
 import { purchaseFromApi } from '../../data/purchases'
 import { awaitingPayment, buyerMoney, cancelMeaning, canCancel, isPaid, isSelfPickup, mmss, paymentExpired, paymentSecondsLeft, stepTime, trackingView } from '../../data/orderFlow'
@@ -227,7 +228,9 @@ export default function PurchaseDetail() {
   if (!paid && !closed) {
     banner = expired
       ? { title: 'This order expired before payment', body: 'An order has fifteen minutes to be paid. Nothing was charged; place it again from the listing to buy.', art: [bagCrossLg, bagCrossSm] }
-      : {
+      : !PAYMENTS_LIVE
+        ? { title: 'Checkout opens soon', body: 'Earth is in early access, so this order cannot be paid yet. Paying opens on launch day; we email you the moment it does, and nothing has been charged.' }
+        : {
           title: 'Finish paying for this order',
           body: `${summary.expiresAt ? `${mmss(paymentSecondsLeft(summary, now))} left to pay. ` : ''}Paystack’s secure page opens when you continue; the seller is told once the payment is confirmed.`,
           action: { label: paying ? 'Opening payment…' : 'Pay now', onClick: () => void payment.pay(id), busy: paying },

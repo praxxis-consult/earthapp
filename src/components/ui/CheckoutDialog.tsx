@@ -19,6 +19,8 @@ import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
 import { purchaseRule, purchaseRuleMessage, type ProductNamer } from '../../lib/purchaseRule'
 import { jakarta } from '../../utils/styles'
+import { PAYMENTS_LIVE } from '../../lib/launch'
+import CheckoutSoonDialog from './CheckoutSoonDialog'
 
 /** One listing and how many of it. */
 export interface CheckoutLine {
@@ -204,6 +206,9 @@ export default function CheckoutDialog({ listing, quantity, lines, onOrdered, on
       )
     }
   }
+
+  // Early access: nothing is ordered or paid until launch day; the buyer is told and can message the seller.
+  if (!PAYMENTS_LIVE) return <CheckoutSoonDialog stores={[{ id: first.store.id, name: first.store.storeName, productId: goods.length === 1 ? first.id : undefined }]} onClose={onClose} />
 
   if (payment.state.phase === 'preparing' || payment.state.phase === 'redirecting')
     return (

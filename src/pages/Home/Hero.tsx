@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import scrollIcon from '../../assets/icons/hero-scroll.svg'
 import arrowRight from '../../assets/icons/hero-arrow-right.svg'
+import { PAYMENTS_LIVE } from '../../lib/launch'
 
 // Compressed muted renditions of the source .mov files (h264, faststart); each poster is the
 // video's own first frame so the first paint matches where playback starts.
@@ -91,12 +92,22 @@ export default function Hero() {
       <div className="absolute flex flex-col items-start bottom-[80px] left-[max(120px,calc((100%-1200px)/2))] w-[1200px] gap-[64px] max-xl:left-[24px] max-xl:w-[calc(100%-48px)] max-lg:relative max-lg:bottom-auto max-lg:left-auto max-lg:w-full max-lg:gap-[40px] max-lg:px-[24px] max-lg:pt-[200px] max-lg:pb-[48px] max-md:px-[16px] max-md:pt-[160px] max-md:pb-[40px]">
         {/* Eyebrow + headline */}
         <div className="flex flex-col items-start w-full" style={{ gap: '16px' }}>
-          <p
-            className="text-[#f8f8f8] text-[12px] uppercase w-full"
-            style={{ ...jakarta(500), letterSpacing: '1.98px' }}
-          >
-            Global sourcing · Import &amp; export
-          </p>
+          <div className="flex flex-wrap items-center gap-x-[16px] gap-y-[8px] w-full">
+            <p
+              className="text-[#f8f8f8] text-[12px] uppercase"
+              style={{ ...jakarta(500), letterSpacing: '1.98px' }}
+            >
+              Global sourcing · Import &amp; export
+            </p>
+            {!PAYMENTS_LIVE && (
+              <span
+                className="inline-flex h-[24px] items-center rounded-full border border-[rgba(248,248,248,0.4)] bg-[rgba(248,248,248,0.12)] px-[10px] text-[#f8f8f8] text-[11px] uppercase"
+                style={{ ...jakarta(500), letterSpacing: '1.2px' }}
+              >
+                Early access
+              </span>
+            )}
+          </div>
           <div className="flex flex-col items-start w-full">
             <p className={headlineClass} style={jakarta(700)}>
               From Earth

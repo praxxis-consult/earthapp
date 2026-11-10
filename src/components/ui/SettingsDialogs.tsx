@@ -18,7 +18,7 @@ export const inputClass =
   'bg-[#f7f7f7] h-[48px] w-full rounded-[30px] px-[16px] text-[14px] leading-[24px] text-[#101604] outline-none border border-transparent focus:border-[#007c53] placeholder:text-[#807e7e]'
 
 /** Figma "store details" (639:24245): 648 wide, radius 20, padding 20, gap 16, title row with close-circle. */
-export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel, busyLabel = 'Saving…' }: {
+export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save changes', cancel, cancelLabel = 'Cancel', busyLabel = 'Saving…' }: {
   title: string
   onClose: () => void
   onSubmit: (e: FormEvent) => void
@@ -26,6 +26,8 @@ export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save ch
   busy: boolean
   cta?: string
   cancel?: boolean
+  /** What the cancel button says, when it is shown. */
+  cancelLabel?: string
   /** What the button says while `busy`. */
   busyLabel?: string
 }) {
@@ -68,7 +70,7 @@ export function Shell({ title, onClose, onSubmit, children, busy, cta = 'Save ch
         </button>
         {cancel && (
           <button type="button" onClick={onClose} className="h-[48px] w-full rounded-[30px] bg-[#f7f7f7] text-[#101604] text-[14px]" style={jakarta(500)}>
-            Cancel
+            {cancelLabel}
           </button>
         )}
       </form>

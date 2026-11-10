@@ -18,6 +18,8 @@ import { naira } from '../../lib/productView'
 import { describeError, toApiError } from '../../services/earthApi'
 import type { ProductNamer } from '../../lib/purchaseRule'
 import { jakarta } from '../../utils/styles'
+import { PAYMENTS_LIVE } from '../../lib/launch'
+import CheckoutSoonDialog from './CheckoutSoonDialog'
 
 /** One store of the cart, with its lines resolved to listings. */
 export interface CartStoreGroup {
@@ -158,6 +160,9 @@ export default function CartCheckoutDialog({ groups, cartVersion, onClose }: Car
     if (stores.some((s) => s.fulfillmentMethod === 'SHIPPING' && !s.quoteId)) return setError('Choose a carrier for every delivered store, or switch that store to collection.')
     await checkout.place(cartVersion, stores, clientCheckoutId.current)
   }
+
+  // Early access: no checkout is created until launch day; the cart stays as it is.
+  if (!PAYMENTS_LIVE) return <CheckoutSoonDialog stores={groups.map((g) => ({ id: g.storeId, name: g.storeName }))} onClose={onClose} />
 
   if (checkout.state.phase === 'preparing' || checkout.state.phase === 'paying' || checkout.state.phase === 'redirecting')
     return (
